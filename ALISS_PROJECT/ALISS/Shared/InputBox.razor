@@ -1,0 +1,34 @@
+﻿@if (ConfigData != null && ConfigData.tbc_edit)
+{
+    <div class="@classColumn">
+        <div class="row justify-content-center divGroup">
+            <div class="@classLabel">
+                <div class="row justify-content-end">
+                    <div style="text-align:right;">
+                        <label>@ConfigData.tbc_column_label</label>
+                        @if (ConfigData.tbc_required_field)
+                        {
+                            <label style="color:red;">*</label>
+                        }
+                    </div>
+                    <div style="width:1px;text-align:center;">
+                        <label>&nbsp;:&nbsp;</label>
+                    </div>
+                </div>
+            </div>
+            <div class="@classInput">
+                @ChildContent
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string classColumn { get; set; } = "col-12 col-xl-4";
+    [Parameter] public string classLabel { get; set; } = "col-4";
+    [Parameter] public string classInput { get; set; } = "col-8";
+
+    [Parameter] public TBConfigDTO ConfigData { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+
+}

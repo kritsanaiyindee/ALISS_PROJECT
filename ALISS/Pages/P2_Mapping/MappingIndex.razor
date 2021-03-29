@@ -1,0 +1,526 @@
+﻿@page "/MappingIndex"
+
+@using ALISS.Data.D2_Mapping
+@using ALISS.Data
+@using ALISS.Mapping.DTO
+
+@using Radzen
+@using Radzen.Blazor
+
+@inject IJSRuntime jsRuntime
+@inject MappingService mappingservice
+@inject DialogService dialogService
+@inject NavigationManager navigationManager
+@inject DropDownListDataService ddlDataService
+@inject UserLoginService userLoginService
+@inject MasterTemplateService masterTemplateService
+@inject ConfigDataService configDataService
+
+<div style="width: 1200px;">
+    <div class="divHead">
+        Lab File Template List
+    </div>
+</div>
+
+
+
+
+@if (gridDatas == null)
+{
+    <p><em>Loading...</em></p>
+    <Loading ShowModel="true" />
+}
+else
+{
+    <div class="container inputArea">
+        <div class="row justify-content-between">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("mps_Hos")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.mps_Hos" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name, x.hos_code, x.hos_name }).Where(x => (searchModel.mps_Area == null || x.arh_code == searchModel.mps_Area) && (searchModel.mps_Province == null || x.prv_code == searchModel.mps_Province))" ValueProperty="hos_code" TextProperty="hos_name" Change="@(args => DDL_Change("Hos", args))" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("mps_Province")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.mps_Province" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name }).Where(x => (searchModel.mps_Area == null || x.arh_code == searchModel.mps_Area)).Distinct()" ValueProperty="prv_code" TextProperty="prv_name" Change="@(args => DDL_Change("Prv", args))" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("mps_Area")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.mps_Area" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name }).Distinct()" ValueProperty="arh_code" TextProperty="arh_name" Change="@(args => DDL_Change("Arh", args))" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("mps_lab")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.mps_lab" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Where(x => x.hos_code == searchModel.mps_Hos)" ValueProperty="lab_code" TextProperty="lab_name" />
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup buttonArea">
+                    <div class="col-auto">
+                        <RadzenButton class="btnSearch" Text="@configData.Get_Label("mp_index_search_btn")" Click="SearchData" />
+                    </div>
+                    <div class="col-auto">
+                        <RadzenButton class="btnClear" Text="@configData.Get_Label("mp_index_clear_btn")" Click="ClearInboxData" />
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+
+    <hr />
+    <div>
+
+        @if (mainLayout.loginUser.PagePermission.rop_create == true)
+        {
+            <div class="container">
+                <div class="row justify-content-end">
+                    <div class="col-auto buttonArea">
+                        <RadzenButton Text="@configData.Get_Label("mp_index_copy_btn")" class="btnAdd"
+                                      Disabled="@(_MappingSelected != Guid.Empty ? false : true)"
+                                      Click="@(() => ShowCopyMappingPopup())" />
+                        <RadzenButton Icon="add" Text="@configData.Get_Label("mp_index_new_btn")" class="btnAdd" Click="@(() => OpenMappingDetail(""))" />
+
+                    </div>
+                </div>
+            </div>
+            <br />
+        }
+        <div style="width:90%;margin:0px auto;">
+            <div class="container">
+                <div class="row justify-content-end">
+                    <div class="col-auto">
+                        <label>Rows : </label>
+                    </div>
+                    <div class="col-auto">
+                        <RadzenDropDown @bind-Value="inboxGrid.PageSize" TValue="int" AllowFiltering="true" Data="inboxGrid.PageSizeOption" Change="SearchData" Style="width:50px" />
+                    </div>
+                </div>
+            </div>
+            <RadzenGrid RowDoubleClick="@((args) => OpenMappingDetail(args.mp_id.ToString()))" AllowFiltering="true" AllowSorting="true" AllowPaging="true"
+                        PageSize="inboxGrid.PageSize" @ref="inboxGrid.radzenGrid" Data="@gridDatas" TItem="MappingListsDTO" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                        RowSelect="@((args) => OnMappingSeleted(args.mp_id,args.mp_program))" ColumnWidth="120px">
+                <Columns>
+                    <RadzenGridColumn TItem="MappingListsDTO" Property="mp_hos_name" Title="โรงพยาบาล" Width="200px">
+                        <FooterTemplate>
+                            <label title="@inboxGrid.FooterLabelString">@inboxGrid.FooterLabelString</label>
+                        </FooterTemplate>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="MappingListsDTO" Property="mp_labname" Title="Lab" Width="200px"/>
+                    <RadzenGridColumn TItem="MappingListsDTO" Property="mp_program_filetype" Title="File Type"/>
+                    <RadzenGridColumn TItem="MappingListsDTO" Property="mp_startdate" Title="วันที่เริ่มใช้งาน" Width="95px">
+                        <Template Context="data">
+                            @String.Format("{0:dd/MM/yyyy}", data.mp_startdate)
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="MappingListsDTO" Property="mp_enddate" Title="วันที่เลิกใช้งาน" Width="95px">
+                        <Template Context="data">
+                            @String.Format("{0:dd/MM/yyyy}", data.mp_enddate)
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="MappingListsDTO" Property="mp_version" Title="Version" Width="90px"/>
+                    <RadzenGridColumn TItem="MappingListsDTO" Property="mp_status_str" Title="Status" />
+                    <RadzenGridColumn Context="order" TItem="MappingListsDTO" Property="mp_updatedate" Title="วันที่ทำรายการล่าสุด" Width="120px">
+                        <Template Context="data">
+                            @String.Format("{0:dd/MM/yyyy HH:mm:ss}", data.mp_updatedate)
+                        </Template>
+                    </RadzenGridColumn>
+
+                </Columns>
+
+            </RadzenGrid>
+        </div>
+    </div>
+}
+@if (ShowPopup)
+{
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+
+                </div>
+
+                <div class="modal-body">
+                    <EditForm Model="@objCopyMapping" OnValidSubmit="()=> SaveMappingCopy()">
+                        <DataAnnotationsValidator />
+                        @*<ValidationSummary/>*@
+                        <div class="container inputArea">
+                            <div class="row">
+
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("mps_Hos")" requireField="true" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenDropDown @bind-Value="objCopyMapping.mp_hos_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name, x.hos_code, x.hos_name }).Where(x => (hoslabModel.mps_Area == null || x.arh_code == hoslabModel.mps_Area) && (hoslabModel.mps_Province == null || x.prv_code == hoslabModel.mps_Province))" ValueProperty="hos_code" TextProperty="hos_name" Change="@(args => DDL_Popup_Change("Hos", args))" />
+                                            <ValidationMessage For="@(() => objCopyMapping.mp_hos_code)" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("mps_Province")" requireField="true" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenDropDown @bind-Value="hoslabModel.mps_Province" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name }).Where(x => (hoslabModel.mps_Area == null || x.arh_code == hoslabModel.mps_Area)).Distinct()" ValueProperty="prv_code" TextProperty="prv_name" Change="@(args => DDL_Popup_Change("Prv", args))" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("mps_Area")" requireField="true" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenDropDown @bind-Value="hoslabModel.mps_Area" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name }).Distinct()" ValueProperty="arh_code" TextProperty="arh_name" Change="@(args => DDL_Popup_Change("Arh", args))" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("mps_lab")" requireField="true"/>
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenDropDown @bind-Value="objCopyMapping.mp_lab" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Where(x => x.hos_code == objCopyMapping.mp_hos_code)" ValueProperty="lab_code" TextProperty="lab_name" Change="@(args => DDL_Popup_Change("Lab", args))" />
+                                            <ValidationMessage For="@(() => objCopyMapping.mp_lab)" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("mp_startdate")" requireField="true"/>
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenDatePicker @bind-Value="objCopyMapping.mp_startdate" DateFormat="dd/MM/yyyy" ReadOnly="true" />
+                                            <ValidationMessage For="@(() => objCopyMapping.mp_startdate)" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup buttonArea">
+                                        <div class="col-auto">
+                                            <RadzenButton class="btnCancel" Text="@configData.Get_Label("mp_index_cancel_btn")" Click="CloseCopyMappingPopup" />
+                                        </div>
+                                        <div class="col-auto">
+                                            <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="@configData.Get_Label("mp_index_save_btn")" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+
+        </div>
+    </div>
+}
+
+<Loading ShowModel="showModal" />
+
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+
+    private RadzenGridCustom<MappingListsDTO> inboxGrid = new RadzenGridCustom<MappingListsDTO>();
+    private List<HospitalDataDTO> arh_List;
+    private List<HospitalDataDTO> prv_List;
+    private List<HospitalDataDTO> hos_List;
+
+    private List<DropDownListDTO> rol_List;
+    private List<DropDownListDTO> lab_List = new List<DropDownListDTO>();
+
+
+    private List<HospitalLabDataDTO> lab_ddl_List;
+
+    private bool showModal = false;
+    private bool ShowPopup = false;
+
+
+    private List<MappingListsDTO> gridDatas;
+    private Guid _MappingSelected = Guid.Empty;
+    MappingSearchDTO searchModel = new MappingSearchDTO();
+    MappingSearchDTO hoslabModel = new MappingSearchDTO();
+    MappingDataDTO objCopyMapping = new MappingDataDTO();
+
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0401") == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = "MNU_0401" });
+
+            _MappingSelected = Guid.Empty;
+
+            var searchData = new HospitalLabDataDTO()
+            {
+                arh_code = searchModel.mps_Area = mainLayout.loginUser.arh_code,
+                prv_code = searchModel.mps_Province = mainLayout.loginUser.prv_code,
+                hos_code = searchModel.mps_Hos = mainLayout.loginUser.hos_code,
+                lab_code = searchModel.mps_lab = mainLayout.loginUser.lab_code
+            };
+            lab_ddl_List = await ddlDataService.GetAllLabListByModelAsync(searchData);
+            rol_List = await ddlDataService.GetRoleListByModelAsync();
+
+
+            gridDatas = await mappingservice.GetMappingListByParamAsync(searchModel);
+
+        }
+    }
+
+    private async void SearchData()
+    {
+        showModal = true;
+
+        gridDatas = await mappingservice.GetMappingListByParamAsync(searchModel);
+        if (inboxGrid.radzenGrid != null) inboxGrid.radzenGrid.GoToPage(0);
+        showModal = false;
+
+
+
+        StateHasChanged();
+    }
+
+    void OnMappingSeleted(Guid mp_id, string mp_program)
+    {
+        _MappingSelected = mp_id;
+        objCopyMapping.mp_program = mp_program;
+        objCopyMapping.mp_AntibioticIsolateOneRec = true;
+        objCopyMapping.mp_firstlineisheader = true;
+        objCopyMapping.mp_dateformat = "dd/mm/yyyy";
+
+    }
+
+    private async Task SaveMappingCopy()
+    {
+        var now = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
+        if (objCopyMapping.mp_startdate < now)
+        {
+            showModal = false;
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "วันที่เริ่มใช้งานไม่สามารถมีค่าก่อนวันที่ปัจจุบัน");
+            return;
+        }
+        showModal = true;
+        var searchMasterTemplate = new MasterTemplateSearchDTO();
+        var ActiveMasterTemplate = await masterTemplateService.GetListByModelActiveAsync(searchMasterTemplate);
+
+        var getSelectedMappingData = await mappingservice.GetMappingDataAsync(_MappingSelected.ToString());
+        if (getSelectedMappingData.mp_id != Guid.Empty)
+        {
+            getSelectedMappingData.mp_lab = objCopyMapping.mp_lab;
+            var chkOldMappingData = await mappingservice.GetMappingDataByModelAsync(getSelectedMappingData);
+
+
+            if (chkOldMappingData.mp_id != Guid.Empty)
+            {
+
+                //Dialog Confirm
+                var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Found old version(" + @chkOldMappingData.mp_version.ToString() + ").Do you want to create new version?");
+
+                if (result)
+                {
+                    if (objCopyMapping.mp_startdate <= chkOldMappingData.mp_startdate)
+                    {
+                        showModal = false;
+                        await jsRuntime.InvokeAsync<object>("ShowAlert", "วันที่เริ่มใช้งานไม่สามารถมีค่าก่อนหรือวันเดียวกันกับวันที่เริ่มใช้งานของ Version ก่อนหน้า (" + @chkOldMappingData.mp_version.ToString() + ")(" + @chkOldMappingData.mp_startdate_str + ")");
+                        return;
+                    }
+                    objCopyMapping.mp_version = chkOldMappingData.mp_version + 1;
+                }
+                else
+                {
+                    showModal = false;
+                    return;
+                }
+
+            }
+            else
+            {
+                objCopyMapping.mp_version = 1;
+            }
+
+
+            objCopyMapping.mp_mst_code = ActiveMasterTemplate.mst_code;
+            objCopyMapping.mp_id = _MappingSelected;
+            objCopyMapping.mp_createuser = mainLayout.loginUser.Username;
+
+            var x = await mappingservice.CopyMappingDataAsync(objCopyMapping);
+
+            navigationManager.NavigateTo("MappingDetail/" + x.mp_id.ToString());
+
+        }
+
+
+
+
+    }
+    async Task ShowCopyMappingPopup()
+    {
+
+
+        ShowPopup = true;
+    }
+
+    void CloseCopyMappingPopup()
+    {
+        hoslabModel = new MappingSearchDTO();
+        objCopyMapping.mp_hos_code = null;
+        objCopyMapping.mp_lab = null;
+        objCopyMapping.mp_startdate = null;
+        ShowPopup = false;
+    }
+
+    async Task OpenMappingDetail(string id)
+    {
+        if (string.IsNullOrEmpty(id))
+        {
+            navigationManager.NavigateTo("MappingDetail");
+        }
+        else
+        {
+            navigationManager.NavigateTo("MappingDetail/" + id);
+        }
+    }
+
+
+
+
+    private void DDL_Change(string ddl_name, object value)
+    {
+        if (ddl_name == "Arh" && value == null)
+        {
+            searchModel.mps_Province = null;
+            searchModel.mps_Hos = null;
+            searchModel.mps_lab = null;
+        }
+        else if (ddl_name == "Prv" && value == null)
+        {
+            searchModel.mps_Hos = null;
+            searchModel.mps_lab = null;
+        }
+        else if (ddl_name == "Prv" && value != null)
+        {
+            var prv_select = lab_ddl_List.FirstOrDefault(x => x.prv_code == value.ToString());
+
+            searchModel.mps_Area = prv_select.arh_code;
+        }
+        else if (ddl_name == "Hos" && value == null)
+        {
+            searchModel.mps_lab = null;
+        }
+        else if (ddl_name == "Hos" && value != null)
+        {
+            var hos_select = lab_ddl_List.FirstOrDefault(x => x.hos_code == value.ToString());
+
+            searchModel.mps_Province = hos_select.prv_code;
+            searchModel.mps_Area = hos_select.arh_code;
+            searchModel.mps_lab = null;
+        }
+
+
+
+        StateHasChanged();
+    }
+
+    private void DDL_Popup_Change(string ddl_name, object value)
+    {
+        if (ddl_name == "Arh" && value == null)
+        {
+            hoslabModel.mps_Province = null;
+            hoslabModel.mps_Hos = null;
+            objCopyMapping.mp_hos_code = null;
+            hoslabModel.mps_lab = null;
+            objCopyMapping.mp_lab = null;
+        }
+        else if (ddl_name == "Prv" && value == null)
+        {
+            hoslabModel.mps_Hos = null;
+            objCopyMapping.mp_hos_code = null;
+            hoslabModel.mps_lab = null;
+            objCopyMapping.mp_lab = null;
+
+        }
+        else if (ddl_name == "Prv" && value != null)
+        {
+            var prv_select = lab_ddl_List.FirstOrDefault(x => x.prv_code == value.ToString());
+
+            hoslabModel.mps_Area = prv_select.arh_code;
+        }
+        else if (ddl_name == "Hos" && value == null)
+        {
+            hoslabModel.mps_lab = null;
+            objCopyMapping.mp_hos_code = null;
+        }
+        else if (ddl_name == "Hos" && value != null)
+        {
+            var hos_select = lab_ddl_List.FirstOrDefault(x => x.hos_code == value.ToString());
+
+            hoslabModel.mps_Province = hos_select.prv_code;
+            hoslabModel.mps_Area = hos_select.arh_code;
+            hoslabModel.mps_lab = null;
+            objCopyMapping.mp_lab = null;
+            objCopyMapping.mp_hos_code = hos_select.hos_code;
+        }
+        else if (ddl_name == "Lab" && value == null)
+        {
+
+            objCopyMapping.mp_lab = null;
+        }
+        else if (ddl_name == "Lab" && value != null)
+        {
+            var lab_select = lab_ddl_List.FirstOrDefault(x => x.lab_code == value.ToString());
+
+            objCopyMapping.mp_lab = lab_select.lab_code;
+        }
+
+        StateHasChanged();
+    }
+
+    private async void ClearInboxData()
+    {
+        searchModel.mps_Area = null;
+        searchModel.mps_Hos = null;
+        searchModel.mps_Province = null;
+        searchModel.mps_lab = null;
+        SearchData();
+    }
+
+}

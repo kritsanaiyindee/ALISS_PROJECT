@@ -1,0 +1,216 @@
+﻿@page "/MasterManagement/MasterTemplate/Specimen"
+
+@inject GridDataService GridService
+@inject DialogService dialogService
+
+<div style="width: 1200px;">
+    <div class="divHead">
+        Specimen
+    </div>
+</div>
+
+@if (gridDatas == null)
+{
+<p><em>Loading...</em></p>
+}
+else
+{
+<div style="width:1200px;">
+    <div>
+        <label>Filter : </label>
+    </div>
+    <div class="divBox">
+        <div class="divLabel">
+            <label>Specimen</label>
+        </div>
+        <div class="divColon">
+            <label>:</label>
+        </div>
+        <div class="divInput">
+            <input type="text" style="background: #FFFFFF 0% 0% no-repeat padding-box; border: 1px solid #E4E4E4; border-radius: 3px; opacity: 1;font: Regular 14px/22px Arial;" />
+        </div>
+    </div>
+
+    <br />
+
+    <div style="text-align:right;">
+        <input type="button" style="width: 131px;height: 38px;background: #FFFFFF 0% 0% no-repeat padding-box;border: 1px solid #0A6839;border-radius: 3px;color: #0A6839;" value="ค้นหา" />
+    </div>
+</div>
+
+<hr />
+
+<div style="width:1200px;">
+    <div style="text-align:right;">
+        <RadzenButton Text=@($"+ เพิ่ม Specimen") Click="@ShowSimpleDialog" style="width: 225px;height: 38px;background: #0A6839 0% 0% no-repeat padding-box;border-radius: 3px;color: #FFFFFF;" />
+    </div>
+
+    <br />
+
+    <div style="width:90%;margin:0px auto;">
+        <RadzenGrid AllowPaging="true" PageSize="4" Data="@gridDatas" TItem="GridData" ColumnWidth="200px">
+            <Columns>
+                <RadzenGridColumn TItem="GridData" Property="Column_01" Title="Specimen code" />
+                <RadzenGridColumn TItem="GridData" Property="Column_02" Title="Specimen" />
+                <RadzenGridColumn TItem="GridData" Property="Column_04" Title="สถานะ" />
+                <RadzenGridColumn TItem="GridData" Property="Column_05" Title="" />
+            </Columns>
+        </RadzenGrid>
+    </div>
+
+    <br />
+
+</div>
+
+
+<hr />
+
+<div style="width:1200px;">
+    <div>
+        <label style="        display: inline-block;
+        font: Bold 18px/22px Arial;
+        letter-spacing: 0;
+        color: #999999;">Log</label>
+    </div>
+    <table class="historyTable" width="90%" align="center">
+        <thead>
+            <tr>
+                <th style="font:bold 14px/22px Arial;">User</th>
+                <th style="font:bold 14px/22px Arial;">Action</th>
+                <th style="font:bold 14px/22px Arial;">Status</th>
+                <th style="font:bold 14px/22px Arial;">DateTime</th>
+                <th style="font:bold 14px/22px Arial;">Remark</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var history in historys)
+            {
+            <tr>
+                <td style="font:Regular 14px/22px Arial;">@history.Column_01</td>
+                <td style="font:Regular 14px/22px Arial;">@history.Column_02</td>
+                <td style="font:Regular 14px/22px Arial;">@history.Column_03</td>
+                <td style="font:Regular 14px/22px Arial;">@history.Column_04</td>
+                <td style="font:Regular 14px/22px Arial;">@history.Column_05</td>
+            </tr>
+            }
+        </tbody>
+    </table>
+
+</div>
+
+<hr />
+}
+
+@code {
+    [Parameter] public string mst_code { get; set; }
+
+    private GridData[] gridDatas;
+    private GridData[] historys;
+    private string tmpData = "กรุณาเลือก";
+    private DateTime Date1;
+    int value = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        gridDatas = await GridService.GetDataAsync();
+        historys = await GridService.GetHistoryAsync();
+    }
+
+    string[] options = new[]
+           {
+                "One",
+                "Two",
+                "Three"
+            };
+
+    Dictionary<DateTime, string>
+    events = new Dictionary<DateTime, string>
+        ();
+
+    async Task ShowSimpleDialog() => await dialogService.OpenAsync("เพิ่ม Specimen", ds =>
+        @<RadzenCard Style="padding: 20px;">
+            <div class="row">
+                <div class="divBox">
+                    <div class="divLabel">
+                        <label>Specimen Code</label>
+                    </div>
+                    <div class="divColon">
+                        <label>:</label>
+                    </div>
+                    <div class="divInput">
+                        <input type="text" style="background: #FFFFFF 0% 0% no-repeat padding-box; border: 1px solid #E4E4E4; border-radius: 3px; opacity: 1;font: Regular 14px/22px Arial;" />
+                    </div>
+                </div>
+                <div class="divBox">
+                    <div class="divLabel">
+                        <label>Specimen</label>
+                    </div>
+                    <div class="divColon">
+                        <label>:</label>
+                    </div>
+                    <div class="divInput">
+                        <input type="text" style="background: #FFFFFF 0% 0% no-repeat padding-box; border: 1px solid #E4E4E4; border-radius: 3px; opacity: 1;font: Regular 14px/22px Arial;" />
+                    </div>
+                </div>
+                <div class="divBox">
+                    <div class="divLabel">
+                        <label>Status</label>
+                    </div>
+                    <div class="divColon">
+                        <label>:</label>
+                    </div>
+                    <div class="divInput">
+                        <RadzenRadioButtonList @bind-Value="value" TValue="int">
+                            <Items>
+                                <RadzenRadioButtonListItem Text="Active" Value="1" />
+                                <RadzenRadioButtonListItem Text="Inactive" Value="2" />
+                            </Items>
+                        </RadzenRadioButtonList>
+                    </div>
+                </div>
+                <div class="col-md-12">
+                    <div style="text-align: right">
+                        <input type="button" style="        width: 131px;
+        height: 38px;
+        display: inline-block;
+        background: #EBEBEB 0% 0% no-repeat padding-box;
+        border: 1px solid #E4E4E4;
+        border-radius: 3px;
+        color: #999999;" value="ยกเลิก" />
+                        <div style="width: 5px;display: inline-block;"></div>
+                        <input type="button" style="width: 131px;height: 38px;display: inline-block;background: #41AA88 0% 0% no-repeat padding-box;border-radius: 3px;color: #FFFFFF;" value="ตกลง" />
+                    </div>
+                    @*<RadzenButton Text="Save" Click="()=> ds.Close(true)" Style="margin-bottom: 10px; width: 150px" />
+                    <RadzenButton Text="Cancel" Click="()=> ds.Close(false)" ButtonStyle="ButtonStyle.Secondary" Style="margin-bottom: 10px; width: 150px" />*@
+                </div>
+            </div>
+        </RadzenCard>
+        );
+
+        void RadioChange(int? value, string name)
+        {
+        events.Add(DateTime.Now, $"{name} value changed to {value}");
+        }
+
+        void DropdownChange(object value, string name)
+        {
+        var str = value is IEnumerable<object>
+            ? string.Join(", ", (IEnumerable<object>
+                )value) : value;
+
+                events.Add(DateTime.Now, $"{name} value changed to {str}");
+                StateHasChanged();
+                }
+
+                void ChangeBound(object value, string name)
+                {
+                events.Add(DateTime.Now, $"{name} value changed to {tmpData}");
+                StateHasChanged();
+                }
+
+                void Change(object value, string name)
+                {
+                events.Add(DateTime.Now, $"{name} value changed to {tmpData}");
+                StateHasChanged();
+                }
+                }

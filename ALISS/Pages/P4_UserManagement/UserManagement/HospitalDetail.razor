@@ -1,0 +1,473 @@
+﻿@page "/UserManagement/Hospital/DataDetail"
+@page "/UserManagement/Hospital/DataDetail/{hos_code}"
+
+@inject IJSRuntime jsRuntime
+@inject DialogService dialogService
+@inject NavigationManager navigationManager
+
+@inject ConfigDataService configDataService
+@inject DropDownListDataService ddlDataService
+@inject HospitalService hospitalService
+
+<div>
+    <div class="divHead">
+        <RadzenLink Path="/UserManagement/Hospital" Text="Hospital" /> - @(dataModel?.hos_name ?? "New hospital") (@(dataModel?.hos_code ?? "-"))
+    </div>
+</div>
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>
+
+    <Loading ShowModel="true" />
+}
+else
+{
+    <EditForm Model="@dataModel" OnInvalidSubmit="HandleInvalidSubmit" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+
+        <div class="container inputArea">
+            <div class="row">
+                <InputBox ConfigData="@(configData.Get_ConfigRow("hos_code"))">
+                    <RadzenTextBox @bind-Value="@dataModel.hos_code" ReadOnly="true" />
+                </InputBox>
+
+                <InputBox ConfigData="@(configData.Get_ConfigRow("hos_name"))">
+                    @if (dataModel.hos_status == "N")
+                    {
+                        <RadzenDropDown @bind-Value="dataModel.hos_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="hos_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name, x.hos_code, x.hos_name }).Where(x => (dataModel.hos_arh_code == null || x.arh_code == dataModel.hos_arh_code) &&  (dataModel.hos_prv_code == null || x.prv_code == dataModel.hos_prv_code))" ValueProperty="hos_code" TextProperty="hos_name" Change="@(args => DDL_Change("Hos", args))" Style="width:100%" />
+                        <ValidationMessage For="@(() => dataModel.hos_code)" />
+                    }
+                    else
+                    {
+                        <RadzenDropDown @bind-Value="dataModel.hos_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="hos_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name, x.hos_code, x.hos_name }).Where(x => (dataModel.hos_arh_code == null || x.arh_code == dataModel.hos_arh_code) &&  (dataModel.hos_prv_code == null || x.prv_code == dataModel.hos_prv_code))" ValueProperty="hos_code" TextProperty="hos_name" Disabled="true" Style="width:100%" />
+                    }
+                </InputBox>
+
+                <InputBox ConfigData="@(configData.Get_ConfigRow("hos_prv_code"))">
+                    @if (dataModel.hos_status == "N")
+                    {
+                        <RadzenDropDown @bind-Value="dataModel.hos_prv_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="hos_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name }).Where(x => (dataModel.hos_arh_code == null || x.arh_code == dataModel.hos_arh_code)).Distinct()" TextProperty="prv_name" ValueProperty="prv_code" Change="@(args => DDL_Change("Prv", args))" Style="width:100%" />
+                        <ValidationMessage For="@(() => dataModel.hos_prv_code)" />
+                    }
+                    else
+                    {
+                        <RadzenDropDown @bind-Value="dataModel.hos_prv_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="hos_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name }).Where(x => (dataModel.hos_arh_code == null || x.arh_code == dataModel.hos_arh_code)).Distinct()" TextProperty="prv_name" ValueProperty="prv_code" Disabled="true" Style="width:100%" />
+                    }
+                </InputBox>
+
+                <InputBox ConfigData="@(configData.Get_ConfigRow("hos_arh_code"))">
+                    @if (dataModel.hos_status == "N")
+                    {
+                        <RadzenDropDown @bind-Value="dataModel.hos_arh_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="hos_List.Select(x => new { x.arh_code, x.arh_name }).Distinct().OrderBy(x => x.arh_code)" TextProperty="arh_name" ValueProperty="arh_code" Change="@(args => DDL_Change("Arh", args))" Style="width:100%" />
+                        <ValidationMessage For="@(() => dataModel.hos_arh_code)" />
+                    }
+                    else
+                    {
+                        <RadzenDropDown @bind-Value="dataModel.hos_arh_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="hos_List.Select(x => new { x.arh_code, x.arh_name }).Distinct().OrderBy(x => x.arh_code)" TextProperty="arh_name" ValueProperty="arh_code" Disabled="true" Style="width:100%" />
+                    }
+                </InputBox>
+
+                <InputBox ConfigData="@(configData.Get_ConfigRow("hos_active"))">
+                    <RadzenRadioButtonList @bind-Value="@dataModel.hos_active" TValue="bool">
+                        <Items>
+                            <RadzenRadioButtonListItem Text="Active" Value="true" />
+                            <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                        </Items>
+                    </RadzenRadioButtonList>
+                </InputBox>
+
+            </div>
+        </div>
+
+        <hr />
+
+        <div>
+            <div class="container">
+                <div class="row justify-content-end">
+                    <div class="col-auto buttonArea">
+                        @if (mainLayout.loginUser.PagePermission.rop_create)
+                        {
+                            <RadzenButton Icon="add" class="btnAdd" Text="Add Lab" Click="@(() => ShowPopupDialog(null))" />
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <br />
+
+            <div style="width:90%;margin:0px auto;">
+                <RadzenGrid TItem="HospitalLabDTO" Data="@hospitalLabList" PageSize="4" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                    <Columns>
+                        <RadzenGridColumn TItem="HospitalLabDTO" Property="" Title="" Width="50px" Filterable="false" Context="data">
+                            <Template>
+                                @if (mainLayout.loginUser.PagePermission.rop_create || mainLayout.loginUser.PagePermission.rop_edit)
+                                {
+                                    <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowPopupDialog(data))" />
+                                }
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="HospitalLabDTO" Property="lab_code" Title="@configData.Get_Label("lab_code")" />
+                        <RadzenGridColumn TItem="HospitalLabDTO" Property="lab_name" Title="@configData.Get_Label("lab_name")" />
+                        <RadzenGridColumn TItem="HospitalLabDTO" Property="lab_prg_type" Title="@configData.Get_Label("lab_prg_type")" />
+                        <RadzenGridColumn TItem="HospitalLabDTO" Property="lab_active" Title="@configData.Get_Label("lab_active")" Context="data">
+                            <Template>
+                                @if (data.lab_active == true)
+                                {
+                                    <label>Active</label>
+                                }
+                                else
+                                {
+                                    <label>Inactive</label>
+                                }
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+            </div>
+
+            <br />
+
+        </div>
+
+        <hr />
+
+        <div class="row justify-content-between buttonArea">
+            <div class="col-auto">
+                <RadzenButton class="btnCancel" Text="Cancel" Click="RedirectToInbox" />
+            </div>
+            <div class="col-auto">
+                @if (mainLayout.loginUser.PagePermission.rop_create || mainLayout.loginUser.PagePermission.rop_edit)
+                {
+                    <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Save" />
+                }
+            </div>
+        </div>
+    </EditForm>
+
+    <hr />
+
+    <HistoryLog HistoryList="historyResultList" />
+
+    @if (showPopupDialog)
+    {
+        <div class="modal" tabindex="-1" style="display:block" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+
+                    </div>
+                    <div class="modal-body">
+                        <EditForm Model="@hospitalLabModel" OnInvalidSubmit="HandleInvalidSubmitPopup" OnValidSubmit="HandleValidSubmitPopup">
+                            <DataAnnotationsValidator />
+
+                            <div class="container inputArea">
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("lab_code"))"classColumn="col-xl-12">
+                                        @if (hospitalLabModel.lab_status == "N")
+                                        {
+                                            <RadzenTextBox @bind-Value="@hospitalLabModel.lab_code" />
+                                            <ValidationMessage For="@(() => hospitalLabModel.lab_code)" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenTextBox @bind-Value="@hospitalLabModel.lab_code" ReadOnly="true" />
+                                        }
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("lab_name"))"classColumn="col-xl-12">
+                                        <RadzenTextBox @bind-Value="@hospitalLabModel.lab_name" />
+                                        <ValidationMessage For="@(() => hospitalLabModel.lab_name)" />
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("lab_prg_type"))"classColumn="col-xl-12">
+                                        <RadzenDropDown @bind-Value="hospitalLabModel.lab_prg_type"
+                                                        TValue="string"
+                                                        Data="@(programs.Select(c => new { ID = c, Name = c }).Distinct())"
+                                                        TextProperty="Name" ValueProperty="ID" />
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("lab_active"))"classColumn="col-xl-12">
+                                        <RadzenRadioButtonList @bind-Value="@hospitalLabModel.lab_active" TValue="bool">
+                                            <Items>
+                                                <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                                <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                            </Items>
+                                        </RadzenRadioButtonList>
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <div class="col-xl-12">
+                                        <div class="row justify-content-center divGroup buttonArea">
+                                            <div class="col-auto">
+                                                <RadzenButton class="btnCancel" Text="Cancel" Click="ClosePopup" />
+                                            </div>
+                                            <div class="col-auto">
+                                                @if (mainLayout.loginUser.PagePermission.rop_create || mainLayout.loginUser.PagePermission.rop_edit)
+                                                {
+                                                    <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="OK" />
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <Loading ShowModel="showLoading" />
+    }
+}
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+    [Parameter] public string hos_code { get; set; }
+
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private bool showPopupDialog;
+    private bool showLoading;
+
+    private HospitalDTO dataModel;
+
+    private RadzenGridCustom<HospitalLabDTO> hospitalLabGrid = new RadzenGridCustom<HospitalLabDTO>();
+    private List<HospitalLabDTO> hospitalLabList;
+    HospitalLabDTO hospitalLabModel = new HospitalLabDTO();
+
+    private List<LogProcessDTO> historyResultList;
+
+    private List<HospitalDataDTO> hos_List = new List<HospitalDataDTO>();
+
+    private bool pageLoading { get { return (dataModel == null || historyResultList == null); } }
+
+    string[] programs = new[]
+           {
+                "MLAB",
+                "WHONET",
+                "OTHER"
+            };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0301") == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = "MNU_0301" });
+            if (mainLayout.loginUser.rol_code == "ROL_00")
+            {
+                configData.ConfigDTOList.ForEach(x =>
+                {
+                    x.tbc_edit = true;
+                });
+            }
+
+            var searchData = new HospitalDataDTO()
+            {
+                arh_code = mainLayout.loginUser.arh_code,
+                prv_code = mainLayout.loginUser.prv_code
+            };
+
+            if (string.IsNullOrEmpty(hos_code))
+            {
+                dataModel = new HospitalDTO()
+                {
+                    hos_status = "N",
+                    hos_active = true,
+                    hos_createuser = mainLayout.loginUser.Username
+                };
+
+                hos_List = await ddlDataService.GetTCHospitalListByModelAsync(searchData);
+
+                hospitalLabList = new List<HospitalLabDTO>();
+
+                historyResultList = new List<LogProcessDTO>();
+            }
+            else
+            {
+                dataModel = await hospitalService.GetDataAsync(hos_code);
+                dataModel.hos_status = "E";
+                dataModel.hos_updateuser = mainLayout.loginUser.Username;
+
+                searchData = new HospitalDataDTO()
+                {
+                    arh_code = dataModel.hos_arh_code,
+                    prv_code = dataModel.hos_prv_code
+                };
+
+                hos_List = await ddlDataService.GetHospitalListByModelAsync(searchData);
+
+                hospitalLabList = await hospitalService.GetLabListByModelAsync(new HospitalSearchDTO() { hos_code = dataModel.hos_code });
+
+                historyResultList = await hospitalService.GetHistoryAsync(dataModel.hos_code);
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    private async void DDL_Change(string ddl_name, object value)
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        if (ddl_name == "Arh" && value == null)
+        {
+            dataModel.hos_prv_code = null;
+            dataModel.hos_code = null;
+        }
+        else if (ddl_name == "Prv" && value == null)
+        {
+            dataModel.hos_code = null;
+        }
+        else if (ddl_name == "Prv" && value != null)
+        {
+            var prv_select = hos_List.FirstOrDefault(x => x.prv_code == value.ToString());
+            dataModel.hos_arh_code = prv_select.arh_code;
+        }
+        else if (ddl_name == "Hos" && value != null)
+        {
+            var hos_select = hos_List.FirstOrDefault(x => x.hos_code == value.ToString());
+            dataModel.hos_arh_code = hos_select.arh_code;
+            dataModel.hos_prv_code = hos_select.prv_code;
+            dataModel.hos_name = hos_select.hos_name;
+        }
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private void RedirectToInbox()
+    {
+        navigationManager.NavigateTo("/UserManagement/Hospital/");
+    }
+
+    private void HandleInvalidSubmit()
+    {
+
+    }
+
+    private async void HandleValidSubmit()
+    {
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (result)
+        {
+            showLoading = true;
+            StateHasChanged();
+
+            //if (dataModel.hos_status == "N")
+            //{
+            //    //Check duplicate
+            //    var duplicate = await hospitalService.GetDataAsync(dataModel.hos_code);
+
+            //    if (string.IsNullOrEmpty(duplicate.hos_code) == false)
+            //    {
+            //        await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate code.");
+
+            //        showLoading = false;
+
+            //        return;
+            //    }
+            //}
+
+            //Save data
+            var saveResult = hospitalService.SaveDataAsync(dataModel);
+
+            hospitalLabList.ForEach(x =>
+            {
+                x.lab_hos_code = dataModel.hos_code;
+            });
+
+            var saveResultList = hospitalService.SaveLabDataAsync(hospitalLabList);
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save data complete.");
+
+            historyResultList = await hospitalService.GetHistoryAsync(dataModel.hos_code);
+
+            dataModel.hos_status = "E";
+
+            showLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowPopupDialog(HospitalLabDTO selectModel)
+    {
+
+        //if (CreateMode == true)
+        //{
+        //    await jsRuntime.InvokeAsync<object>("ShowAlert", "Please save before add lab.");
+        //}
+        //else
+        //{
+        if (selectModel == null)
+        {
+            hospitalLabModel = new HospitalLabDTO()
+            {
+                lab_status = "N",
+                lab_active = true,
+                lab_createuser = mainLayout.loginUser.Username
+            };
+        }
+        else
+        {
+            hospitalLabModel = selectModel;
+            hospitalLabModel.lab_status = "E";
+            hospitalLabModel.lab_updateuser = mainLayout.loginUser.Username;
+        }
+
+        showPopupDialog = true;
+        //}
+
+        StateHasChanged();
+    }
+
+    void ClosePopup()
+    {
+        // Close the Popup
+        hospitalLabModel = new HospitalLabDTO();
+        showPopupDialog = false;
+
+        StateHasChanged();
+    }
+
+    private void HandleInvalidSubmitPopup()
+    {
+
+    }
+
+    private async void HandleValidSubmitPopup()
+    {
+        if (hospitalLabModel.lab_status == "N")
+        {
+            if (hospitalLabList.Any(x => x.lab_code == hospitalLabModel.lab_code))
+            {
+                await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate lab code.");
+
+                return;
+            }
+
+            hospitalLabList.Add(hospitalLabModel);
+        }
+        else
+        {
+            var objHospitalLabData = hospitalLabList.FirstOrDefault(x => x.lab_hos_code == hos_code && x.lab_code == hospitalLabModel.lab_code);
+            objHospitalLabData.lab_name = hospitalLabModel.lab_name;
+            objHospitalLabData.lab_prg_type = hospitalLabModel.lab_prg_type;
+            objHospitalLabData.lab_status = hospitalLabModel.lab_status;
+        }
+
+        showPopupDialog = false;
+        StateHasChanged();
+    }
+
+}

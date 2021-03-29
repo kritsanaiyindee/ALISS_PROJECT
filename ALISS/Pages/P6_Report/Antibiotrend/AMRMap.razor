@@ -1,0 +1,704 @@
+﻿@page "/Antibiotrend/AMRMap"
+
+@using ALISS.Data.D6_Report.Antibiotrend
+@using ALISS.ANTIBIOTREND.DTO
+@using ALISS.EXPORT.Library.DTO;
+@using Radzen
+@using Radzen.Blazor
+@using System.Globalization
+
+@inject DialogService dialogService
+@inject NotificationService notificationService
+@inject IJSRuntime JSRuntime
+@inject AMPService ReportService
+@inject NavigationManager navigationManager
+@inject ConfigDataService configDataService
+@inject IFileSave OIFileSave
+
+    <div style="width: 100%;">
+        <div class="divHead">
+            สถานการณ์เชื้อดื้อยาประจำปี
+        </div>
+    </div>
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>
+    <Loading ShowModel="true" />
+}
+else
+{
+
+    <div class="row">
+        <div class="col-md-4">
+            <RadzenFieldset Text="Filter">
+                <div class="row justify-content-start divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("rpt_map_monthfrom")" />
+                    </div>
+                    <div class="@classMonth">
+                        <RadzenDropDown AllowClear="false" TValue="int" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        Placeholder="Select..."
+                                        AllowFiltering="false" @bind-Value=@iMonthFrom
+                                        Data="@MonthData" TextProperty="MonthName" ValueProperty="MonthValue" />
+                    </div>
+                    <div style="width:70px; vertical-align: middle;display: inline-block">
+                        <RadzenNumeric TValue="int" Min="2000" Max="9999" @bind-Value=@iYearFrom />
+                    </div>
+                </div>
+
+                <div class="row justify-content-start divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("rpt_map_monthto")" />
+                    </div>
+                    <div class="@classMonth">
+                        <RadzenDropDown AllowClear="false" TValue="int" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        Placeholder="Select..."
+                                        AllowFiltering="false" @bind-Value=@iMonthTo
+                                        Data="@MonthData" TextProperty="MonthName" ValueProperty="MonthValue" />
+                    </div>
+                    <div style="width:70px; vertical-align: middle;display: inline-block">
+                        <RadzenNumeric TValue="int" Min="2000" Max="9999" @bind-Value=@iYearTo />
+                    </div>
+                </div>
+
+                <div class="row justify-content-center divGroup">
+                    <div>
+                        <RadzenButton class="btnSearch" Text="Search" Click="SearchData" />
+                    </div>
+                    <div>
+                        <RadzenButton Click="Export" Text="Export" Style="background: #0A6839 0% 0% no-repeat padding-box; color: #FFFFFF;border: 1px solid #6DC6A9;border-radius: 3px; font: Regular 16px/22px Arial;" />
+                    </div>
+
+                </div>
+
+                <br />
+                @foreach (var selectedRow in lstAMRData)
+                {
+                    <div class="row justify-content-center">
+                        @if (selectedAMR.org_code == selectedRow.org_code && selectedAMR.anti_code == selectedRow.anti_code)
+                        {
+                            <RadzenButton Click="@((args) => ClickOrganism(args,selectedRow))" Text=@selectedRow.org_label_name Style="margin-bottom: 20px; width: 210px ; height:38px; background: #E7F4EF 0% 0% no-repeat padding-box; color: #0A6839;border: 1px solid #6DC6A9;border-radius: 4px; font: Regular 18px/22px Arial;" />
+                        }
+                        else
+                        {
+                            <RadzenButton Click="@((args) => ClickOrganism(args,selectedRow))" Text=@selectedRow.org_label_name Style="margin-bottom: 20px; width: 210px ; height:38px; background: #FFFFFF 0% 0% no-repeat padding-box; color:#333333 ;border: 1px solid #999999;border-radius: 4px; font: Regular 18px/22px Arial;" />
+                        }
+                    </div>
+                }
+            </RadzenFieldset>
+        </div>
+
+        <div class="col-md-8">
+            <RadzenFieldset Text="Map">
+
+                <div class="row">
+
+                    <div class="col-md-6">
+                        <img id="thai" src="/Images/ThaiMap.png" onclick="showCoords(event)">
+                        <p id="coords"></p>
+                        <br /><br />
+                        <canvas id="cvsMax" style="left:717px; top:188px;" width="@CVS_MAX_WIDTH" height="@CVS_MAX_HEIGHT"></canvas> @*border: 1px solid #6DC6A9*@
+                        <canvas id="cvsMin" style="left:717px; top:188px;" width="@CVS_MIN_WIDTH" height="@CVS_MIN_HEIGHT"></canvas> @*border: 1px solid #FF6633*@
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="row justify-content-center">
+                            @*<RadzenButton Text=@antiPercentLabel Style="margin-bottom: 20px; width: 210px ; height:38px; background: #E7F4EF 0% 0% no-repeat padding-box; color: #0A6839;border: 1px solid #6DC6A9;border-radius: 4px; font: Regular 18px/22px Arial;" />*@
+                            <RadzenButton Text=@antiPercentLabel Style="margin-bottom: 20px; width: 100% ; height:38px; background: #E7F4EF 0% 0% no-repeat padding-box; color: #0A6839;border: 1px solid #6DC6A9;border-radius: 4px; font: Regular 18px/22px Arial;" />
+                            <RadzenButton Text=@selectedAMR.org_label_name Style="margin-bottom: 20px; width: 100% ; height:38px; background: #E7F4EF 0% 0% no-repeat padding-box; color: #0A6839;border: 1px solid #6DC6A9;border-radius: 4px; font: Regular 18px/22px Arial;" />
+                        </div>
+                        <div class="row justify-content-center">
+                            <RadzenFieldset Text=" เขตสุขภาพ " Style="width: 90%;">
+                                <img id="circle" src="/Images/Circle.png">
+                            </RadzenFieldset>
+                            <canvas id="cvsIndex" width="60px" height="35px"></canvas>
+
+                            <canvas id="idx_01" width="60px" height="35px"></canvas>
+                            <canvas id="idx_02" width="60px" height="35px"></canvas>
+                            <canvas id="idx_03" width="60px" height="35px"></canvas>
+                            <canvas id="idx_04" width="60px" height="35px"></canvas>
+                            <canvas id="idx_05" width="60px" height="35px"></canvas>
+                            <canvas id="idx_06" width="60px" height="35px"></canvas>
+                            <canvas id="idx_07" width="60px" height="35px"></canvas>
+                            <canvas id="idx_08" width="60px" height="35px"></canvas>
+                            <canvas id="idx_09" width="60px" height="35px"></canvas>
+                            <canvas id="idx_10" width="60px" height="35px"></canvas>
+                            <canvas id="idx_11" width="60px" height="35px"></canvas>
+                            <canvas id="idx_12" width="60px" height="35px"></canvas>
+                            <canvas id="idx_13" width="60px" height="35px"></canvas>
+                        </div>
+
+                    </div>
+                </div>
+
+                @if (!blnExportComplete)
+                {
+                    <Loading ShowModel="true" />
+                }
+
+            </RadzenFieldset>
+        </div>
+
+    </div>
+
+    <div class="row">
+        @*<RadzenFieldset Text="Test Area">*@
+            @*<div class="row">
+                <RadzenButton Click="@((args) => MoveCanvas(args, eAreaHealth.Arh_01))" Text="Area 1" ButtonStyle="ButtonStyle.Secondary" />
+                <RadzenButton Click="@((args) => MoveCanvas(args, eAreaHealth.Arh_02))" Text="Area 2" />
+                <RadzenButton Click="@((args) => MoveCanvas(args, eAreaHealth.Arh_03))" Text="Area 3" ButtonStyle="ButtonStyle.Secondary" />
+                <RadzenButton Click="@((args) => MoveCanvas(args, eAreaHealth.Arh_04))" Text="Area 4" />
+                <RadzenButton Click="@((args) => MoveCanvas(args, eAreaHealth.Arh_05))" Text="Area 5" ButtonStyle="ButtonStyle.Secondary" />
+                <RadzenButton Click="@((args) => MoveCanvas(args, eAreaHealth.Arh_06))" Text="Area 6" />
+                <RadzenButton Click="@((args) => MoveCanvas(args, eAreaHealth.Arh_07))" Text="Area 7" ButtonStyle="ButtonStyle.Secondary" />
+                <RadzenButton Click="@((args) => MoveCanvas(args, eAreaHealth.Arh_08))" Text="Area 8" />
+                <RadzenButton Click="@((args) => MoveCanvas(args, eAreaHealth.Arh_09))" Text="Area 9" ButtonStyle="ButtonStyle.Secondary" />
+                <RadzenButton Click="@((args) => MoveCanvas(args, eAreaHealth.Arh_10))" Text="Area 10" />
+                <RadzenButton Click="@((args) => MoveCanvas(args, eAreaHealth.Arh_11))" Text="Area 11" ButtonStyle="ButtonStyle.Secondary" />
+                <RadzenButton Click="@((args) => MoveCanvas(args, eAreaHealth.Arh_12))" Text="Area 12" />
+                <RadzenButton Click="@((args) => MoveCanvas(args, eAreaHealth.Arh_13))" Text="Area 13" ButtonStyle="ButtonStyle.Secondary" />
+            </div>*@
+
+            <img id="@nameof(eAreaHealth.Arh_01)" width="@W01" height="@H01" src="/Images/Arh_01.png" style="visibility:hidden">
+            <img id="@nameof(eAreaHealth.Arh_02)" width="@W02" height="@H02" src="/Images/Arh_02.png" style="visibility:hidden">
+            <img id="@nameof(eAreaHealth.Arh_03)" width="@W03" height="@H03" src="/Images/Arh_03.png" style="visibility:hidden">
+            <img id="@nameof(eAreaHealth.Arh_04)" width="@W04" height="@H04" src="/Images/Arh_04.png" style="visibility:hidden">
+            <img id="@nameof(eAreaHealth.Arh_05)" width="@W05" height="@H05" src="/Images/Arh_05.png" style="visibility:hidden">
+            <img id="@nameof(eAreaHealth.Arh_06)" width="@W06" height="@H06" src="/Images/Arh_06.png" style="visibility:hidden">
+            <img id="@nameof(eAreaHealth.Arh_07)" width="@W07" height="@H07" src="/Images/Arh_07.png" style="visibility:hidden">
+            <img id="@nameof(eAreaHealth.Arh_08)" width="@W08" height="@H08" src="/Images/Arh_08.png" style="visibility:hidden">
+            <img id="@nameof(eAreaHealth.Arh_09)" width="@W09" height="@H09" src="/Images/Arh_09.png" style="visibility:hidden">
+            <img id="@nameof(eAreaHealth.Arh_10)" width="@W10" height="@H10" src="/Images/Arh_10.png" style="visibility:hidden">
+            <img id="@nameof(eAreaHealth.Arh_11)" width="@W11" height="@H11" src="/Images/Arh_11.png" style="visibility:hidden">
+            <img id="@nameof(eAreaHealth.Arh_12)" width="@W12" height="@H12" src="/Images/Arh_12.png" style="visibility:hidden">
+            <img id="@nameof(eAreaHealth.Arh_13)" width="@W13" height="@H13" src="/Images/Arh_13.png" style="visibility:hidden">
+        @*</RadzenFieldset>*@
+     <canvas id="myCanvas" width="@CVS_MAX_WIDTH" height="@CVS_MAX_HEIGHT"></canvas>  
+    </div>
+
+}
+
+@code {
+
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+    private const string MENU_CODE = "MNU_0706";
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private string classMonth = "col-4";
+
+    private int iMonthFrom = 1;
+    private int iMonthTo = DateTime.Today.Month;
+    private int iYearFrom = DateTime.Today.Year;
+    private int iYearTo = DateTime.Today.Year;
+
+    private int iYear = DateTime.Today.Year;
+    private DateTime dtStartDate;
+    private DateTime dtEndDate;
+    private string SelectedOrgn = "";
+    private List<string> lstOrganism = new List<string> { "A. baumannii", "P. aeruginosa", "E. coli", "K. pneumonia", "Salmonella", "Enterococcus supp", "A. aureus", "S. pneumoniae" };
+    private List<AntibiotrendAMRStrategyDTO> lstAMRData = new List<AntibiotrendAMRStrategyDTO>();
+    private AntibiotrendAMRStrategyDTO selectedAMR = new AntibiotrendAMRStrategyDTO();
+    private AMRStrategySearchDTO searchAMR = new AMRStrategySearchDTO();
+    private AMRSearchMapDTO modelExport = new AMRSearchMapDTO();
+    private string antiPercentLabel = "";
+    private eAreaHealth selectedAreaHealth;
+    private bool pageLoading = true;
+    private List<string> lstCanvasValue = new List<string> { "idx_01", "idx_02", "idx_03", "idx_04", "idx_05", "idx_06", "idx_07", "idx_08", "idx_09", "idx_10", "idx_11", "idx_12", "idx_13" };
+    NotificationMessage notiMsg = new NotificationMessage();
+    private Boolean blnExportComplete = true;
+
+    private class MonthItem
+    {
+        public int MonthValue { get; set; }
+        public string MonthName { get; set; }
+    }
+    MonthItem[] MonthData = new MonthItem[] {
+        new MonthItem
+        {
+            MonthValue = 1,
+            MonthName = "January"
+        },
+        new MonthItem
+        {
+           MonthValue = 2,
+           MonthName = "Febuary"
+        },
+        new MonthItem
+        {
+          MonthValue = 3,
+          MonthName = "March"
+        },
+        new MonthItem
+        {
+           MonthValue = 4,
+           MonthName = "April"
+        },
+        new MonthItem
+        {
+           MonthValue = 5,
+           MonthName = "May"
+        },
+        new MonthItem
+        {
+            MonthValue = 6,
+            MonthName = "June"
+        },
+        new MonthItem
+        {
+           MonthValue = 7,
+            MonthName = "July"
+        },
+        new MonthItem
+        {
+           MonthValue = 8,
+            MonthName = "August"
+        },
+        new MonthItem
+        {
+            MonthValue = 9,
+            MonthName = "September"
+        },
+        new MonthItem
+        {
+           MonthValue = 10,
+            MonthName = "October"
+        },
+        new MonthItem
+        {
+            MonthValue = 11,
+            MonthName = "November"
+        },
+        new MonthItem
+        {
+           MonthValue = 12,
+           MonthName = "December"
+        }
+    };
+
+    private string CVS_MAX_WIDTH = 128 + "px";
+    private string CVS_MAX_HEIGHT = 110 + "px";
+    private string CVS_MIN_WIDTH = 128 + "px";
+    private string CVS_MIN_HEIGHT = 110 + "px";
+
+    private enum eAreaHealth
+    {
+        Arh_01 = 1,
+        Arh_02 = 2,
+        Arh_03 = 3,
+        Arh_04 = 4,
+        Arh_05 = 5,
+        Arh_06 = 6,
+        Arh_07 = 7,
+        Arh_08 = 8,
+        Arh_09 = 9,
+        Arh_10 = 10,
+        Arh_11 = 11,
+        Arh_12 = 12,
+        Arh_13 = 13
+    }
+
+    private class clsCoordinateXY
+    {
+        public int rgn_x { get; set; }
+        public int rgn_y { get; set; }
+        public int idx_x { get; set; }
+        public int idx_y { get; set; }
+        public string Width { get; set; }
+        public string Height { get; set; }
+        public string arhpicid { get; set; }
+    }
+
+    private string W01 = 128 + "px";
+    private string W02 = 126 + "px";
+    private string W03 = 60 + "px";
+    private string W04 = 45 + "px";
+    private string W05 = 74 + "px";
+    private string W06 = 81 + "px";
+    private string W07 = 85 + "px";
+    private string W08 = 128 + "px";
+    private string W09 = 94 + "px";
+    private string W10 = 57 + "px";
+    private string W11 = 85 + "px";
+    private string W12 = 98 + "px";
+    private string W13 = 22 + "px";
+
+    private string H01 = 110 + "px";
+    private string H02 = 108 + "px";
+    private string H03 = 68 + "px";
+    private string H04 = 60 + "px";
+    private string H05 = 158 + "px";
+    private string H06 = 98 + "px";
+    private string H07 = 58 + "px";
+    private string H08 = 60 + "px";
+    private string H09 = 88 + "px";
+    private string H10 = 92 + "px";
+    private string H11 = 125 + "px";
+    private string H12 = 78 + "px";
+    private string H13 = 16 + "px";
+
+    private clsCoordinateXY Coordinate
+    {
+        get
+        {
+            var obj = new clsCoordinateXY();
+            if (selectedAreaHealth == eAreaHealth.Arh_01)
+            {
+                obj.rgn_x = 3;
+                obj.rgn_y = 10;
+
+                obj.idx_x = 45;
+                obj.idx_y = 3;
+
+                obj.Width = 128 + "px";
+                obj.Height = 110 + "px";
+                obj.arhpicid = nameof(eAreaHealth.Arh_01);
+            }
+            else if (selectedAreaHealth == eAreaHealth.Arh_02)
+            {
+                obj.rgn_x = 20;
+                obj.rgn_y = 80;
+
+                obj.idx_x = 45;
+                obj.idx_y = 48;
+
+                obj.Width = 126 + "px";
+                obj.Height = 108 + "px";
+                obj.arhpicid = nameof(eAreaHealth.Arh_02);
+            }
+            else if (selectedAreaHealth == eAreaHealth.Arh_03)
+            {
+                obj.rgn_x = 55;
+                obj.rgn_y = 130;
+
+                obj.idx_x = 45;
+                obj.idx_y = 93;
+
+                obj.Width = 60 + "px";
+                obj.Height = 68 + "px";
+                obj.arhpicid = nameof(eAreaHealth.Arh_03);
+            }
+            else if (selectedAreaHealth == eAreaHealth.Arh_04)
+            {
+                obj.rgn_x = 92;
+                obj.rgn_y = 176;
+
+                obj.idx_x = 45;
+                obj.idx_y = 140;
+
+                obj.Width = 44 + "px";
+                obj.Height = 58 + "px";
+                obj.arhpicid = nameof(eAreaHealth.Arh_04);
+            }
+            else if (selectedAreaHealth == eAreaHealth.Arh_05)
+            {
+                obj.rgn_x = 27;
+                obj.rgn_y = 171;
+
+                obj.idx_x = 45;
+                obj.idx_y = 189;
+
+                obj.Width = 74 + "px";
+                obj.Height = 158 + "px";
+                obj.arhpicid = nameof(eAreaHealth.Arh_05);
+            }
+            else if (selectedAreaHealth == eAreaHealth.Arh_06)
+            {
+                obj.rgn_x = 101;
+                obj.rgn_y = 211;
+
+                obj.idx_x = 45;
+                obj.idx_y = 232;
+
+                obj.Width = 81 + "px";
+                obj.Height = 98 + "px";
+                obj.arhpicid = nameof(eAreaHealth.Arh_06);
+            }
+            else if (selectedAreaHealth == eAreaHealth.Arh_07)
+            {
+                obj.rgn_x = 142;
+                obj.rgn_y = 123;
+
+                obj.idx_x = 45;
+                obj.idx_y = 283;
+
+                obj.Width = 85 + "px";
+                obj.Height = 58 + "px";
+                obj.arhpicid = nameof(eAreaHealth.Arh_07);
+            }
+            else if (selectedAreaHealth == eAreaHealth.Arh_08)
+            {
+                obj.rgn_x = 115;
+                obj.rgn_y = 77;
+
+                obj.idx_x = 165;
+                obj.idx_y = 3;
+
+                obj.Width = 128 + "px";
+                obj.Height = 60 + "px";
+                obj.arhpicid = nameof(eAreaHealth.Arh_08);
+            }
+            else if (selectedAreaHealth == eAreaHealth.Arh_09)
+            {
+                obj.rgn_x = 126;
+                obj.rgn_y = 137;
+
+                obj.idx_x = 165;
+                obj.idx_y = 48;
+
+                obj.Width = 94 + "px";
+                obj.Height = 88 + "px";
+                obj.arhpicid = nameof(eAreaHealth.Arh_09);
+            }
+            else if (selectedAreaHealth == eAreaHealth.Arh_10)
+            {
+                obj.rgn_x = 212;
+                obj.rgn_y = 130;
+
+                obj.idx_x = 165;
+                obj.idx_y = 93;
+
+                obj.Width = 57 + "px";
+                obj.Height = 92 + "px";
+                obj.arhpicid = nameof(eAreaHealth.Arh_10);
+            }
+            else if (selectedAreaHealth == eAreaHealth.Arh_11)
+            {
+                obj.rgn_x = 17;
+                obj.rgn_y = 322;
+
+                obj.idx_x = 165;
+                obj.idx_y = 138;
+
+                obj.Width = 85 + "px";
+                obj.Height = 121 + "px";
+                obj.arhpicid = nameof(eAreaHealth.Arh_11);
+            }
+            else if (selectedAreaHealth == eAreaHealth.Arh_12)
+            {
+                obj.rgn_x = 58;
+                obj.rgn_y = 422;
+
+                obj.idx_x = 165;
+                obj.idx_y = 190;
+
+                obj.Width = 98 + "px";
+                obj.Height = 78 + "px";
+                obj.arhpicid = nameof(eAreaHealth.Arh_12);
+            }
+            else if (selectedAreaHealth == eAreaHealth.Arh_13)
+            {
+                obj.rgn_x = 96;
+                obj.rgn_y = 229;
+
+                obj.idx_x = 165;
+                obj.idx_y = 236;
+
+                obj.Width = 22 + "px";
+                obj.Height = 16 + "px";
+                obj.arhpicid = nameof(eAreaHealth.Arh_13);
+            }
+            else
+            {
+                obj.rgn_x = 0;
+                obj.rgn_y = 0;
+
+                obj.idx_x = 0;
+                obj.idx_y = 0;
+
+                obj.Width = 0 + "px";
+                obj.Height = 0 + "px";
+                obj.arhpicid = "";
+            }
+            return obj;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission(MENU_CODE) == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = MENU_CODE });
+
+            dtStartDate = new DateTime(iYearFrom, iMonthFrom, 1);
+            dtEndDate = new DateTime(iYearTo, iMonthTo, 1);
+
+            searchAMR.month_start = dtStartDate;
+            searchAMR.month_end = dtEndDate;
+
+            lstAMRData = await ReportService.GetAMRStrategyModelAsync(searchAMR);
+            pageLoading = false;
+            StateHasChanged();
+
+            await JSRuntime.InvokeVoidAsync("SetPositionCanvasInitial", "circle", lstCanvasValue);
+        }
+    }
+
+    private async Task SearchData()
+    {
+        //pageLoading = true;
+        dtStartDate = new DateTime(iYearFrom, iMonthFrom, 1);
+        dtEndDate = new DateTime(iYearTo, iMonthTo, 1);
+
+        searchAMR.month_start = dtStartDate;
+        searchAMR.month_end = dtEndDate;
+
+        lstAMRData = await ReportService.GetAMRStrategyModelAsync(searchAMR);
+        StateHasChanged();
+
+
+        //await JSRuntime.InvokeVoidAsync("SetPositionCanvasInitial", "circle", lstCanvasValue);
+        List<decimal> lstValue = new List<decimal> { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+        await JSRuntime.InvokeVoidAsync("setPercentValue", lstCanvasValue, lstValue);
+        //pageLoading = false;
+
+    }
+
+    private async Task ClickOrganism(MouseEventArgs args, AntibiotrendAMRStrategyDTO selectedItem)
+    {
+        selectedAMR = selectedItem;
+        antiPercentLabel = string.Format("(%{0}) {1}", selectedItem.measure_type, selectedItem.anti_name);
+        await SetPercentValue();
+
+        StateHasChanged();
+        await SetPercentValue();
+        //List<decimal> lstValue = new List<decimal>  { selectedAMR.arh_01, selectedAMR.arh_02
+        //                                               , selectedAMR.arh_03, selectedAMR.arh_04
+        //                                               , selectedAMR.arh_05, selectedAMR.arh_06
+        //                                               , selectedAMR.arh_07, selectedAMR.arh_08
+        //                                               , selectedAMR.arh_09, selectedAMR.arh_10
+        //                                               , selectedAMR.arh_11, selectedAMR.arh_12
+        //                                               , selectedAMR.arh_13 };
+
+        //var maxValue = lstValue.Max();
+        //var minValue = lstValue.Min();
+        //int maxIndex = 0;
+        //int minIndex = 0;
+
+        //maxValue = 0;
+        //for (var i = 0; i < 13; i++)
+        //{
+        //    if (lstValue[i] > maxValue)
+        //    {
+        //        maxValue = lstValue[i];
+        //        maxIndex = i + 1;
+        //    }
+        //}
+
+        //selectedAreaHealth = (eAreaHealth)maxIndex;
+        //CVS_MAX_WIDTH = Coordinate.Width;
+        //CVS_MAX_HEIGHT = Coordinate.Height;
+        //await JSRuntime.InvokeVoidAsync("MoveCanvas", "cvsMax", "thai", Coordinate.rgn_x, Coordinate.rgn_y, Coordinate.arhpicid, maxIndex);
+        //StateHasChanged();
+    }
+
+    private async Task SetPercentValue()
+    {
+        List<decimal> lstValue = new List<decimal>  { selectedAMR.arh_01, selectedAMR.arh_02
+                                                       , selectedAMR.arh_03, selectedAMR.arh_04
+                                                       , selectedAMR.arh_05, selectedAMR.arh_06
+                                                       , selectedAMR.arh_07, selectedAMR.arh_08
+                                                       , selectedAMR.arh_09, selectedAMR.arh_10
+                                                       , selectedAMR.arh_11, selectedAMR.arh_12
+                                                       , selectedAMR.arh_13 };
+
+        await JSRuntime.InvokeVoidAsync("setPercentValue", lstCanvasValue, lstValue);
+
+        var maxValue = lstValue.Max();
+        var minValue = lstValue.Min();
+        int maxIndex = 0;
+        int minIndex = 0;
+
+        maxValue = 0;
+        for (var i = 0; i < 13; i++)
+        {
+            if (lstValue[i] > maxValue)
+            {
+                maxValue = lstValue[i];
+                maxIndex = i + 1;
+            }
+        }
+        minValue = 100;
+        for (var i = 0; i < 13; i++)
+        {
+            if (lstValue[i] < minValue)
+            {
+                minValue = lstValue[i];
+                minIndex = i + 1;
+            }
+        }
+
+        selectedAreaHealth = (eAreaHealth)maxIndex;
+        CVS_MAX_WIDTH = Coordinate.Width;
+        CVS_MAX_HEIGHT = Coordinate.Height;
+        await JSRuntime.InvokeVoidAsync("MoveCanvas", "cvsMax", "thai", Coordinate.rgn_x, Coordinate.rgn_y, Coordinate.arhpicid, maxIndex);
+
+        StateHasChanged();
+
+        selectedAreaHealth = (eAreaHealth)minIndex;
+        CVS_MIN_WIDTH = Coordinate.Width;
+        CVS_MIN_HEIGHT = Coordinate.Height;
+        await JSRuntime.InvokeVoidAsync("MoveCanvas", "cvsMin", "thai", Coordinate.rgn_x, Coordinate.rgn_y, Coordinate.arhpicid, minIndex);
+
+        StateHasChanged();
+    }
+
+    private async Task MoveCanvas(MouseEventArgs args, eAreaHealth selectedItem)
+    {
+
+        selectedAreaHealth = selectedItem;
+        //SetContext();
+        CVS_MAX_WIDTH = Coordinate.Width;
+        CVS_MAX_HEIGHT = Coordinate.Height;
+        await JSRuntime.InvokeVoidAsync("MoveCanvas", "cvsMax", "thai", Coordinate.rgn_x, Coordinate.rgn_y, Coordinate.arhpicid, selectedItem);
+
+        //var strValue = selectedAMR.percent_ns + "%";
+        //await JSRuntime.InvokeVoidAsync("DrawValue", "cvsIndex", "circle", Coordinate.idx_x, Coordinate.idx_y,strValue);
+
+        StateHasChanged();
+
+    }
+
+    private async Task showCoords(MouseEventArgs args)
+    {
+        await JSRuntime.InvokeVoidAsync("showCoords", args);
+    }
+
+    private async void Export()
+    {
+        blnExportComplete = false;
+        modelExport.month_start = searchAMR.month_start;
+        modelExport.month_end = searchAMR.month_end;
+
+        string statuscode = await ReportService.ExportMapDataAsync(modelExport);
+        if (statuscode == "OK")
+        {
+            string OutputFileName = string.Format("{0}_{1}-{2}_{3}"
+                                        , DateTime.Today.ToString("yyyyMMdd")
+                                        , modelExport.month_start.Value.ToString("MMMyy", new CultureInfo("en-US"))
+                                        , modelExport.month_end.Value.ToString("MMMyy", new CultureInfo("en-US"))
+                                        , "AMPMap.pdf"
+                                        );
+
+            string ServerFileName = "ANTIBIOTREND" + "/" + DateTime.Today.ToString("yyyyMMdd") + "/" + OutputFileName;
+            string contentType = "application/pdf";
+
+            await OIFileSave.DownloadFile(ServerFileName, OutputFileName, contentType);
+        }
+        else if (statuscode == "ERR_PATH")
+        {
+            await JSRuntime.InvokeAsync<object>("ShowAlert", "ไม่พบ Config PATH กรุณาติดต่อผู้ดูแลระบบ");
+        }
+        else
+        {
+            await JSRuntime.InvokeAsync<object>("ShowAlert", "File not Found");
+        }
+        blnExportComplete = true;
+    }
+
+}

@@ -1,0 +1,359 @@
+{
+  "ReRoutes": [
+    {
+      "DownstreamPathTemplate": "/api/DropDownList/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44373"
+        }
+      ],
+      "UpstreamPathTemplate": "/dropdownlist_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/LoginUser/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44338"
+        }
+      ],
+      "UpstreamPathTemplate": "/loginuserdata_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/MenuData/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44338"
+        }
+      ],
+      "UpstreamPathTemplate": "/menudata_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/LogProcess/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44367"
+        }
+      ],
+      "UpstreamPathTemplate": "/logprocess_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/TBConfig/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44367"
+        }
+      ],
+      "UpstreamPathTemplate": "/tbconfig_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/TRNoticeMessage/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44367"
+        }
+      ],
+      "UpstreamPathTemplate": "/noticemessage_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/LogUserLogin/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44331"
+        }
+      ],
+      "UpstreamPathTemplate": "/loginlog_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/Menu/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44331"
+        }
+      ],
+      "UpstreamPathTemplate": "/menu_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/ColumnConfig/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44331"
+        }
+      ],
+      "UpstreamPathTemplate": "/columnconfig_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/PasswordConfig/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44331"
+        }
+      ],
+      "UpstreamPathTemplate": "/passwordconfig_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/Role/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44331"
+        }
+      ],
+      "UpstreamPathTemplate": "/role_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/MasterHospital/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44314"
+        }
+      ],
+      "UpstreamPathTemplate": "/masterhospital_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/MasterTemplate/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44314"
+        }
+      ],
+      "UpstreamPathTemplate": "/mastertemplate_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/Antibiotic/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44314"
+        }
+      ],
+      "UpstreamPathTemplate": "/antibiotic_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/ExpertRule/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44314"
+        }
+      ],
+      "UpstreamPathTemplate": "/expertrule_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/Organism/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44314"
+        }
+      ],
+      "UpstreamPathTemplate": "/organism_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/QCRange/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44314"
+        }
+      ],
+      "UpstreamPathTemplate": "/qcrange_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/Specimen/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44314"
+        }
+      ],
+      "UpstreamPathTemplate": "/specimen_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/WardType/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44314"
+        }
+      ],
+      "UpstreamPathTemplate": "/wardtype_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/WHONETColumn/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44314"
+        }
+      ],
+      "UpstreamPathTemplate": "/whonetcolumn_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/Hospital/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44382"
+        }
+      ],
+      "UpstreamPathTemplate": "/hospital_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/UserLogin/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44382"
+        }
+      ],
+      "UpstreamPathTemplate": "/userlogin_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44355"
+        }
+      ],
+      "UpstreamPathTemplate": "/mapping_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/LabFileUpload/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44389"
+        }
+      ],
+      "UpstreamPathTemplate": "/labfileupload_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44326"
+        }
+      ],
+      "UpstreamPathTemplate": "/processrequest_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44383"
+        }
+      ],
+      "UpstreamPathTemplate": "/report_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/Glass/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44358"
+        }
+      ],
+      "UpstreamPathTemplate": "/glassreport_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/Antibiotrend/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44336"
+        }
+      ],
+      "UpstreamPathTemplate": "/antibiotrend_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/AMRGraph/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44385"
+        }
+      ],
+      "UpstreamPathTemplate": "/exportgraph_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/ConvertPDF/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44385"
+        }
+      ],
+      "UpstreamPathTemplate": "/exportpdf_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/Antibiogram/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44383"
+        }
+      ],
+      "UpstreamPathTemplate": "/antitemplate_api/{everything}"
+    },
+    {
+      "DownstreamPathTemplate": "/api/HISUpload/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": "44304"
+        }
+      ],
+      "UpstreamPathTemplate": "/his_api/{everything}"
+    }
+  ],
+  "GlobalConfiguration": {
+    "BaseUrl": "https://localhost:44303"
+  }
+}

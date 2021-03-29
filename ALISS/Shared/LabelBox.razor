@@ -1,0 +1,17 @@
+﻿<div class="row justify-content-end">
+    <div style="text-align:right;">
+        <label>@inputLabel</label>
+        @if (requireField)
+        {
+            <label style="color:red;">*</label>
+        }
+    </div>
+    <div style="width:1px;text-align:center;">
+        <label>&nbsp;:&nbsp;</label>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string inputLabel { get; set; }
+    [Parameter] public bool requireField { get; set; } = false;
+}

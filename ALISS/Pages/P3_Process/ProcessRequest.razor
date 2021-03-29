@@ -1,0 +1,393 @@
+﻿@page "/ProcessRequest"
+
+@inject IJSRuntime jsRuntime
+@inject NavigationManager navigationManager
+
+@inject ConfigDataService configDataService
+@inject DropDownListDataService ddlDataService
+@inject SpecimenService specimenService
+@inject ProcessRequestService processRequestService
+
+<div style="width: 1200px;">
+    <div class="divHead">
+        Process request
+    </div>
+</div>
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>
+
+    <Loading ShowModel="true" />
+}
+else
+{
+    <div class="container inputArea">
+        <div class="row">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("pcr_hos_code")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.pcr_hos_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="All" Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name, x.hos_code, x.hos_name }).Where(x => (searchModel.pcr_arh_code == null || x.arh_code == searchModel.pcr_arh_code) && (searchModel.pcr_prv_code == null || x.prv_code == searchModel.pcr_prv_code))" ValueProperty="hos_code" TextProperty="hos_name" Change="@(args => DDL_Change("Hos", args))" Style="width:100%" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("pcr_prv_code")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.pcr_prv_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="All" Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name }).Where(x => (searchModel.pcr_arh_code == null || x.arh_code == searchModel.pcr_arh_code)).Distinct()" ValueProperty="prv_code" TextProperty="prv_name" Change="@(args => DDL_Change("Prv", args))" Style="width:100%" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("pcr_arh_code")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.pcr_arh_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="All" Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name }).Distinct()" ValueProperty="arh_code" TextProperty="arh_name" Change="@(args => DDL_Change("Arh", args))" Style="width:100%" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("pcr_month_start")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.pcr_month_start" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="All" Data="@(month_List.Where(x => Convert.ToInt32(x.data_Value) <= Convert.ToInt32(searchModel.pcr_month_end ?? "12")))" ValueProperty="data_Value" TextProperty="data_Text" Style="width:100%" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("pcr_month_end")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.pcr_month_end" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="All" Data="month_List.Where(x => Convert.ToInt32(x.data_Value) >= Convert.ToInt32(searchModel.pcr_month_start))" ValueProperty="data_Value" TextProperty="data_Text" Style="width:100%" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("pcr_year")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.pcr_year" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="All" Data="year_List" ValueProperty="data_Value" TextProperty="data_Text" Style="width:100%" Change="@(args => DDL_Year_Change())" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("pcr_type")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.pcr_type" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="All" Data="prm_ddl_List" ValueProperty="prm_code_minor" TextProperty="prm_desc1" Style="width:100%" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("pcr_spc_code")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.pcr_spc_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="All" Data="spc_ddl_List" ValueProperty="spc_code" TextProperty="spc_name" Style="width:100%" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup buttonArea">
+                    <div class="col-auto">
+                        <RadzenButton class="btnSearch" Text="Search" Click="SearchInboxData" />
+                    </div>
+                    <div class="col-auto">
+                        <RadzenButton class="btnClear" Text="Clear" Click="ClearInboxData" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div>
+        <div class="container">
+            <div class="row justify-content-end">
+                <div class="col-auto buttonArea">
+                    @if (mainLayout.loginUser.PagePermission.rop_create)
+                    {
+                        <RadzenButton Icon="add" class="btnAdd" Text="Add Process" Click="@(() => NavigateToDetailPage(""))" />
+                    }
+                </div>
+            </div>
+        </div>
+
+        <br />
+
+        <div style="width:90%;margin:0px auto;">
+            <div class="container">
+                <div class="row justify-content-end">
+                    <div class="col-auto">
+                        <label>Rows : </label>
+                    </div>
+                    <div class="col-auto">
+                        <RadzenDropDown @bind-Value="inboxGrid.PageSize" TValue="int" AllowFiltering="true" Data="inboxGrid.PageSizeOption" Change="SearchInboxData" Style="width:50px" />
+                    </div>
+                </div>
+            </div>
+            <RadzenGrid TItem="ProcessRequestDTO" @ref="inboxGrid.radzenGrid" Data="@searchResultList" PageSize="inboxGrid.PageSize" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                <Columns>
+                    <RadzenGridColumn TItem="ProcessRequestDTO" Property="pcr_code" Title="Process Code" Width="100px">
+                        <FooterTemplate>
+                            <label title="@inboxGrid.FooterLabelString">@inboxGrid.FooterLabelString</label>
+                        </FooterTemplate>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="ProcessRequestDTO" Property="pcr_arh_code" Title="@configData.Get_Label("pcr_arh_name")" Width="100px" Context="data">
+                        <Template>
+                            @if (string.IsNullOrEmpty(data.pcr_arh_code))
+                            {
+                                <label>All</label>
+                            }
+                            else
+                            {
+                                @*<label>@data.pcr_arh_name</label>*@
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="ProcessRequestDTO" Property="pcr_prv_code" Title="@configData.Get_Label("pcr_prv_name")" Width="100px" Context="data">
+                        <Template>
+                            @if (string.IsNullOrEmpty(data.pcr_prv_code))
+                            {
+                                <label>All</label>
+                            }
+                            else
+                            {
+                                @*<label>@data.pcr_prv_name</label>*@
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="ProcessRequestDTO" Property="pcr_hos_name" Title="@configData.Get_Label("pcr_hos_name")" Width="100px" Context="data">
+                        <Template>
+                            @if (string.IsNullOrEmpty(data.pcr_hos_code))
+                            {
+                                <label>All</label>
+                            }
+                            else
+                            {
+                                <label>@data.pcr_hos_name</label>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="ProcessRequestDTO" Property="pcr_type_name" Title="@configData.Get_Label("pcr_type")" Width="100px" />
+                    <RadzenGridColumn TItem="ProcessRequestDTO" Property="pcr_spc_code" Title="@configData.Get_Label("pcr_spc_code")" Width="100px"  Context="data">
+                        <Template>
+                            @if (string.IsNullOrEmpty(data.pcr_spc_code))
+                            {
+                                <label>All</label>
+                            }
+                            else
+                            {
+                                <label>@data.pcr_spc_code</label>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="ProcessRequestDTO" Property="pcr_month_start" Title="@configData.Get_Label("pcr_month_start")" Context="data">
+                        <Template>
+                            <label>@data.pcr_month_start / @data.pcr_year</label>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="ProcessRequestDTO" Property="pcr_month_end" Title="@configData.Get_Label("pcr_month_end")" Context="data">
+                        <Template>
+                            <label>@data.pcr_month_end / @data.pcr_year</label>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="ProcessRequestDTO" Property="pcr_active" Title="Status" Width="50px" Context="data">
+                        <Template>
+                            @if (data.pcr_status == "A")
+                            {
+                                <label>Active</label>
+                            }
+                            else if (data.pcr_status == "I")
+                            {
+                                <label>Inactive</label>
+                            }
+                            else if (data.pcr_status == "W")
+                            {
+                                <label>Waiting</label>
+                            }
+                            else if (data.pcr_status == "P")
+                            {
+                                <label>Public</label>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="ProcessRequestDTO" Width="50px" Context="data">
+                        <Template>
+                            @if (mainLayout.loginUser.PagePermission.rop_edit && data.pcr_active == true && (data.pcr_status == "A" || data.pcr_status == "P"))
+                            {
+                                <RadzenButton Icon="download" Style="background: #0A6839" Click="@(() => NavigateToDownload(data.pcr_code))" />
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="ProcessRequestDTO" Width="50px" Context="data">
+                        <Template>
+                            @if (mainLayout.loginUser.PagePermission.rop_edit && data.pcr_active == true)
+                            {
+                                <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => NavigateToDetailPage(data.pcr_code))" />
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="ProcessRequestDTO" Width="50px" Context="data">
+                        <Template>
+                            @if (mainLayout.loginUser.PagePermission.rop_edit && data.pcr_active == true && data.pcr_status == "A")
+                            {
+                                <RadzenButton Icon="public" Style="background: #0A6839" Click="@(() => NavigateToPublic(data.pcr_code))" />
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+
+        <br />
+
+    </div>
+
+    <hr />
+}
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private bool ShowPopupDialog;
+
+    private RadzenGridCustom<ProcessRequestDTO> inboxGrid = new RadzenGridCustom<ProcessRequestDTO>();
+    private ProcessRequestDTO searchModel = new ProcessRequestDTO();
+    private List<ProcessRequestDTO> searchResultList_All, searchResultList;
+
+    private List<HospitalLabDataDTO> lab_ddl_List;
+    private List<ParameterDTO> prm_ddl_List;
+    private List<SpecimenDTO> spc_ddl_List;
+    private List<DropDownListDTO> month_List;
+    private List<DropDownListDTO> year_List;
+
+
+    private bool pageLoading { get { return (searchResultList == null); } }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0601") == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = "MNU_0601" });
+
+            var searchData = new HospitalLabDataDTO()
+            {
+                arh_code = searchModel.pcr_arh_code = mainLayout.loginUser.arh_code,
+                prv_code = searchModel.pcr_prv_code = mainLayout.loginUser.prv_code,
+                hos_code = searchModel.pcr_hos_code = mainLayout.loginUser.hos_code
+            };
+            lab_ddl_List = await ddlDataService.GetAllLabListByModelAsync(searchData);
+            prm_ddl_List = await ddlDataService.GetParameterListByModelAsync("R01");
+            spc_ddl_List = await specimenService.GetListByModelActiveAsync(new SpecimenDTO());
+            month_List = ddlDataService.GetMonthList();
+            year_List = ddlDataService.GetYearList();
+
+            searchResultList_All = searchResultList = await processRequestService.GetListByModelAsync(searchModel);
+        }
+    }
+
+    private async void SearchInboxData()
+    {
+        searchResultList = await processRequestService.GetListByModelAsync(searchModel);
+        if (inboxGrid.radzenGrid != null) inboxGrid.radzenGrid.GoToPage(0);
+
+        StateHasChanged();
+    }
+
+    private async void ClearInboxData()
+    {
+        searchModel = new ProcessRequestDTO();
+
+        searchResultList = await processRequestService.GetListByModelAsync(searchModel);
+        if (inboxGrid.radzenGrid != null) inboxGrid.radzenGrid.GoToPage(0);
+
+        StateHasChanged();
+    }
+
+    private void DDL_Year_Change()
+    {
+        year_List = ddlDataService.GetYearList(searchModel.pcr_year);
+
+        StateHasChanged();
+    }
+
+    private void DDL_Change(string ddl_name, object value)
+    {
+        if (ddl_name == "Arh" && value == null)
+        {
+            searchModel.pcr_prv_code = null;
+            searchModel.pcr_hos_code = null;
+        }
+        else if (ddl_name == "Prv" && value != null)
+        {
+            var prv_select = lab_ddl_List.FirstOrDefault(x => x.prv_code == value.ToString());
+
+            searchModel.pcr_arh_code = prv_select.arh_code;
+            searchModel.pcr_hos_code = null;
+        }
+        else if (ddl_name == "Prv" && value == null)
+        {
+            searchModel.pcr_hos_code = null;
+        }
+        else if (ddl_name == "Hos" && value != null)
+        {
+            var hos_select = lab_ddl_List.FirstOrDefault(x => x.hos_code == value.ToString());
+
+            searchModel.pcr_arh_code = hos_select.arh_code;
+            searchModel.pcr_prv_code = hos_select.prv_code;
+        }
+
+        StateHasChanged();
+    }
+
+    private void NavigateToDownload(string pcr_code)
+    {
+        //navigationManager.NavigateTo("/ProcessRequest/DataDetail/" + pcr_code);
+
+    }
+
+    private void NavigateToDetailPage(string pcr_code)
+    {
+        navigationManager.NavigateTo("/ProcessRequest/DataDetail/" + pcr_code);
+    }
+
+    private async void NavigateToPublic(string pcr_code)
+    {
+        //navigationManager.NavigateTo("/ProcessRequest/DataDetail/" + pcr_code);
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to public data?");
+        if (result)
+        {
+            var saveResult = await processRequestService.SaveDataToPublicAsync(pcr_code);
+        }
+    }
+
+}

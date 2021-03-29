@@ -1,0 +1,182 @@
+﻿@inject IJSRuntime jsRuntime
+@inject NavigationManager navigationManager
+
+@if (menuList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div>
+        <div class="row">
+            <div class="col">
+                <NavLink Match="NavLinkMatch.All" @onclick="(() => RedirectToUserManagement(mainLayout.loginUser.Username))" style="cursor: pointer;">
+                    <RadzenGravatar Email="@mainLayout.loginUser.Username" />
+                </NavLink>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <label style="color:#0A6839;">Hello, @mainLayout.loginUser.Fullname</label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <label style="color:#0A6839;">Role :  @mainLayout.loginUser.FullRole</label>
+            </div>
+        </div>
+        <br />
+        <ul class="nav flex-column">
+            <li class="nav-item px-3">
+                <NavLink class="nav-link show" href="Home" Match="NavLinkMatch.All">
+                    <span class="oi oi-home" aria-hidden="true"></span> Home
+                </NavLink>
+            </li>
+
+            @foreach (var _menu in menuList.Where(x => x.mnu_order_sub == 0).OrderBy(x => x.mnu_order).ToList())
+            {
+                <li class="nav-item px-3">
+                    <div class="nav-link justify-content-between" @onclick="(() => DisplaySubMenu(_menu))" style="cursor: pointer;">
+                        <div><span class="oi @_menu.mnu_icon" aria-hidden="true"></span> @_menu.mnu_name</div>
+                        @*<div><i class="@GetToggleSign(_menu)" aria-hidden="true"></i></div>*@
+                        <RadzenButton Icon="@GetToggleSign(_menu)" class="btnIcon" />
+                    </div>
+                </li>
+                @if (_menu.mnu_status == "S")
+                {
+                    @foreach (var _submenu in menuList.Where(x => x.mnu_group == _menu.mnu_group && x.mnu_order_sub != 0).OrderBy(x => x.mnu_order_sub).ToList())
+                    {
+                        <ul class="nav flex-column">
+                            <li class="nav-item px-3">
+                                <NavLink class="nav-link" href="@_submenu.mnu_path" Match="NavLinkMatch.All">
+                                    <span class="oi @_submenu.mnu_icon" aria-hidden="true"></span> @_submenu.mnu_name
+                                </NavLink>
+                            </li>
+                        </ul>
+                    }
+                }
+            }
+
+            <li class="nav-item px-3">
+                <NavLink class="nav-link show" Match="NavLinkMatch.All" @onclick="RedirectToLogin">
+                    <span class="oi oi-account-logout" aria-hidden="true"></span> Log out
+                </NavLink>
+            </li>
+        </ul>
+
+        @*<BlazoredMenu>
+                <BlazoredMenuItem>
+                    <ul class="nav flex-column">
+                        <li class="nav-item px-3">
+                            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                                <span class="oi oi-home" aria-hidden="true"></span> Home
+                            </NavLink>
+                        </li>
+                    </ul>
+                </BlazoredMenuItem>
+                <BlazoredSubMenu Header="Sub Menu">
+                    <HeaderTemplate>
+                        <NavLink class="nav flex-column nav-item px-3 nav-link">
+                            <span class="oi oi-plus" aria-hidden="true"></span> Sub Menu
+                        </NavLink>
+                    </HeaderTemplate>
+                    <MenuTemplate>
+                        <BlazoredMenuItem>
+                            <ul class="nav flex-column">
+                                <li class="nav-item px-3">
+                                    <NavLink class="nav-link" href="counter">
+                                        <span class="oi oi-plus" aria-hidden="true"></span> Counter
+                                    </NavLink>
+                                </li>
+                            </ul>
+                        </BlazoredMenuItem>
+                        <BlazoredMenuItem>
+                            <ul class="nav flex-column">
+                                <li class="nav-item px-3">
+                                    <NavLink class="nav-link" href="fetchdata">
+                                        <span class="oi oi-list-rich" aria-hidden="true"></span> Fetch data
+                                    </NavLink>
+                                </li>
+                            </ul>
+                        </BlazoredMenuItem>
+                    </MenuTemplate>
+                </BlazoredSubMenu>
+                <BlazoredMenuItem>
+                    <ul class="nav flex-column">
+                        <li class="nav-item px-3">
+                            <NavLink class="nav-link" href="login">
+                                <span class="oi oi-account-logout" aria-hidden="true"></span> Logout
+                            </NavLink>
+                        </li>
+                    </ul>
+                </BlazoredMenuItem>
+            </BlazoredMenu>*@
+    </div>
+}
+
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+    private List<LoginUserRolePermissionDTO> menuList;
+
+    protected override async Task OnInitializedAsync()
+    {
+        menuList = mainLayout.loginUser.LoginUserRolePermissionList.Where(x => x.rop_rol_code == mainLayout.loginUser.rol_code && x.rop_view == true && x.mnu_active == true).ToList();
+    }
+
+    private bool collapseSubMenu = true;
+    private string currentSubMenu = "";
+
+    private void ToggleSubMenu(string mnu_code)
+    {
+        if (string.IsNullOrEmpty(currentSubMenu)) currentSubMenu = mnu_code;
+        else if (currentSubMenu == mnu_code) currentSubMenu = "";
+
+        StateHasChanged();
+    }
+
+    private void DisplaySubMenu(LoginUserRolePermissionDTO _mnu)
+    {
+        if (_mnu.mnu_status == "A")
+        {
+            var menu = menuList.FirstOrDefault(x => x.rop_mnu_code == _mnu.rop_mnu_code);
+            menu.mnu_status = "S";
+        }
+        else
+        {
+            var menu = menuList.FirstOrDefault(x => x.rop_mnu_code == _mnu.rop_mnu_code);
+            menu.mnu_status = "A";
+        }
+
+        StateHasChanged();
+    }
+
+    private string GetToggleSign(LoginUserRolePermissionDTO _mnu)
+    {
+        if (_mnu.mnu_status == "A")
+        {
+            return "expand-more";
+        }
+        else
+        {
+            return "expand-less";
+        }
+    }
+
+    private void RedirectToUserManagement(string username)
+    {
+        navigationManager.NavigateTo("UserManagement/UserLogin/DataDetail/" + username);
+    }
+
+    private async void RedirectToLogin()
+    {
+        var confirmResult = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to logout?");
+        if (confirmResult)
+        {
+            await mainLayout.Logout();
+
+            navigationManager.NavigateTo("/");
+        }
+    }
+
+}

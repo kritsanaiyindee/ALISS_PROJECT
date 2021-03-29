@@ -1,0 +1,43 @@
+﻿<div class="row">
+    <div class="divBox">
+        <div class="divLabel">
+            <label>ชื่อโรงพยาบาล</label>
+        </div>
+        <div class="divColon">
+            <label>:</label>
+        </div>
+        <div class="divInput">
+            <input type="text" @bind-value="@hos_name" style="background: #FFFFFF 0% 0% no-repeat padding-box; border: 1px solid #E4E4E4; border-radius: 3px; opacity: 1;font: Regular 14px/22px Arial;" />
+        </div>
+    </div>
+    <div class="divBox">
+        <div class="divLabel">
+            <label>จังหวัด</label>
+        </div>
+        <div class="divColon">
+            <label>:</label>
+        </div>
+        <div class="divInput">
+            <RadzenDropDown @bind-Value="hos_prv_id" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="@prvList" TextProperty="ddl_Text" ValueProperty="ddl_Value" />
+        </div>
+    </div>
+    <div class="divBox">
+        <div class="divLabel">
+            <label>เขตสุขภาพ</label>
+        </div>
+        <div class="divColon">
+            <label>:</label>
+        </div>
+        <div class="divInput">
+            <RadzenDropDown @bind-Value="hos_arh" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="@arhList" TextProperty="ddl_Text" ValueProperty="ddl_Value" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string hos_name { get; set; }
+    [Parameter] public string hos_prv_id { get; set; }
+    [Parameter] public string hos_arh { get; set; }
+    [Parameter] public List<MasterDataDTO> prvList { get; set; }
+    [Parameter] public List<MasterDataDTO> arhList { get; set; }
+}

@@ -1,0 +1,355 @@
+﻿@page "/AUTH/Menu"
+
+@inject IJSRuntime jsRuntime
+@inject NavigationManager navigationManager
+
+@inject ConfigDataService configDataService
+@inject MenuService menuService
+
+<div>
+    <div class="divHead">
+        Menu
+    </div>
+</div>
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>
+
+    <Loading ShowModel="true" />
+}
+else
+{
+    <div class="container inputArea">
+        <div class="row justify-content-between">
+            <InputBox ConfigData="@(configData.Get_ConfigRow("sch_mnu_code"))" classLabel="col" classInput="col">
+                <RadzenTextBox @bind-Value="@searchModel.sch_mnu_code" />
+            </InputBox>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup buttonArea">
+                    <div class="col-auto">
+                        <RadzenButton class="btnSearch" Text="Search" Click="SearchInboxData" />
+                    </div>
+                    <div class="col-auto">
+                        <RadzenButton class="btnClear" Text="Clear" Click="ClearInboxData" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div>
+        <div class="container">
+            <div class="row justify-content-end">
+                <div class="col-auto buttonArea">
+                    @if (mainLayout.loginUser.PagePermission.rop_create)
+                    {
+                        <RadzenButton Icon="add" class="btnAdd" Text="Add Menu" Click="@(() => ShowPopupDialog(null))" />
+                    }
+                </div>
+            </div>
+        </div>
+
+        <br />
+
+        <div style="width:90%;margin:0px auto;">
+            <div class="container">
+                <div class="row justify-content-end">
+                    <div class="col-auto">
+                        <label>Rows : </label>
+                    </div>
+                    <div class="col-auto">
+                        <RadzenDropDown @bind-Value="inboxGrid.PageSize" TValue="int" AllowFiltering="true" Data="inboxGrid.PageSizeOption" Change="SearchInboxData" Style="width:50px" />
+                    </div>
+                </div>
+            </div>
+            <RadzenGrid TItem="MenuDTO" @ref="inboxGrid.radzenGrid" Data="@searchResultList" PageSize="inboxGrid.PageSize" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                <Columns>
+                    <RadzenGridColumn TItem="MenuDTO" Property="mnu_id" Title="" Width="50px" Context="data">
+                        <Template>
+                            @if (mainLayout.loginUser.PagePermission.rop_edit)
+                            {
+                                <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowPopupDialog(data))" />
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="MenuDTO" Property="mnu_code" Title="@(configData.Get_Label("mnu_code"))">
+                        <FooterTemplate>
+                            <label title="@inboxGrid.FooterLabelString">@inboxGrid.FooterLabelString</label>
+                        </FooterTemplate>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="MenuDTO" Property="mnu_name" Title="@(configData.Get_Label("mnu_name"))" />
+                    <RadzenGridColumn TItem="MenuDTO" Property="mnu_path" Title="@(configData.Get_Label("mnu_path"))" />
+                    <RadzenGridColumn TItem="MenuDTO" Property="mnu_active" Title="@(configData.Get_Label("mnu_active"))" Context="data">
+                        <Template>
+                            @if (data.mnu_active == true)
+                            {
+                                <label>Active</label>
+                            }
+                            else
+                            {
+                                <label>Inactive</label>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+
+        <br />
+
+    </div>
+
+    <hr />
+
+    <HistoryLog HistoryList="historyResultList" />
+
+    @if (showPopupDialog)
+    {
+        <div class="modal" tabindex="-1" style="display:block" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+
+                    </div>
+                    <div class="modal-body">
+                        <EditForm Model="@dataModel" OnInvalidSubmit="HandleInvalidSubmit" OnValidSubmit="HandleValidSubmit">
+                            <DataAnnotationsValidator />
+
+                            <div class="container inputArea">
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("mnu_code"))"classColumn="col-xl-12">
+                                        @if (dataModel.mnu_status == "N")
+                                        {
+                                            <RadzenTextBox @bind-Value="@dataModel.mnu_code" Placeholder="กรอกได้เฉพาะ a-zA-Z0-9_-" />
+                                            <ValidationMessage For="@(() => dataModel.mnu_code)" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenTextBox @bind-Value="@dataModel.mnu_code" ReadOnly="true" />
+                                        }
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("mnu_name"))"classColumn="col-xl-12">
+                                        <RadzenTextBox @bind-Value="@dataModel.mnu_name" />
+                                        <ValidationMessage For="@(() => dataModel.mnu_name)" />
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("mnu_order"))"classColumn="col-xl-12">
+                                        <RadzenNumeric TValue="int" @bind-Value="dataModel.mnu_order" Min="0" />
+                                        <ValidationMessage For="@(() => dataModel.mnu_order)" />
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("mnu_order_sub"))"classColumn="col-xl-12">
+                                        <RadzenNumeric TValue="int" @bind-Value="dataModel.mnu_order_sub" Min="0" />
+                                        <ValidationMessage For="@(() => dataModel.mnu_order_sub)" />
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("mnu_icon"))"classColumn="col-xl-12">
+                                        <RadzenTextBox @bind-Value="@dataModel.mnu_icon" />
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("mnu_area"))"classColumn="col-xl-12">
+                                        <RadzenTextBox @bind-Value="@dataModel.mnu_area" />
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("mnu_controller"))"classColumn="col-xl-12">
+                                        <RadzenTextBox @bind-Value="@dataModel.mnu_controller" />
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("mnu_page"))"classColumn="col-xl-12">
+                                        <RadzenTextBox @bind-Value="@dataModel.mnu_page" />
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("mnu_active"))"classColumn="col-xl-12">
+                                        <RadzenRadioButtonList @bind-Value="@dataModel.mnu_active" TValue="bool">
+                                            <Items>
+                                                <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                                <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                            </Items>
+                                        </RadzenRadioButtonList>
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <div class="col-xl-12">
+                                        <div class="row justify-content-center divGroup buttonArea">
+                                            <div class="col" style="text-align:right;">
+                                                <RadzenButton class="btnCancel" Text="Cancel" Click="ClosePopup" />
+                                            </div>
+                                            <div class="col">
+                                                @if (mainLayout.loginUser.PagePermission.rop_create || mainLayout.loginUser.PagePermission.rop_edit)
+                                                {
+                                                    <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="OK" />
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <Loading ShowModel="showLoading" />
+}
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private bool showPopupDialog;
+    private bool showLoading;
+
+    private RadzenGridCustom<MenuDTO> inboxGrid = new RadzenGridCustom<MenuDTO>();
+    private MenuSearchDTO searchModel = new MenuSearchDTO();
+    private List<MenuDTO> searchResultList;
+
+    private MenuDTO dataModel = new MenuDTO();
+    private List<LogProcessDTO> historyResultList;
+
+    private bool pageLoading { get { return (searchResultList == null || historyResultList == null); } }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0102") == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = "MNU_0102" });
+            if (mainLayout.loginUser.rol_code == "ROL_00")
+            {
+                configData.ConfigDTOList.ForEach(x =>
+                {
+                    x.tbc_edit = true;
+                });
+            }
+
+            searchResultList = await menuService.GetListByModelAsync(searchModel);
+
+            historyResultList = await menuService.GetHistoryAsync();
+
+            ClosePopup();
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task SearchInboxData()
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        searchModel.sch_mnu_code = searchModel.sch_mnu_code?.Trim();
+
+        searchResultList = await menuService.GetListByModelAsync(searchModel);
+        if (inboxGrid.radzenGrid != null) inboxGrid.radzenGrid.GoToPage(0);
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task ClearInboxData()
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        searchModel = new MenuSearchDTO();
+
+        await SearchInboxData();
+    }
+
+    private void ShowPopupDialog(MenuDTO selectModel)
+    {
+        if (selectModel == null)
+        {
+            dataModel = new MenuDTO()
+            {
+                mnu_status = "N",
+                mnu_active = true,
+                mnu_createuser = mainLayout.loginUser.Username
+            };
+        }
+        else
+        {
+            dataModel = selectModel;
+            dataModel.mnu_status = "E";
+            dataModel.mnu_updateuser = mainLayout.loginUser.Username;
+        }
+
+        // Open the Popup
+        showPopupDialog = true;
+
+        StateHasChanged();
+    }
+
+    private async Task ClosePopup()
+    {
+        // Close the Popup
+        dataModel = new MenuDTO();
+        showPopupDialog = false;
+
+        searchResultList = await menuService.GetListByModelAsync(searchModel);
+
+        StateHasChanged();
+    }
+
+    private void HandleInvalidSubmit()
+    {
+
+    }
+
+    private async void HandleValidSubmit()
+    {
+        var confirmResult = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (confirmResult)
+        {
+            showLoading = true;
+            StateHasChanged();
+
+            if (dataModel.mnu_status == "N")
+            {
+                //Check duplicate
+                //var duplicate = searchResultList_All.Where(x => x.mnu_code == searchModel.mnu_code).ToList(); ;
+
+                if (searchResultList.Any(x => x.mnu_code == dataModel.mnu_code))
+                {
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate code.");
+
+                    showLoading = false;
+                    StateHasChanged();
+
+                    return;
+                }
+            }
+
+            //Save data
+            var saveResult = menuService.SaveDataAsync(dataModel);
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save data complete.");
+
+            historyResultList = await menuService.GetHistoryAsync();
+
+            await ClosePopup();
+
+            showLoading = false;
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,289 @@
+﻿@page "/HISExport"
+@using ALISS.Data
+@using ALISS.Data.D5_HISData
+@using ALISS.HISUpload.DTO;
+
+@inject IJSRuntime jsRuntime
+@inject ConfigDataService configDataService
+@inject NavigationManager navigationManager
+@inject HISFileUploadService HISUploadservice
+@inject DropDownListDataService ddlDataService
+@inject MasterTemplateService masterTemplateService
+
+<div>
+    <div class="divHead">
+        Export HIS With SP
+    </div>
+</div>
+
+@if (lab_ddl_List == null)
+{
+    <Loading ShowModel="true" />
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="container inputArea">
+
+        <div class="row justify-content-between">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("hex_hoscode")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.hos_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name, x.hos_code, x.hos_name }).Where(x => (searchModel.arh_code == null || x.arh_code == searchModel.arh_code) && (searchModel.prv_code == null || x.prv_code == searchModel.prv_code))" ValueProperty="hos_code" TextProperty="hos_name" Change="@(args => DDL_Change("Hos", args))" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("hex_province")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.prv_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name }).Where(x => (searchModel.arh_code == null || x.arh_code == searchModel.arh_code)).Distinct()" ValueProperty="prv_code" TextProperty="prv_name" Change="@(args => DDL_Change("Prv", args))" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("hex_arhcode")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.arh_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name }).Distinct()" ValueProperty="arh_code" TextProperty="arh_name" Change="@(args => DDL_Change("Arh", args))" />
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+
+        <div class="row justify-content-start">
+            <br />
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-start divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("hex_start_month")" />
+                    </div>
+                    <div class="@classMonth">
+                        <RadzenDropDown AllowClear="false" TValue="int" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        Placeholder="Select..."
+                                        AllowFiltering="false" @bind-Value=@iMonthFrom
+                                        Data="@MonthData" TextProperty="MonthName" ValueProperty="MonthValue" />
+                    </div>
+                    <div style="width:70px; vertical-align: middle;display: inline-block">
+                        <RadzenNumeric TValue="int" Min="2000" Max="9999" @bind-Value="@iYearFrom" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("hex_end_month")" />
+                    </div>
+                    <div class="@classMonth">
+                        <RadzenDropDown AllowClear="false" TValue="int" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        Placeholder="Select..."
+                                        AllowFiltering="false" @bind-Value=@iMonthTo
+                                        Data="@MonthData" TextProperty="MonthName" ValueProperty="MonthValue" />
+                    </div>
+                    <div style="width:70px; vertical-align: middle;display: inline-block">
+                        <RadzenNumeric TValue="int" Min="2000" Max="9999" @bind-Value=@iYearTo />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <hr />
+
+    <div class="container">
+        <div class="row justify-content-end">
+            <div class="col-auto buttonArea">
+                <RadzenButton Text="Export" class="btnAdd" Click="@ExportLabDataWithHIS" />
+            </div>
+        </div>
+    </div>
+}
+
+<Loading ShowModel="showModal" />
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+    private ConfigData configData = new ConfigData();
+    private const string MENU_CODE = "MNU_0502";
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private string classMonth = "col-4";
+
+    LabDataWithHISSearchDTO searchModel = new LabDataWithHISSearchDTO();
+    private List<HospitalLabDataDTO> lab_ddl_List;
+    private List<DropDownListDTO> rol_List;
+    private List<DropDownListDTO> lab_List = new List<DropDownListDTO>();
+
+    private bool showModal = false;
+
+    LoginUserRolePermissionDTO permission;
+    private int iMonthFrom = 1;
+    private int iMonthTo = DateTime.Today.Month;
+    private int iYearFrom = DateTime.Today.Year;
+    private int iYearTo = DateTime.Today.Year;
+    private DateTime dtStartDate;
+    private DateTime dtEndDate;
+
+    private class MonthItem
+    {
+        public int MonthValue { get; set; }
+        public string MonthName { get; set; }
+    }
+
+    MonthItem[] MonthData = new MonthItem[] {
+        new MonthItem
+        {
+            MonthValue = 1,
+            MonthName = "January"
+        },
+        new MonthItem
+        {
+           MonthValue = 2,
+           MonthName = "Febuary"
+        },
+        new MonthItem
+        {
+          MonthValue = 3,
+          MonthName = "March"
+        },
+        new MonthItem
+        {
+           MonthValue = 4,
+           MonthName = "April"
+        },
+        new MonthItem
+        {
+           MonthValue = 5,
+           MonthName = "May"
+        },
+        new MonthItem
+        {
+            MonthValue = 6,
+            MonthName = "June"
+        },
+        new MonthItem
+        {
+           MonthValue = 7,
+            MonthName = "July"
+        },
+        new MonthItem
+        {
+           MonthValue = 8,
+            MonthName = "August"
+        },
+        new MonthItem
+        {
+            MonthValue = 9,
+            MonthName = "September"
+        },
+        new MonthItem
+        {
+           MonthValue = 10,
+            MonthName = "October"
+        },
+        new MonthItem
+        {
+            MonthValue = 11,
+            MonthName = "November"
+        },
+        new MonthItem
+        {
+           MonthValue = 12,
+           MonthName = "December"
+        }
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission(MENU_CODE) == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = MENU_CODE });
+
+            var searchData = new HospitalLabDataDTO()
+            {
+                arh_code = searchModel.arh_code = mainLayout.loginUser.arh_code,
+                prv_code = searchModel.prv_code = mainLayout.loginUser.prv_code,
+                hos_code = searchModel.hos_code = mainLayout.loginUser.hos_code,
+            };
+
+
+            lab_ddl_List = await ddlDataService.GetAllLabListByModelAsync(searchData);
+            rol_List = await ddlDataService.GetRoleListByModelAsync();
+
+        }
+    }
+
+    private async Task ExportLabDataWithHIS()
+    {
+        showModal = true;
+
+        dtStartDate = new DateTime(iYearFrom, iMonthFrom, 1);
+
+        int numberOfDays = DateTime.DaysInMonth(iYearTo, iMonthTo);
+        dtEndDate = new DateTime(iYearTo, iMonthTo, numberOfDays);
+
+        searchModel.start_date = dtStartDate;
+        searchModel.end_date = dtEndDate;
+
+        MasterTemplateDTO ActiveMasterTemplate = await masterTemplateService.GetListByModelActiveAsync(new MasterTemplateSearchDTO());
+
+        await HISUploadservice.ExportLabDataWithHIS(jsRuntime, searchModel, ActiveMasterTemplate);
+
+        showModal = false;
+    }
+
+    private void DDL_Change(string ddl_name, object value)
+    {
+        if (ddl_name == "Arh" && value == null)
+        {
+            searchModel.prv_code = null;
+            searchModel.hos_code = null;
+            //HISFileData.hfu_lab = null;
+        }
+        else if (ddl_name == "Prv" && value == null)
+        {
+            searchModel.hos_code = null;
+            //HISFileData.hfu_lab = null;
+        }
+        else if (ddl_name == "Prv" && value != null)
+        {
+            var prv_select = lab_ddl_List.FirstOrDefault(x => x.prv_code == value.ToString());
+
+            searchModel.arh_code = prv_select.arh_code;
+        }
+        else if (ddl_name == "Hos" && value == null)
+        {
+            //searchModel.lab = null;
+            //HISFileData.hfu_lab = null;
+            //HISFileData.hfu_hos_code = null;
+        }
+        else if (ddl_name == "Hos" && value != null)
+        {
+            var hos_select = lab_ddl_List.FirstOrDefault(x => x.hos_code == value.ToString());
+
+            searchModel.prv_code = hos_select.prv_code;
+            searchModel.arh_code = hos_select.arh_code;
+
+            //HISFileData.hfu_hos_code = hos_select.hos_code;
+        }
+
+        StateHasChanged();
+    }
+}

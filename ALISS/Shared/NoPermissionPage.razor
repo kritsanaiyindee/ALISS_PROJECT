@@ -1,0 +1,27 @@
+﻿@page "/NoPermissionPage"
+
+@inject NavigationManager navigationManager
+
+<div class="container">
+    <div class="row">
+        <div class="col-12 divHead justify-content-center">
+            You don't have permission.
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12 justify-content-center">
+            @if (string.IsNullOrEmpty(mainLayout.loginUser.Username) == true)
+            {
+                <RadzenLink Path="/" Text="Redirect to login" />
+            }
+            else
+            {
+                <RadzenLink Path="/Home" Text="Redirect to home" />
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+}

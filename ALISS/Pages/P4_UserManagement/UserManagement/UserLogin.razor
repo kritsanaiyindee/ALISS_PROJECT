@@ -1,0 +1,257 @@
+﻿@page "/usermanagement/userlogin"
+
+@inject IJSRuntime jsRuntime
+@inject NavigationManager navigationManager
+
+@inject ConfigDataService configDataService
+@inject DropDownListDataService ddlDataService
+@inject UserLoginService userLoginService
+
+<div>
+    <div class="divHead">
+        User Login
+    </div>
+</div>
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>
+
+    <Loading ShowModel="true" />
+}
+else
+{
+    <div class="container inputArea">
+        <div class="row justify-content-between">
+            <InputBox ConfigData="@(configData.Get_ConfigRow("usp_hos_code"))">
+                <RadzenDropDown @bind-Value="searchModel.usp_hos_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name, x.hos_code, x.hos_name }).Where(x => (searchModel.usp_arh_code == null || x.arh_code == searchModel.usp_arh_code) && (searchModel.usp_prv_code == null || x.prv_code == searchModel.usp_prv_code))" ValueProperty="hos_code" TextProperty="hos_name" Change="@(args => DDL_Change("Hos", args))" Style="width:100%" />
+            </InputBox>
+
+            <InputBox ConfigData="@(configData.Get_ConfigRow("usp_prv_code"))">
+                <RadzenDropDown @bind-Value="searchModel.usp_prv_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name }).Where(x => (searchModel.usp_arh_code == null || x.arh_code == searchModel.usp_arh_code)).Distinct()" ValueProperty="prv_code" TextProperty="prv_name" Change="@(args => DDL_Change("Prv", args))" Style="width:100%" />
+            </InputBox>
+
+            <InputBox ConfigData="@(configData.Get_ConfigRow("usp_arh_code"))">
+                <RadzenDropDown @bind-Value="searchModel.usp_arh_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name }).Distinct().OrderBy(x => x.arh_code)" ValueProperty="arh_code" TextProperty="arh_name" Change="@(args => DDL_Change("Arh", args))" Style="width:100%" />
+            </InputBox>
+
+            <InputBox ConfigData="@(configData.Get_ConfigRow("usp_lab_code"))">
+                <RadzenDropDown @bind-Value="searchModel.usp_lab_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Where(x => x.hos_code == searchModel.usp_hos_code)" ValueProperty="lab_code" TextProperty="lab_name" Style="width:100%" />
+            </InputBox>
+
+            <InputBox ConfigData="@(configData.Get_ConfigRow("usp_rol_code"))">
+                <RadzenDropDown @bind-Value="searchModel.usp_rol_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="rol_List" ValueProperty="data_Value" TextProperty="data_Text" Style="width:100%" />
+            </InputBox>
+
+            <InputBox ConfigData="@(configData.Get_ConfigRow("usr_active"))">
+                <RadzenRadioButtonList @bind-Value="searchModel.usr_active" TValue="bool">
+                    <Items>
+                        <RadzenRadioButtonListItem Text="Active" Value="true" />
+                        <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                    </Items>
+                </RadzenRadioButtonList>
+            </InputBox>
+        </div>
+        <div class="row justify-content-between">
+            <InputBox ConfigData="@(configData.Get_ConfigRow("usr_email"))">
+                <RadzenTextBox @bind-Value="searchModel.usr_email" />
+            </InputBox>
+
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup buttonArea">
+                    <div class="col-auto">
+                        <RadzenButton class="btnSearch" Text="Search" Click="SearchInboxData" />
+                    </div>
+                    <div class="col-auto">
+                        <RadzenButton class="btnClear" Text="Clear" Click="ClearInboxData" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div>
+        <div class="container">
+            <div class="row justify-content-end">
+                <div class="col-auto buttonArea">
+                    @if (mainLayout.loginUser.PagePermission.rop_create)
+                    {
+                        <RadzenButton Icon="add" class="btnAdd" Text="Add UserLogin" Click="@(() => ShowDataDetailPage(""))" />
+                    }
+                </div>
+            </div>
+        </div>
+
+        <br />
+
+        <div style="width:90%;margin:0px auto;">
+            <div class="container">
+                <div class="row justify-content-end">
+                    <div class="col-auto">
+                        <label>Rows : </label>
+                    </div>
+                    <div class="col-auto">
+                        <RadzenDropDown @bind-Value="inboxGrid.PageSize" TValue="int" AllowFiltering="true" Data="inboxGrid.PageSizeOption" Change="SearchInboxData" Style="width:50px" />
+                    </div>
+                </div>
+            </div>
+            <RadzenGrid TItem="UserLoginPermissionDTO" @ref="inboxGrid.radzenGrid" Data="@searchResultList" PageSize="inboxGrid.PageSize" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                <Columns>
+                    <RadzenGridColumn TItem="UserLoginPermissionDTO" Property="" Title="" Width="50px" Filterable="false" Context="data">
+                        <Template>
+                            @if (mainLayout.loginUser.PagePermission.rop_edit)
+                            {
+                                <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowDataDetailPage(data.usp_usr_userName))" />
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="UserLoginPermissionDTO" Property="usp_usr_userName" Title="@(configData.Get_Label("usp_usr_userName"))">
+                        <FooterTemplate>
+                            <label title="@inboxGrid.FooterLabelString">@inboxGrid.FooterLabelString</label>
+                        </FooterTemplate>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="UserLoginPermissionDTO" Property="usp_usr_email" Title="@(configData.Get_Label("usp_usr_email"))" />
+                    <RadzenGridColumn TItem="UserLoginPermissionDTO" Property="usp_rol_name" Title="@(configData.Get_Label("usp_rol_name"))" />
+                    <RadzenGridColumn TItem="UserLoginPermissionDTO" Property="usp_hos_name" Title="@(configData.Get_Label("usp_hos_name"))" />
+                    <RadzenGridColumn TItem="UserLoginPermissionDTO" Property="usp_lab_name" Title="@(configData.Get_Label("usp_lab_name"))" />
+                    <RadzenGridColumn TItem="UserLoginPermissionDTO" Property="usp_active" Title="@(configData.Get_Label("usp_active"))" Context="data">
+                        <Template>
+                            @if (data.usp_active == true)
+                            {
+                                <label>Active</label>
+                            }
+                            else
+                            {
+                                <label>Inactive</label>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+
+        <br />
+
+    </div>
+
+    <hr />
+
+    <Loading ShowModel="showLoading" />
+}
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private bool showLoading;
+
+    private RadzenGridCustom<UserLoginPermissionDTO> inboxGrid = new RadzenGridCustom<UserLoginPermissionDTO>();
+    private UserLoginSearchDTO searchModel = new UserLoginSearchDTO() { usr_active = true };
+    private List<UserLoginPermissionDTO> searchResultList;
+
+    private List<HospitalLabDataDTO> lab_ddl_List;
+    private List<DropDownListDTO> rol_List;
+
+    private bool pageLoading { get { return (searchResultList == null); } }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0302") == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = "MNU_0302" });
+
+            searchModel = new UserLoginSearchDTO() { usr_active = true };
+
+            var searchData = new HospitalLabDataDTO()
+            {
+                arh_code = searchModel.usp_arh_code = mainLayout.loginUser.arh_code,
+                prv_code = searchModel.usp_prv_code = mainLayout.loginUser.prv_code,
+                hos_code = searchModel.usp_hos_code = mainLayout.loginUser.hos_code,
+                lab_code = searchModel.usp_lab_code = mainLayout.loginUser.lab_code
+            };
+            lab_ddl_List = await ddlDataService.GetAllLabListByModelAsync(searchData);
+            rol_List = await ddlDataService.GetRoleListByModelAsync();
+
+            searchResultList = await userLoginService.GetListByModelAsync(searchModel);
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task SearchInboxData()
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        searchModel.usr_email = searchModel.usr_email?.Trim();
+
+        searchResultList = await userLoginService.GetListByModelAsync(searchModel);
+        if (inboxGrid.radzenGrid != null) inboxGrid.radzenGrid.GoToPage(0);
+
+        showLoading = false;
+        StateHasChanged();
+
+    }
+
+    private async Task ClearInboxData()
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        searchModel = new UserLoginSearchDTO() { usr_active = true };
+
+        await SearchInboxData();
+    }
+
+    private void DDL_Change(string ddl_name, object value)
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        if (ddl_name == "Arh" && value == null)
+        {
+            searchModel.usp_prv_code = null;
+            searchModel.usp_hos_code = null;
+            searchModel.usp_lab_code = null;
+        }
+        else if (ddl_name == "Prv" && value == null)
+        {
+            searchModel.usp_hos_code = null;
+            searchModel.usp_lab_code = null;
+        }
+        else if (ddl_name == "Prv" && value != null)
+        {
+            var prv_select = lab_ddl_List.FirstOrDefault(x => x.prv_code == value.ToString());
+
+            searchModel.usp_arh_code = prv_select.arh_code;
+        }
+        else if (ddl_name == "Hos" && value == null)
+        {
+            searchModel.usp_lab_code = null;
+        }
+        else if (ddl_name == "Hos" && value != null)
+        {
+            var hos_select = lab_ddl_List.FirstOrDefault(x => x.hos_code == value.ToString());
+
+            searchModel.usp_prv_code = hos_select.prv_code;
+            searchModel.usp_arh_code = hos_select.arh_code;
+            searchModel.usp_lab_code = null;
+        }
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private void ShowDataDetailPage(string usr_username)
+    {
+        navigationManager.NavigateTo("UserManagement/UserLogin/DataDetail/" + usr_username);
+    }
+}

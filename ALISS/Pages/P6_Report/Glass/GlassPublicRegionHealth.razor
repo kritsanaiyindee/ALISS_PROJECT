@@ -1,0 +1,353 @@
+﻿@page "/Glass/GlassPublicRegionHealth"
+
+@using ALISS.Data.D6_Report.Glass
+@using ALISS.GLASS.DTO
+@using ALISS.Master.DTO
+@using Radzen
+@using Radzen.Blazor
+@using System.Globalization
+@using System.IO
+
+@inject IJSRuntime JSRuntime
+@inject GlassService ReportService
+@inject DialogService dialogService
+@inject NotificationService notificationService
+@inject ConfigDataService configDataService
+@inject NavigationManager navigationManager
+@inject DropDownListDataService ddlDataService
+@inject IFileSave OIFileSave
+
+<div>
+    <div class="divHead">
+        Glass - ระดับเขตสุขภาพ
+    </div>
+</div>
+
+@if (gridDatas == null)
+{
+    <p><em>Loading...</em></p>
+    <Loading ShowModel="true" />
+}
+else
+{
+    <div class="container inputArea">
+        <br />
+        <div class="row justify-content-start">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("rpt_glsarh_arhcode")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchGlass.arh_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..."
+                                        Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name }).Distinct()" ValueProperty="arh_code" TextProperty="arh_name" Change="@(args => DDL_Change("Arh", args))" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("rpt_glsarh_year")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenNumeric TValue="int" Min="2000" Max="9999" @bind-Value=@iYear />
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="row justify-content-end">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup buttonArea">
+                    <div class="col-auto">
+                        <RadzenButton class="btnSearch" Text="Search" Click="SearchData" />
+                    </div>
+                    <div class="col-auto">
+                        <RadzenButton class="btnClear" Text="Clear" Click="ClearData" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr />
+
+    <div style="width:90%;margin:0px auto;">
+        <div class="container">
+            <div class="row justify-content-end">
+                <div class="col-auto">
+                    <label>Rows : </label>
+                </div>
+                <div class="col-auto">
+                    <RadzenDropDown @bind-Value="inboxGrid.PageSize" TValue="int" AllowFiltering="true" Data="inboxGrid.PageSizeOption" Change="SearchData" Style="width:50px" />
+                </div>
+            </div>
+        </div>
+
+        <RadzenGrid AllowPaging="true" AllowFiltering="true" AllowSorting="true" PageSize="@inboxGrid.PageSize" Data="@(gridDatas.Where(s=> s.who_flag == false).OrderBy(o=> o.year).ToList())" TItem="GlassFileListDTO" @ref="inboxGrid.radzenGrid" ColumnWidth="120px">
+            <Columns>
+                <RadzenGridColumn TItem="GlassFileListDTO" Property="year" Title="Glass Year" Width="50px">
+                    <FooterTemplate>
+                        <label title="@inboxGrid.FooterLabelString">@inboxGrid.FooterLabelString</label>
+                    </FooterTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="GlassFileListDTO" Property="arh_code" Title="เขตสุขภาพ" Width="50px" />
+                <RadzenGridColumn TItem="GlassFileListDTO" Property="analyze_file_name" Title="File Name" Width="50px" />
+                <RadzenGridColumn TItem="GlassFileListDTO" Property="analyze_file_name" Title="Analyze File (Excel)" Width="100px" TextAlign="TextAlign.Center">
+                    <Template Context="selectedRow">
+                        <RadzenButton Click="@(args => DownloadFile(selectedRow, eDownloadType.Excel))" Text="Download" Style="text-align:center; margin-bottom: 0px; width: 131px; height: 31px;background: #0A6839 0% 0% no-repeat padding-box;border: 1px solid #0A6839;border-radius: 3px;color: #FFFFFF; font-size:16px" />
+                    </Template>
+                </RadzenGridColumn>
+                @*<RadzenGridColumn TItem="GlassFileListDTO" Property="analyze_file_name" Title="Analyze File (PDF)" Width="100px">
+            <Template Context="selectedRow">
+                <RadzenButton Click="@(args => DownloadPDFFile(selectedRow))" Text="Download" Style="text-align:center; margin-bottom: 0px; width: 131px; height: 31px;background: #0A6839 0% 0% no-repeat padding-box;border: 1px solid #0A6839;border-radius: 3px;color: #FFFFFF; font-size:16px" />
+            </Template>
+        </RadzenGridColumn>*@
+                @*<RadzenGridColumn TItem="GlassFileListDTO" Property="analyze_file_name" Title="Link" Width="100px">
+            <Template Context="selectedRow">
+                @if (blnPreview)
+                {
+                    <a href="pdf/glass.pdf" target="_blank"><img src="img/pdf.png"></a>
+                }
+            </Template>
+        </RadzenGridColumn>*@
+                <RadzenGridColumn TItem="GlassFileListDTO" Property="updateuser" Title="Approve By" Width="100px" />
+                <RadzenGridColumn TItem="GlassFileListDTO" Property="updatedate" Title="Approve Datetime" Width="100px" />
+            </Columns>
+        </RadzenGrid>
+    </div>
+    <hr />
+
+    @*@if (blnPreview)
+        {
+            <iframe src=@url style="width: 100%;height: 930px;border: none;" frameborder="0" allowfullscreen></iframe>
+        }*@
+
+    @if (!blnLoadComplete)
+    {
+        <Loading ShowModel="true" />
+    }
+
+}
+
+@code {
+
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+    private const string MENU_CODE = "MNU_0707";
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private List<HospitalLabDataDTO> lab_ddl_List;
+    private RadzenGridCustom<GlassFileListDTO> inboxGrid = new RadzenGridCustom<GlassFileListDTO>();
+    //[Inject]
+    //private IFileSave OIFileSave { get; set; }
+
+    private int iYear = DateTime.Today.Year - 1;
+    private List<GlassFileListDTO> gridDatas;
+    GlassFileListNationSearchDTO searchGlass = new GlassFileListNationSearchDTO();
+    GlassFileListDTO selectedRow = new GlassFileListDTO();
+    private List<MasterDataDTO> AreaHealthData;
+    private bool blnPreview = false;
+    private bool blnLoadComplete = true;
+    private string url = "pdf/glass.pdf";
+
+    NotificationMessage notiMsg = new NotificationMessage();
+
+    private enum eDownloadType
+    {
+        Excel = 1,
+        PDF = 2
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission(MENU_CODE) == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = MENU_CODE });
+
+            var searchData = new HospitalLabDataDTO()
+            {
+                arh_code = searchGlass.arh_code = mainLayout.loginUser.arh_code,
+            };
+            searchGlass.start_year = iYear;
+            searchGlass.end_year = iYear;
+
+            lab_ddl_List = await ddlDataService.GetAllLabListByModelAsync(searchData);
+            gridDatas = await ReportService.GetGlassPublicFileListRegHealthModelAsync(searchGlass);
+        }
+    }
+
+    private async Task SearchData()
+    {
+        searchGlass.start_year = iYear;
+        searchGlass.end_year = searchGlass.start_year;
+
+        gridDatas = null;
+        StateHasChanged();
+
+        gridDatas = await ReportService.GetGlassPublicFileListRegHealthModelAsync(searchGlass);
+        StateHasChanged();
+    }
+
+    private async Task ClearData()
+    {
+        searchGlass.arh_code = mainLayout.loginUser.arh_code;
+        searchGlass.start_year = DateTime.Today.Year - 1;
+        //blnPreview = false;
+        StateHasChanged();
+
+        await SearchData();
+    }
+
+    private async Task DownloadFile(GlassFileListDTO Selecteditem, eDownloadType eReportType)
+    {
+        if (!string.IsNullOrEmpty(Selecteditem.analyze_file_name) && !string.IsNullOrEmpty(Selecteditem.analyze_file_path))
+        {
+            blnLoadComplete = false;
+            var statuscode = await ReportService.RequestAnalyseFileAsync(Selecteditem);
+            if (statuscode == "OK")
+            {
+                string ServerFileName = string.Format("{0}\\{1}", Selecteditem.analyze_file_path.Remove(0, 1), Selecteditem.analyze_file_name);
+                string contentType = (eReportType == eDownloadType.PDF) ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                string OutputFileName = Selecteditem.analyze_file_name;
+
+                await OIFileSave.DownloadFile(ServerFileName, OutputFileName, contentType);
+            }
+            else if (statuscode == "ERR_PATH")
+            {
+                await JSRuntime.InvokeAsync<object>("ShowAlert", "ไม่พบ Config PATH กรุณาติดต่อผู้ดูแลระบบ");
+            }
+            else
+            {
+                await JSRuntime.InvokeAsync<object>("ShowAlert", "File not Found");
+            }
+            blnLoadComplete = true;
+
+        }
+        else
+        {
+            //ToDo: Path incorrect or null
+            await JSRuntime.InvokeAsync<object>("ShowAlert", "Path Incorrect");
+        }
+
+    }
+
+    private async Task DownloadPDFFile(GlassFileListDTO Selecteditem)
+    {
+        if (!string.IsNullOrEmpty(Selecteditem.analyze_file_name) && !string.IsNullOrEmpty(Selecteditem.analyze_file_path))
+        {
+            blnLoadComplete = false;
+            string statuscode = await ReportService.DownloadPDFFileAsync(Selecteditem);
+            if (statuscode == "OK")
+            {
+                string ServerFileName = string.Format("{0}\\{1}", Selecteditem.analyze_file_path.Remove(0, 1), Selecteditem.analyze_file_name.Replace(".xlsx", ".pdf"));
+                var contentType = "application/pdf";
+                var extension = Path.GetExtension(Selecteditem.analyze_file_name);
+                var OutputFileName = Selecteditem.analyze_file_name.Replace(extension, ".pdf");
+
+                await OIFileSave.DownloadFile(ServerFileName, OutputFileName, contentType);
+            }
+            else if (statuscode == "ERR_PATH")
+            {
+                await JSRuntime.InvokeAsync<object>("ShowAlert", "ไม่พบ Config PATH กรุณาติดต่อผู้ดูแลระบบ");
+            }
+            else
+            {
+                await JSRuntime.InvokeAsync<object>("ShowAlert", "No Data to Export");
+            }
+            blnLoadComplete = true;
+        }
+        else
+        {
+            //ToDo: Path incorrect or null
+            await JSRuntime.InvokeAsync<object>("ShowAlert", "Path Incorrect");
+        }
+    }
+
+    //async void DownloadFile(GlassFileListDTO Selecteditem)
+    //{
+    //    blnLoadComplete = false;
+    //    string statuscode = await ReportService.DownloadGlassAnalyzeFileAsync(Selecteditem);
+
+    //    if (statuscode == "OK")
+    //    {
+    //        string messageFile = Selecteditem.analyze_file_name;
+    //        notiMsg.Severity = NotificationSeverity.Success;
+    //        notiMsg.Summary = string.Format("Success Download {0} File ", messageFile);
+    //        //notiMsg.Detail = "Success Detail";
+    //        notiMsg.Duration = 4000;
+
+    //        ShowNotification(notiMsg);
+
+    //        await JSRuntime.InvokeAsync<object>("ShowAlert", @configData.Get_Label("rpt_glsarh_loadcomp"));
+    //    }
+    //    else
+    //    {
+    //        notiMsg.Severity = NotificationSeverity.Error;
+    //        notiMsg.Summary = "Error Download File";
+    //        //notiMsg.Detail = "Success Detail";
+    //        notiMsg.Duration = 4000;
+
+    //        ShowNotification(notiMsg);
+
+    //        await JSRuntime.InvokeAsync<object>("ShowAlert", @configData.Get_Label("rpt_glsarh_loadincomp"));
+    //    }
+    //    blnLoadComplete = true;
+    //}
+
+    //async void PreviewFile(GlassFileListDTO Selecteditem)
+    //{
+    //    blnLoadComplete = false;
+    //    string statuscode = await ReportService.ConvertExcelToPdfAsync(Selecteditem);
+
+    //    if (statuscode == "OK")
+    //    {
+    //        string messageFile = "Analyze";
+    //        notiMsg.Severity = NotificationSeverity.Success;
+    //        notiMsg.Summary = string.Format("Success Download {0} File ", messageFile);
+    //        notiMsg.Duration = 4000;
+
+    //        //ShowNotification(notiMsg);
+    //        //blnPreview = true;
+
+    //        //await JSRuntime.InvokeAsync<object>("openInNewTab", url);
+    //        ShowSimpleDialog();
+    //    }
+    //    else
+    //    {
+    //        notiMsg.Severity = NotificationSeverity.Error;
+    //        notiMsg.Summary = "Error Download File";
+    //        notiMsg.Duration = 4000;
+
+    //        ShowNotification(notiMsg);
+    //    }
+    //    blnLoadComplete = true;
+    //}
+
+    private void DDL_Change(string ddl_name, object value)
+    {
+        StateHasChanged();
+    }
+
+    @*async Task ShowSimpleDialog() => await dialogService.OpenAsync("Simple Dialog", ds =>
+        @<RadzenCard Style="padding:20px;">
+            <p Style="margin-bottom: 10px;">Do you want to preview now ?</p>
+            <div class="row">
+                <div class="col-md-12">
+                    <RadzenButton Text="Ok" Click="() => OpenFile()" Style="margin-bottom: 10px; width: 150px" />
+                    <RadzenButton Text="Cancel" Click="() => ds.Close(false)" ButtonStyle="ButtonStyle.Secondary" Style="margin-bottom: 10px; width: 150px" />
+                </div>
+            </div>
+        </RadzenCard>);*@
+
+    //async Task ShowNotification(NotificationMessage message)
+    //{
+    //    notificationService.Notify(message);
+    //    await InvokeAsync(() => { StateHasChanged(); });
+    //}
+}
+

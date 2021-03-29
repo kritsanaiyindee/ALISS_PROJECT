@@ -1,0 +1,71 @@
+﻿@page "/HISRunBatch"
+
+@using System.IO;
+@using BlazorInputFile
+@using System.Diagnostics;
+
+@inject IJSRuntime jsRuntime
+
+<div>
+    <div class="divHead">
+        HIS Run Batch File
+    </div>
+</div>
+
+<div>
+
+    <h3>Please Input Batch Path : </h3>
+    <RadzenTextBox Style="margin-bottom: 100px" @bind-Value="@InputPath" />
+    <RadzenButton Text="Run Batch" class="btnAdd"
+                  Click="@BatchProcess" />
+    (Ex : F:\ALISS_Batch\HISRunBatch.bat)
+
+</div>
+
+@strMessage
+
+@code {
+
+    IFileListEntry selectedFiles;
+    private string strMessage = "";
+    private string InputPath = "";
+
+    private async Task BatchProcess()
+    {
+        string strBathPath = InputPath;
+
+        try
+        {
+            //strMessage = "Batch Start ...";
+
+            if (File.Exists(strBathPath))
+            {
+                //System.Diagnostics.Process.Start(InputPath);
+
+                ProcessStartInfo info = new ProcessStartInfo(strBathPath);
+                info.UseShellExecute = false;
+                info.RedirectStandardError = true;
+                info.RedirectStandardInput = true;
+                info.RedirectStandardOutput = true;
+                info.CreateNoWindow = true;
+                info.ErrorDialog = false;
+                info.WindowStyle = ProcessWindowStyle.Minimized;
+
+                Process process = Process.Start(info);
+
+            }
+            else
+            {
+                //strMessage += Environment.NewLine + Environment.NewLine + "File Batch not found...";
+            }
+
+            //strMessage += Environment.NewLine + Environment.NewLine + "Batch End ...";
+
+        }
+        catch
+        {
+            strMessage = "Batch Problem !!";
+        }
+
+    }
+}

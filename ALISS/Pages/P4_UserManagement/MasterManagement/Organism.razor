@@ -1,0 +1,329 @@
+﻿@page "/MasterManagement/MasterTemplate/Organism/{mst_code}"
+
+@inject IJSRuntime jsRuntime
+@inject NavigationManager navigationManager
+@inject DialogService dialogService
+
+@inject LoginUserData loginUserData
+@inject OrganismService organismService
+
+<div style="width: 1200px;">
+    <div class="divHead">
+        Organism
+    </div>
+</div>
+
+<Loading ShowModel="showModal" />
+
+@if (gridDatas == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="container inputArea">
+        <div class="row justify-content-between">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="col">
+                        <LabelBox inputLabel="Organism" />
+                    </div>
+                    <div class="col">
+                        <RadzenTextBox @bind-Value="@searchData.org_mst_ORGANISM" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="col" style="text-align:right;">
+                        <RadzenButton class="btnSearch" Text="Search" />
+                    </div>
+                    <div class="col">
+                        <RadzenButton class="btnClear" Text="Clear" Click="OnInitializedAsync" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div style="width:1200px;">
+        <div style="text-align:right;">
+            <RadzenButton Icon="add" Text="Add Organism" Click="@(() => ShowDataDetailDialog(new OrganismDTO()))" />
+        </div>
+
+        <br />
+
+        <div style="width:90%;margin:0px auto;">
+            <RadzenGrid TItem="OrganismDTO" Data="@gridDatas" PageSize="4" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" AllowSorting="true">
+                <Columns>
+                    <RadzenGridColumn TItem="OrganismDTO" Property="" Title="" Width="50px" Filterable="false" Context="data">
+                        <Template>
+                            <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowDataDetailDialog(data))" />
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="OrganismDTO" Property="org_code" Title="Organism Code" />
+                    <RadzenGridColumn TItem="OrganismDTO" Property="org_mst_ORGANISM" Title="Organism" />
+                    <RadzenGridColumn TItem="OrganismDTO" Property="org_mst_ORG" Title="ORG" />
+                    <RadzenGridColumn TItem="OrganismDTO" Property="org_mst_GRAM" Title="GRAM" />
+                    <RadzenGridColumn TItem="OrganismDTO" Property="org_mst_STATUS" Title="Master status" />
+                    <RadzenGridColumn TItem="OrganismDTO" Property="org_active" Title="Status" Context="data">
+                        <Template>
+                            @if (data.org_active == true)
+                            {
+                                <label>Active</label>
+                            }
+                            else
+                            {
+                                <label>Inactive</label>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+
+        <br />
+
+        <div style="text-align: right">
+            <RadzenButton class="btnCancel" Text="Cancel" Click="RedirectToInbox" />
+        </div>
+
+    </div>
+
+    <hr />
+}
+
+@if (ShowPopup)
+{
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@modelData" OnInvalidSubmit="HandleInvalidSubmit" OnValidSubmit="HandleValidSubmit">
+                        <DataAnnotationsValidator />
+
+                        <div class="container inputArea">
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col">
+                                            <LabelBox inputLabel="Organism Code" />
+                                        </div>
+                                        <div class="col">
+                                            @if (CreateMode)
+                                            {
+                                                <RadzenTextBox @bind-Value="@modelData.org_code" />
+                                                <ValidationMessage For="@(() => modelData.org_code)" />
+                                            }
+                                            else
+                                            {
+                                                <RadzenTextBox @bind-Value="@modelData.org_code" ReadOnly="true" />
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col">
+                                            <LabelBox inputLabel="Organism" />
+                                        </div>
+                                        <div class="col">
+                                            <RadzenTextBox @bind-Value="@modelData.org_mst_ORGANISM" />
+                                            <ValidationMessage For="@(() => modelData.org_mst_ORGANISM)" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col">
+                                            <LabelBox inputLabel="ORG" />
+                                        </div>
+                                        <div class="col">
+                                            <RadzenTextBox @bind-Value="@modelData.org_mst_ORG" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col">
+                                            <LabelBox inputLabel="GRAM" />
+                                        </div>
+                                        <div class="col">
+                                            <RadzenTextBox @bind-Value="@modelData.org_mst_GRAM" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col">
+                                            <LabelBox inputLabel="MASTER STATUS" />
+                                        </div>
+                                        <div class="col">
+                                            <RadzenTextBox @bind-Value="@modelData.org_mst_STATUS" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col">
+                                            <LabelBox inputLabel="Status" />
+                                        </div>
+                                        <div class="col">
+                                            <RadzenRadioButtonList @bind-Value="@modelData.org_active" TValue="bool">
+                                                <Items>
+                                                    <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                                    <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                                </Items>
+                                            </RadzenRadioButtonList>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col" style="text-align:right;">
+                                            <RadzenButton class="btnCancel" Text="Cancel" Click="ClosePopup" />
+                                        </div>
+                                        <div class="col">
+                                            <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Save" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string mst_code { get; set; }
+
+    private List<OrganismDTO> gridDatas;
+    private List<LogProcessDTO> historys;
+    OrganismDTO searchData = new OrganismDTO();
+    OrganismDTO modelData = new OrganismDTO();
+    private bool CreateMode = true;
+
+    private bool showModal = true;
+    private bool ShowPopup = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        gridDatas = await organismService.GetListByModelAsync(new OrganismDTO() { org_mst_code = mst_code });
+        //historys = await organismService.GetHistoryAsync();
+
+        showModal = false;
+    }
+
+    private async void SearchInboxData()
+    {
+        showModal = true;
+
+        gridDatas = await organismService.GetListByModelAsync(new OrganismDTO() { org_mst_code = mst_code, org_code = searchData.org_code });
+        historys = new List<LogProcessDTO>();
+
+        showModal = false;
+
+        StateHasChanged();
+    }
+
+    private void RedirectToInbox()
+    {
+        navigationManager.NavigateTo("MasterManagement/MasterTemplate/DataDetail/" + mst_code);
+    }
+
+    private async Task ShowDataDetailDialog(OrganismDTO modelData1)
+    {
+        modelData = modelData1;
+
+        if (string.IsNullOrEmpty(modelData.org_code))
+        {
+            CreateMode = true;
+            modelData = new OrganismDTO()
+            {
+                org_status = "N",
+                org_createuser = "SYSTEM"
+            };
+        }
+        else
+        {
+            CreateMode = false;
+            //modelData = await organismService.GetDataAsync(org_code);
+            modelData.org_status = "E";
+            modelData.org_updateuser = "SYSTEM";
+        }
+
+        ShowPopup = true;
+    }
+
+    void ClosePopup()
+    {
+        // Close the Popup
+        modelData = new OrganismDTO();
+        ShowPopup = false;
+
+        StateHasChanged();
+    }
+
+    private void HandleInvalidSubmit()
+    {
+
+    }
+
+    private async void HandleValidSubmit()
+    {
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (result)
+        {
+            showModal = true;
+
+            if (CreateMode)
+            {
+                //Check duplicate
+                var duplicate = await organismService.GetDataAsync(modelData.org_id.ToString());
+
+                if (string.IsNullOrEmpty(duplicate.org_code) == false)
+                {
+                    showModal = false;
+
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate code.");
+
+                    return;
+                }
+                modelData.org_createuser = loginUserData.CurrentLoginUser.Username;
+            }
+            else
+            {
+                modelData.org_updateuser = loginUserData.CurrentLoginUser.Username;
+            }
+
+            //Save data
+            var returnData = await organismService.SaveDataAsync(modelData);
+
+            showModal = false;
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save data complete.");
+
+            ClosePopup();
+        }
+    }
+}

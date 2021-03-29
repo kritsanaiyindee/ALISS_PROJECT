@@ -1,0 +1,2174 @@
+﻿@page "/MappingDetail"
+@page "/MappingDetail/{id}"
+
+@using ALISS.Data.D2_Mapping
+@using ALISS.Data
+@using ALISS.Mapping.DTO
+
+@using Radzen
+@using Radzen.Blazor
+@using BlazorInputFile
+@using Microsoft.AspNetCore.Http;
+@using System.IO;
+
+@inject IJSRuntime jsRuntime
+@inject MappingService mappingservice
+@inject WHONETColumnService whonetcolumnservice
+@inject AntibioticService   antibioticservice
+@inject WardTypeService wardTypeService
+@inject SpecimenService specimenService
+@inject OrganismService organismService
+@inject MasterTemplateService masterTemplateService
+@inject DialogService dialogService
+@inject NavigationManager navManager
+@inject WHONETService whonetService
+
+@inject TemplateUploadService fileUpload
+@inject DropDownListDataService ddlDataService
+@inject ConfigDataService configDataService
+
+<div>
+    <div class="divHead">
+        Template Files
+    </div>
+</div>
+
+
+@if (pageLoading)
+{
+    <Loading ShowModel="true" />
+    <p><em>Loading...</em></p>
+}
+else
+{
+
+
+    <EditForm Model="@mappingData" OnValidSubmit="@(() => ShowConfirmDialog("SaveMapping"))">
+        <div class="container inputArea">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="row">
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup">
+                        <div class="@classLabel">
+                            <LabelBox inputLabel="@configData.Get_Label("_Username")" />
+                        </div>
+                        <div class="@classInput">
+                            <RadzenTextBox @bind-Value="_Username" Disabled="true" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup">
+                        <div class="@classLabel">
+                            <LabelBox inputLabel="@configData.Get_Label("_ModifiedDate")" />
+                        </div>
+                        <div class="@classInput">
+                            <RadzenTextBox @bind-Value="_ModifiedDate" Disabled="true" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup">
+                        <div class="@classLabel">
+                            <LabelBox inputLabel="@configData.Get_Label("_Version")" />
+                        </div>
+                        <div class="@classInput">
+                            <RadzenTextBox @bind-Value="_Version" Disabled="true" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup">
+                        <div class="@classLabel">
+                            <LabelBox inputLabel="@configData.Get_Label("mp_startdate")" requireField="true" />
+                        </div>
+                        <div class="@classInput">
+                            <RadzenDatePicker Name="startdate" Disabled="@(_StrControl.Equals("E") ? true : false)" @bind-Value="mappingData.mp_startdate" DateFormat="dd/MM/yyyy" ReadOnly="true" Style="width:100%;" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup">
+                        <div class="@classLabel">
+                            <LabelBox inputLabel="@configData.Get_Label("mp_enddate")" />
+                        </div>
+                        <div class="@classInput">
+                            <RadzenDatePicker @bind-Value="mappingData.mp_enddate" Disabled="true" DateFormat="dd/MM/yyyy" ReadOnly="true" Style="width:100%;" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup">
+                        <div class="@classLabel">
+                            <LabelBox inputLabel="@configData.Get_Label("mp_status_str")" />
+                        </div>
+                        <div class="@classInput">
+                            <label style="text-align: left;font: Bold 16px Arial;letter-spacing: 0px;opacity: 1;">@mappingData.mp_status_str</label>
+                        </div>
+                    </div>
+                </div>
+                <hr />
+
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup">
+                        <div class="@classLabel">
+                            <LabelBox inputLabel="@configData.Get_Label("mps_Hos")" requireField="true" />
+                        </div>
+                        <div class="@classInput">
+                            <RadzenDropDown @bind-Value="mappingData.mp_hos_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name, x.hos_code, x.hos_name }).Where(x => (searchLabModel.mps_Area == null || x.arh_code == searchLabModel.mps_Area) && (searchLabModel.mps_Province == null || x.prv_code == searchLabModel.mps_Province))" ValueProperty="hos_code" TextProperty="hos_name" Change="@(args => DDL_Change("Hos", args))" Disabled="@(_StrControl.Equals("E") ? true : false)" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup">
+                        <div class="@classLabel">
+                            <LabelBox inputLabel="@configData.Get_Label("mps_Province")" requireField="true" />
+                        </div>
+                        <div class="@classInput">
+                            <RadzenDropDown @bind-Value="searchLabModel.mps_Province" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name }).Where(x => (searchLabModel.mps_Area == null || x.arh_code == searchLabModel.mps_Area)).Distinct()" ValueProperty="prv_code" TextProperty="prv_name" Change="@(args => DDL_Change("Prv", args))" Disabled="@(_StrControl.Equals("E") ? true : false)" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup">
+                        <div class="@classLabel">
+                            <LabelBox inputLabel="@configData.Get_Label("mps_Area")" requireField="true" />
+                        </div>
+                        <div class="@classInput">
+                            <RadzenDropDown @bind-Value="searchLabModel.mps_Area" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name }).Distinct()" ValueProperty="arh_code" TextProperty="arh_name" Change="@(args => DDL_Change("Arh", args))" Disabled="@(_StrControl.Equals("E") ? true : false)" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup">
+                        <div class="@classLabel">
+                            <LabelBox inputLabel="@configData.Get_Label("mps_lab")" requireField="true" />
+                        </div>
+                        <div class="@classInput">
+                            <RadzenDropDown @bind-Value="mappingData.mp_lab" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Where(x => x.hos_code == mappingData.mp_hos_code)" ValueProperty="lab_code" TextProperty="lab_name" Change="@(args => DDL_Change("Lab", args))" Disabled="@(_StrControl.Equals("E") ? true : false)" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup">
+                        <div class="@classLabel">
+                            <LabelBox inputLabel="@configData.Get_Label("_Labname")" />
+                        </div>
+                        <div class="@classInput">
+                            <RadzenTextBox @bind-Value="_Labname" Disabled="true" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup">
+                        <div class="@classLabel">
+                            <label> </label>
+                        </div>
+                        <div class="@classInput">
+                            <label> </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup">
+                        <div class="@classLabel">
+                            <LabelBox inputLabel="@configData.Get_Label("mp_program")" requireField="true" />
+                        </div>
+                        <div class="@classInput">
+                            <RadzenDropDown @bind-Value="mappingData.mp_program"
+                                            TValue="string"
+                                            Data="@(programs.Select(c => new { ID = c, Name = c }).Distinct())"
+                                            TextProperty="Name" ValueProperty="ID"
+                                            Disabled="@(_StrControl.Equals("E") ? true : false)" />
+                        </div>
+                    </div>
+                </div>
+
+                @if (mappingData.mp_program == "MLAB")
+                {
+                    <div class="col-12 col-xl-4">
+                        <div class="row justify-content-center divGroup">
+                            <div class="@classLabel">
+                                <LabelBox inputLabel="@configData.Get_Label("mp_filetype")" requireField="true" />
+                            </div>
+                            <div class="@classInput">
+                                <RadzenDropDown @bind-Value="mappingData.mp_filetype"
+                                                TValue="string"
+                                                Data="@(filetype.Select(c => new { ID = c, Name = c }).Distinct())"
+                                                TextProperty="Name" ValueProperty="ID"
+                                                Disabled="@(_StrControl.Equals("E") ? true : false)" />
+                            </div>
+                        </div>
+                    </div>
+                }
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup">
+                        <div class="@classLabel">
+                            <LabelBox inputLabel="@configData.Get_Label("mp_dateformat")" requireField="true" />
+                        </div>
+                        <div class="@classInput">
+                            <RadzenDropDown @bind-Value="mappingData.mp_dateformat"
+                                            TValue="string"
+                                            Data="@(dateformat.Select(c => new { ID = c, Name = c }).Distinct())"
+                                            TextProperty="Name" ValueProperty="ID"
+                                            Disabled="@(_StrControl.Equals("E") ? true : false)" />
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <br />
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div>
+                        <label>@configData.Get_Label("mp_AntibioticIsolateOneRec")</label><label style="color:red;">*</label>
+                    </div>
+                    <div>
+                        <RadzenRadioButtonList @bind-Value="mappingData.mp_AntibioticIsolateOneRec" TValue="bool?" Disabled="@(_StrControl.Equals("E") ? true : false)">
+                            <Items>
+                                <RadzenRadioButtonListItem Text="One row" Value=true TValue="bool?" />
+                                <RadzenRadioButtonListItem Text="More than one row" Value=false TValue="bool?" />
+                            </Items>
+                        </RadzenRadioButtonList>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div>
+                        <label>@configData.Get_Label("mp_firstlineisheader")</label><label style="color:red;">*</label>
+
+                    </div>
+                    <div>
+                        <RadzenRadioButtonList @bind-Value="mappingData.mp_firstlineisheader" TValue="bool?" Disabled="@(_StrControl.Equals("E") ? true : false)">
+                            <Items>
+                                <RadzenRadioButtonListItem Text="Yes" Value=true TValue="bool?" />
+                                <RadzenRadioButtonListItem Text="No" Value=false TValue="bool?" />
+                            </Items>
+                        </RadzenRadioButtonList>
+                    </div>
+                </div>
+            </div>
+            <br />
+        </div>
+
+        @if (_StrControl.Equals("N"))
+        {
+            <div class="row justify-content-between buttonArea">
+                <div class="col-auto">
+                    <RadzenButton Text="@configData.Get_Label("mp_detail_mappingwhonet_btn")" style="background: #0A6839;border-radius: 3px;color: #FFFFFF;" ButtonType="ButtonType.Submit" />
+                </div>
+            </div>
+        }
+        else
+        {
+            <div>
+                <RadzenTabs Change="onTabChange">
+                    <Tabs>
+                        <RadzenTabsItem Text="WHONET Fields" Selected="@(_CurrentTab == "WHONET" ? true : false)">
+                            <div>
+                                @if (mainLayout.loginUser.PagePermission.rop_create == true && Expired != true)
+                                {
+                                    <div>
+                                        <label>@configData.Get_Label("InputFile")</label>
+                                    </div>
+                                    <div class="divColon">
+                                        <label>:</label>
+                                    </div>
+                                    <div class="divInput">
+                                        <InputFile OnChange="HandleSelection"></InputFile>
+                                    </div>
+                                }
+                                <br />
+                                <br />
+                                <div class="row">
+                                    <div class="col-md-5">
+                                        <label>WHONet Field</label>
+                                        <div class="container">
+                                            <div class="row justify-content-end">
+                                                <div class="col-auto">
+                                                    <label>Rows : </label>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <RadzenDropDown @bind-Value="WHONETColumnGrid.PageSize" TValue="int" AllowFiltering="true" Data="WHONETColumnGrid.PageSizeOption" Change="SearchInboxDataWHONETColumnGrid" Style="width:50px" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <RadzenGrid AllowFiltering="true" AllowSorting="true" AllowPaging="true" PageSize="WHONETColumnGrid.PageSize" @ref="WHONETColumnGrid.radzenGrid" Data="@WHONetMasterList" ColumnWidth="70px"
+                                                    TItem="WHONETColumnDTO" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                    RowSelect="@((args) => OnWHONetFieldSeleted(args.wnc_name))" RowDoubleClick="@((args) => DoubleClickWHONETMapping())">
+                                            <Columns>
+                                                <RadzenGridColumn TItem="WHONETColumnDTO" Property="wnc_name" Title="Column Name">
+                                                    <FooterTemplate>
+                                                        <label title="@WHONETColumnGrid.FooterLabelString">@WHONETColumnGrid.FooterLabelString</label>
+                                                    </FooterTemplate>
+                                                </RadzenGridColumn>
+                                            </Columns>
+                                        </RadzenGrid>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <br />
+                                        @if (mainLayout.loginUser.PagePermission.rop_create == true && Expired != true)
+                                        {
+                                            <label>Plase select a field for mapping data.</label>
+                                            <RadzenButton Icon="add" Text="Mapping" class="btnAdd"
+                                                          Click="@(() => ShowWHONetMappingDialog("N", ""))"
+                                                          Disabled="@(_WHOnetFieldSelected != "" && _TemplateFieldSelected != "" ? false : true)" />
+                                        }
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label>Data Fields in the original file</label>
+                                        <div class="container">
+                                            <div class="row justify-content-end">
+                                                <div class="col-auto">
+                                                    <label>Rows : </label>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <RadzenDropDown @bind-Value="TemplateFileGrid.PageSize" TValue="int" AllowFiltering="true" Data="TemplateFileGrid.PageSizeOption" Change="SearchInboxDataTemplateFileGrid" Style="width:50px" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <RadzenGrid AllowFiltering="true" AllowSorting="true" AllowPaging="true" PageSize="TemplateFileGrid.PageSize" @ref="TemplateFileGrid.radzenGrid" Data="@gridTemplateFileDatas" ColumnWidth="70px"
+                                                    TItem="TemplateFileListsDTO" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                    RowSelect="@((args) => OnTemplateFieldSeleted(args.tmp_header))" RowDoubleClick="@((args) => DoubleClickWHONETMapping())">
+                                            <Columns>
+                                                <RadzenGridColumn TItem="TemplateFileListsDTO" Property="tmp_header" Title="Column Name">
+                                                    <FooterTemplate>
+                                                        <label title="@TemplateFileGrid.FooterLabelString">@TemplateFileGrid.FooterLabelString</label>
+                                                    </FooterTemplate>
+                                                </RadzenGridColumn>
+                                                <RadzenGridColumn TItem="TemplateFileListsDTO" Property="tmp_value" Title="Sample Value" />
+                                            </Columns>
+                                        </RadzenGrid>
+
+                                    </div>
+
+                                    <br />
+                                </div>
+                            </div>
+
+                            <br />
+                            <label>Mapping Result</label>
+                            <div style="width:90%;margin:0px auto;">
+                                <div class="container">
+                                    <div class="row justify-content-end">
+                                        <div class="col-auto">
+                                            <label>Rows : </label>
+                                        </div>
+                                        <div class="col-auto">
+                                            <RadzenDropDown @bind-Value="whonetGrid.PageSize" TValue="int" AllowFiltering="true" Data="whonetGrid.PageSizeOption" Change="SearchInboxDataWHONetMapping" Style="width:50px" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <RadzenGrid AllowFiltering="true" AllowSorting="true" AllowPaging="true"
+                                            PageSize="whonetGrid.PageSize" @ref="whonetGrid.radzenGrid" Data="@gridWHONetDatas" TItem="WHONetMappingListsDTO" ColumnWidth="120px" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+                                    <Columns>
+                                        <RadzenGridColumn TItem="WHONetMappingListsDTO" Property="" Title="" Width="50px" Filterable="false" Sortable="false" Context="data">
+                                            <Template>
+                                                <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowWHONetMappingDialog("E",data.wnm_id.ToString()))" />
+                                            </Template>
+                                        </RadzenGridColumn>
+                                        <RadzenGridColumn TItem="WHONetMappingListsDTO" Property="wnm_whonetfield" Title="WHONET Field">
+                                            <FooterTemplate>
+                                                <label title="@whonetGrid.FooterLabelString">@whonetGrid.FooterLabelString</label>
+                                            </FooterTemplate>
+                                        </RadzenGridColumn>
+                                        <RadzenGridColumn TItem="WHONetMappingListsDTO" Property="wnm_originalfield" Title="Original File" />
+                                        <RadzenGridColumn TItem="WHONetMappingListsDTO" Property="wnm_type" Title="Data Type" />
+                                        <RadzenGridColumn TItem="WHONetMappingListsDTO" Property="wnm_fieldformat" Title="Format" />
+                                        <RadzenGridColumn TItem="WHONetMappingListsDTO" Property="wnm_fieldlength" Title="Lenght" />
+                                        <RadzenGridColumn TItem="WHONetMappingListsDTO" Property="wnm_encrypt" Title="Encrypt" Context="data">
+                                            <Template>
+                                                <RadzenCheckBox TValue="bool?" @bind-Value="data.wnm_encrypt" Disabled="true" />
+                                            </Template>
+                                        </RadzenGridColumn>
+                                        <RadzenGridColumn TItem="WHONetMappingListsDTO" Property="wnm_mandatory" Title="Mandatory" Context="data">
+                                            <Template>
+                                                <RadzenCheckBox TValue="bool?" @bind-Value="data.wnm_mandatory" Disabled="true" />
+                                            </Template>
+                                        </RadzenGridColumn>
+                                        @if (mainLayout.loginUser.PagePermission.rop_edit == true && Expired != true)
+                                        {
+                                            <RadzenGridColumn TItem="WHONetMappingListsDTO" Property="" Title="" Width="50px" Context="data" Filterable="false" Sortable="false">
+                                                <Template>
+                                                    <RadzenButton Icon="close" Style="background: #F10303" Click="@(() => ShowWHONetMappingDialog("D",data.wnm_id.ToString()))" />
+                                                </Template>
+                                            </RadzenGridColumn>
+                                        }
+                                    </Columns>
+
+                                </RadzenGrid>
+                            </div>
+
+                        </RadzenTabsItem>
+                        <RadzenTabsItem Text="Specimen" Selected="@(_CurrentTab == "Specimen" ? true : false)">
+                            @if (mainLayout.loginUser.PagePermission.rop_create == true && Expired != true)
+                            {
+                                <div style="text-align:right;">
+                                    <RadzenButton Icon="add" Text="Add New" style="background: #0A6839;border-radius: 3px;color: #FFFFFF;" Click="@(() => ShowSpecimenMappingDialog("N",""))" />
+                                </div>
+                            }
+                            <br />
+                            <div class="container">
+                                <div class="row justify-content-end">
+                                    <div class="col-auto">
+                                        <label>Rows : </label>
+                                    </div>
+                                    <div class="col-auto">
+                                        <RadzenDropDown @bind-Value="specimenGrid.PageSize" TValue="int" AllowFiltering="true" Data="specimenGrid.PageSizeOption" Change="SearchInboxDataSpecimen" Style="width:50px" />
+                                    </div>
+                                </div>
+                            </div>
+                            <RadzenGrid AllowFiltering="true" AllowSorting="true" AllowPaging="true"
+                                        PageSize="specimenGrid.PageSize" @ref="specimenGrid.radzenGrid" Data="@gridSpecimenDatas" TItem="SpecimenMappingListsDTO" ColumnWidth="120px" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+                                <Columns>
+                                    <RadzenGridColumn TItem="SpecimenMappingListsDTO" Property="" Title="" Width="50px" Context="data" Filterable="false" Sortable="false">
+                                        <Template>
+                                            <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowSpecimenMappingDialog("E",data.spm_id.ToString()))" />
+                                        </Template>
+                                    </RadzenGridColumn>
+                                    <RadzenGridColumn TItem="SpecimenMappingListsDTO" Property="spm_whonetcode" Title="WHONET Code">
+                                        <FooterTemplate>
+                                            <label title="@specimenGrid.FooterLabelString">@specimenGrid.FooterLabelString</label>
+                                        </FooterTemplate>
+                                    </RadzenGridColumn>
+                                    <RadzenGridColumn TItem="SpecimenMappingListsDTO" Property="spm_localspecimencode" Title="Source" />
+                                    <RadzenGridColumn TItem="SpecimenMappingListsDTO" Property="spm_localspecimendesc" Title="Csource" />
+                                    @if (mainLayout.loginUser.PagePermission.rop_edit == true && Expired != true)
+                                    {
+                                        <RadzenGridColumn TItem="SpecimenMappingListsDTO" Property="" Title="" Width="50px" Context="data" Filterable="false" Sortable="false">
+                                            <Template>
+                                                <RadzenButton Icon="close" Style="background: #F10303" Click="@(() => ShowSpecimenMappingDialog("D",data.spm_id.ToString()))" />
+                                            </Template>
+                                        </RadzenGridColumn>
+                                    }
+                                </Columns>
+
+                            </RadzenGrid>
+
+                        </RadzenTabsItem>
+                        <RadzenTabsItem Text="Organism" Selected="@(_CurrentTab == "Organism" ? true : false)">
+                            @if (mainLayout.loginUser.PagePermission.rop_create == true && Expired != true)
+                            {
+                                <div style="text-align:right;">
+                                    <RadzenButton Icon="add" Text="Add New" style="background: #0A6839;border-radius: 3px;color: #FFFFFF;" Click="@(() => ShowOrganismMappingDialog("N", ""))" />
+                                </div>
+                            }
+                            <br />
+                            <div class="container">
+                                <div class="row justify-content-end">
+                                    <div class="col-auto">
+                                        <label>Rows : </label>
+                                    </div>
+                                    <div class="col-auto">
+                                        <RadzenDropDown @bind-Value="organismGrid.PageSize" TValue="int" AllowFiltering="true" Data="organismGrid.PageSizeOption" Change="SearchInboxDataOrganism" Style="width:50px" />
+                                    </div>
+                                </div>
+                            </div>
+                            <RadzenGrid AllowFiltering="true" AllowSorting="true" AllowPaging="true"
+                                        PageSize="organismGrid.PageSize" @ref="organismGrid.radzenGrid" Data="@gridOrganismDatas" TItem="OrganismMappingListsDTO" ColumnWidth="120px" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+                                <Columns>
+                                    <RadzenGridColumn TItem="OrganismMappingListsDTO" Property="" Title="" Width="50px" Context="data" Filterable="false" Sortable="false">
+                                        <Template>
+                                            <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowOrganismMappingDialog("E",data.ogm_id.ToString()))" />
+                                        </Template>
+                                    </RadzenGridColumn>
+                                    <RadzenGridColumn TItem="OrganismMappingListsDTO" Property="ogm_whonetcode" Title="WHONET Code">
+                                        <FooterTemplate>
+                                            <label title="@organismGrid.FooterLabelString">@organismGrid.FooterLabelString</label>
+                                        </FooterTemplate>
+                                    </RadzenGridColumn>
+                                    <RadzenGridColumn TItem="OrganismMappingListsDTO" Property="ogm_whonetdesc" Title="WHONET Description" />
+                                    <RadzenGridColumn TItem="OrganismMappingListsDTO" Property="ogm_localorganismcode" Title="Local code" />
+                                    <RadzenGridColumn TItem="OrganismMappingListsDTO" Property="ogm_localorganismdesc" Title="Local Description" />
+                                    @if (mainLayout.loginUser.PagePermission.rop_edit == true && Expired != true)
+                                    {
+                                        <RadzenGridColumn TItem="OrganismMappingListsDTO" Property="" Title="" Width="50px" Context="data" Filterable="false" Sortable="false">
+                                            <Template>
+                                                <RadzenButton Icon="close" Style="background: #F10303" Click="@(() => ShowOrganismMappingDialog("D", data.ogm_id.ToString()))" />
+                                            </Template>
+                                        </RadzenGridColumn>
+                                    }
+                                </Columns>
+                            </RadzenGrid>
+                        </RadzenTabsItem>
+                        <RadzenTabsItem Text="Ward Type" Selected="@(_CurrentTab == "WardType" ? true : false)">
+                            @if (mainLayout.loginUser.PagePermission.rop_create == true && Expired != true)
+                            {
+                                <div style="text-align:right;">
+                                    <RadzenButton Icon="add" Text="Add New" style="background: #0A6839;border-radius: 3px;color: #FFFFFF;" Click="@(() => ShowWardTypeMappingDialog("N",""))" />
+                                </div>
+                            }
+                            <br />
+                            <div class="container">
+                                <div class="row justify-content-end">
+                                    <div class="col-auto">
+                                        <label>Rows : </label>
+                                    </div>
+                                    <div class="col-auto">
+                                        <RadzenDropDown @bind-Value="wardTypeGrid.PageSize" TValue="int" AllowFiltering="true" Data="wardTypeGrid.PageSizeOption" Change="SearchInboxDataWardType" Style="width:50px" />
+                                    </div>
+                                </div>
+                            </div>
+                            <RadzenGrid AllowFiltering="true" AllowSorting="true" AllowPaging="true"
+                                        PageSize="wardTypeGrid.PageSize" @ref="wardTypeGrid.radzenGrid" Data="@gridWardTypeDatas" TItem="WardTypeMappingListsDTO" ColumnWidth="120px" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+                                <Columns>
+                                    <RadzenGridColumn TItem="WardTypeMappingListsDTO" Property="" Title="" Width="50px" Context="data" Filterable="false" Sortable="false">
+                                        <Template>
+                                            <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowWardTypeMappingDialog("E",data.wdm_id.ToString()))" />
+                                        </Template>
+                                    </RadzenGridColumn>
+                                    <RadzenGridColumn TItem="WardTypeMappingListsDTO" Property="wdm_wardtype" Title="Ward Type">
+                                        <FooterTemplate>
+                                            <label title="@wardTypeGrid.FooterLabelString">@wardTypeGrid.FooterLabelString</label>
+                                        </FooterTemplate>
+                                    </RadzenGridColumn>
+                                    <RadzenGridColumn TItem="WardTypeMappingListsDTO" Property="wdm_warddesc" Title="Description" />
+                                    <RadzenGridColumn TItem="WardTypeMappingListsDTO" Property="wdm_localwardname" Title="Local Ward" />
+                                    @if (mainLayout.loginUser.PagePermission.rop_edit == true && Expired != true)
+                                    {
+                                        <RadzenGridColumn TItem="WardTypeMappingListsDTO" Property="" Title="" Width="50px" Context="data" Filterable="false" Sortable="false">
+                                            <Template>
+                                                <RadzenButton Icon="close" Style="background: #F10303" Click="@(() => ShowWardTypeMappingDialog("D", data.wdm_id.ToString()))" />
+                                            </Template>
+                                        </RadzenGridColumn>
+                                    }
+                                </Columns>
+                            </RadzenGrid>
+
+                        </RadzenTabsItem>
+                    </Tabs>
+                </RadzenTabs>
+
+            </div>
+        }
+
+        <br />
+        <div class="row justify-content-between buttonArea">
+            <div class="col-auto">
+                <RadzenButton Text="Back" class="btnCancel" Click="@OpenMappingIndex" />
+            </div>
+            @if (_StrControl != "N" && mainLayout.loginUser.PagePermission.rop_approve == true && Expired != true)
+            {
+                <div class="col-auto">
+                    <RadzenButton Text="Approve" class="btnSave" Click="@(() => ShowConfirmDialog("ApproveMapping"))" disabled="@(mappingData.mp_status == 'A' ? true : false)" />
+                </div>
+            }
+
+            @*  @if ((mainLayout.loginUser.PagePermission.rop_create == true || mainLayout.loginUser.PagePermission.rop_edit == true) && Expired != true)*@
+            @if (_StrControl == "N")
+            {
+
+                <div class="col-auto">
+                    <RadzenButton Text="Save" class="btnSave" ButtonType="ButtonType.Submit" />
+                </div>
+            }
+        </div>
+
+
+    </EditForm>
+
+}
+
+@if (ShowWHONETMappingPopup)
+{
+
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@objWHONetMapping" OnValidSubmit="()=> SaveWHONetMappingData()">
+                        <DataAnnotationsValidator />
+                        <div class="container inputArea">
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("wnm_whonetfield")" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenTextBox @bind-Value="@objWHONetMapping.wnm_whonetfield" Disabled="true" />
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("wnm_originalfield")" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenTextBox @bind-Value="@objWHONetMapping.wnm_originalfield" Disabled="true" />
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (mappingData.mp_AntibioticIsolateOneRec == false)
+                            {
+                                @if (objWHONetMapping.wnm_status == 'N')
+                                {
+                                    <div class="row justify-content-center">
+                                        <div class="col-xl-12">
+                                            <div class="row justify-content-center divGroup">
+                                                <div class="@classLabel">
+                                                    <LabelBox inputLabel="@configData.Get_Label("_isAntibioticField")" />
+                                                </div>
+                                                <div class="@classInput">
+                                                    <RadzenCheckBox TValue="bool" @bind-Value="_isAntibioticField" Change="@ClearAntibiotic" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                }
+                                <div class="row justify-content-center">
+                                    <div class="col-xl-12">
+                                        <div class="row justify-content-center divGroup">
+                                            <div class="@classLabel">
+                                                <LabelBox inputLabel="@configData.Get_Label("wnm_antibioticcolumn")" />
+                                            </div>
+                                            <div class="@classInput">
+                                                <RadzenDropDown @bind-Value="objWHONetMapping.wnm_antibioticcolumn" AllowClear="true" TValue="string"
+                                                                Data="@gridTemplateFileDatas" TextProperty="tmp_header" ValueProperty="tmp_header"
+                                                                Placeholder="Select antibiotic column..." disabled="@(_isAntibioticField == true ? false : true)" />
+                                                @if (!checkAntibioticColumn)
+                                                {
+                                                    <br />
+                                                    <div class="validation-message">Please select antibiotic column.</div>
+                                                }
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row justify-content-center">
+                                    <div class="col-xl-12">
+                                        <div class="row justify-content-center divGroup">
+                                            <div class="@classLabel">
+                                                <LabelBox inputLabel="@configData.Get_Label("wnm_antibiotic")" />
+                                            </div>
+                                            <div class="@classInput">
+                                                <RadzenTextBox @bind-Value="@objWHONetMapping.wnm_antibiotic" disabled="@(_isAntibioticField == true ? false : true)" />
+                                                @if (!checkAntibioticName)
+                                                {
+                                                    <br />
+                                                    <div class="validation-message">Please input antibiotic name.</div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            }
+
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("wnm_type")" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenTextBox @bind-Value="@objWHONetMapping.wnm_type" Disabled="true" />
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("wnm_fieldformat")" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenTextBox @bind-Value="@objWHONetMapping.wnm_fieldformat" disabled="@(objWHONetMapping.wnm_type == "Date" ? false : true)" />
+                                            @if (!checkFormat)
+                                            {
+                                                <br />
+                                                <div class="validation-message">Please input field format.</div>
+                                            }
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("wnm_fieldlength")" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenNumeric @bind-Value="@objWHONetMapping.wnm_fieldlength" Disabled="true" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("wnm_encrypt")" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenCheckBox TValue="bool?" @bind-Value="@objWHONetMapping.wnm_encrypt" Disabled="true" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("wnm_mandatory")" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenCheckBox TValue="bool?" @bind-Value="@objWHONetMapping.wnm_mandatory" Disabled="true" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup buttonArea">
+                                        <div class="col-auto">
+                                            <RadzenButton class="btnCancel" Text="Cancel" Click="@(() => ControlPopup("WHONET",false))" />
+                                        </div>
+                                        @if ((mainLayout.loginUser.PagePermission.rop_create == true || mainLayout.loginUser.PagePermission.rop_edit == true) && Expired != true)
+                                        {
+                                            <div class="col-auto">
+                                                <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Save" />
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </EditForm>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+}
+
+@if (ShowSpecimenMappingPopup)
+{
+
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@objSpecimenMapping" OnValidSubmit="()=> SaveSpecimenMappingData()">
+                        <DataAnnotationsValidator />
+                        <div class="container inputArea">
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("spm_whonetcode")" requireField="true" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenDropDownDataGrid @bind-Value="objSpecimenMapping.spm_whonetcode" disabled="@(objSpecimenMapping.spm_status == 'E' ? true : false)" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="specimenDatas" TextProperty="spc_code" ValueProperty="spc_code">
+                                                <Columns>
+                                                    <RadzenDropDownDataGridColumn Property="spc_code" Title="Code" Width="100px" />
+                                                    <RadzenDropDownDataGridColumn Property="spc_name" Title="Name" Width="200px" />
+                                                </Columns>
+                                            </RadzenDropDownDataGrid>
+                                            <ValidationMessage For="@(() => objSpecimenMapping.spm_whonetcode)" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("spm_localspecimencode")" requireField="true" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenTextBox @bind-Value="@objSpecimenMapping.spm_localspecimencode" disabled="@(objSpecimenMapping.spm_status == 'E' ? true : false)" />
+                                            <ValidationMessage For="@(() => objSpecimenMapping.spm_localspecimencode)" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("spm_localspecimendesc")" requireField="true" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenTextBox @bind-Value="@objSpecimenMapping.spm_localspecimendesc" />
+                                            <ValidationMessage For="@(() => objSpecimenMapping.spm_localspecimendesc)" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup buttonArea">
+                                        <div class="col-auto">
+                                            <RadzenButton class="btnCancel" Text="Cancel" Click="@(() => ControlPopup("Specimen",false))" />
+                                        </div>
+                                        @if ((mainLayout.loginUser.PagePermission.rop_create == true || mainLayout.loginUser.PagePermission.rop_edit == true) && Expired != true)
+                                        {
+                                            <div class="col-auto">
+                                                <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Save" />
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+
+                        </div>
+                    </EditForm>
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+}
+
+@if (ShowOrganismMappingPopup)
+{
+
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@objOrganismMapping" OnValidSubmit="()=> SaveOrganismMappingData()">
+                        <DataAnnotationsValidator />
+
+                        <div class="container inputArea">
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("ogm_whonetcode")" requireField="true" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenDropDownDataGrid @bind-Value="objOrganismMapping.ogm_whonetcode" disabled="@(objOrganismMapping.ogm_status == 'E' ? true : false)" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true"
+                                                                    Placeholder="Select..." Data="organismDatas" TextProperty="org_mst_ORG" ValueProperty="org_mst_ORG"
+                                                                    Change="OrganismCode_DDL_Change">
+                                                <Columns>
+                                                    <RadzenDropDownDataGridColumn Property="org_mst_ORG" Title="Code" Width="100px" />
+                                                    <RadzenDropDownDataGridColumn Property="org_mst_ORGANISM" Title="Name" Width="200px" />
+                                                </Columns>
+                                            </RadzenDropDownDataGrid>
+                                            <ValidationMessage For="@(() => objOrganismMapping.ogm_whonetcode)" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("ogm_whonetdesc")" requireField="true" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenTextBox @bind-Value="@objOrganismMapping.ogm_whonetdesc" Disabled="true" />
+                                            <ValidationMessage For="@(() => objOrganismMapping.ogm_whonetdesc)" />
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("ogm_localorganismcode")" requireField="true" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenTextBox @bind-Value="@objOrganismMapping.ogm_localorganismcode" disabled="@(objOrganismMapping.ogm_status == 'E' ? true : false)" />
+                                            <ValidationMessage For="@(() => objOrganismMapping.ogm_localorganismcode)" />
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("ogm_localorganismdesc")" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenTextBox @bind-Value="@objOrganismMapping.ogm_localorganismdesc" />
+                                            <ValidationMessage For="@(() => objOrganismMapping.ogm_localorganismdesc)" />
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup buttonArea">
+                                        <div class="col-auto">
+                                            <RadzenButton class="btnCancel" Text="Cancel" Click="@(() => ControlPopup("Organism",false))" />
+                                        </div>
+                                        @if ((mainLayout.loginUser.PagePermission.rop_create == true || mainLayout.loginUser.PagePermission.rop_edit == true) && Expired != true)
+                                        {
+                                            <div class="col-auto">
+                                                <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Save" />
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+}
+
+@if (ShowWardTypeMappingPopup)
+{
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@objWardTypeMapping" OnValidSubmit="()=> SaveWardTypeMappingData()">
+                        <DataAnnotationsValidator />
+                        <div class="container inputArea">
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("wdm_wardtype")" requireField="true" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenDropDownDataGrid @bind-Value="objWardTypeMapping.wdm_wardtype" disabled="@(objWardTypeMapping.wdm_status == 'E' ? true : false)"
+                                                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string"
+                                                                    AllowFiltering="true" Placeholder="Select..." Data="wardTypeDatas"
+                                                                    TextProperty="wrd_code" ValueProperty="wrd_code"
+                                                                    Change="WardType_DDL_Change">
+                                                <Columns>
+                                                    <RadzenDropDownDataGridColumn Property="wrd_code" Title="Code" Width="100px" />
+                                                    <RadzenDropDownDataGridColumn Property="wrd_name" Title="Name" Width="200px" />
+                                                </Columns>
+                                            </RadzenDropDownDataGrid>
+                                            <ValidationMessage For="@(() => objWardTypeMapping.wdm_wardtype)" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("wdm_warddesc")" requireField="true" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenTextBox @bind-Value="@objWardTypeMapping.wdm_warddesc" Disabled="true" />
+                                            <ValidationMessage For="@(() => objWardTypeMapping.wdm_warddesc)" />
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="@classLabel">
+                                            <LabelBox inputLabel="@configData.Get_Label("wdm_localwardname")" requireField="true" />
+                                        </div>
+                                        <div class="@classInput">
+                                            <RadzenTextBox @bind-Value="@objWardTypeMapping.wdm_localwardname" disabled="@(objWardTypeMapping.wdm_status == 'E' ? true : false)" />
+                                            <ValidationMessage For="@(() => objWardTypeMapping.wdm_localwardname)" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup buttonArea">
+                                        <div class="col-auto">
+                                            <RadzenButton class="btnCancel" Text="Cancel" Click="@(() => ControlPopup("WardType",false))" />
+                                        </div>
+                                        @if ((mainLayout.loginUser.PagePermission.rop_create == true || mainLayout.loginUser.PagePermission.rop_edit == true) && Expired != true)
+                                        {
+                                            <div class="col-auto">
+                                                <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Save" />
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </EditForm>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+}
+
+
+<Loading ShowModel="showModal" />
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+
+    [Parameter]
+    public string id { get; set; }
+
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+
+    RadzenGridCustom<WHONetMappingListsDTO> whonetGrid = new RadzenGridCustom<WHONetMappingListsDTO>();
+    RadzenGridCustom<SpecimenMappingListsDTO> specimenGrid = new RadzenGridCustom<SpecimenMappingListsDTO>();
+    RadzenGridCustom<OrganismMappingListsDTO> organismGrid = new RadzenGridCustom<OrganismMappingListsDTO>();
+    RadzenGridCustom<WardTypeMappingListsDTO> wardTypeGrid = new RadzenGridCustom<WardTypeMappingListsDTO>();
+    RadzenGridCustom<TemplateFileListsDTO> TemplateFileGrid = new RadzenGridCustom<TemplateFileListsDTO>();
+    RadzenGridCustom<WHONETColumnDTO> WHONETColumnGrid = new RadzenGridCustom<WHONETColumnDTO>();
+
+    private ConfigData configData = new ConfigData();
+    private List<HospitalLabDataDTO> lab_ddl_List;
+    private List<WardTypeDTO> wardTypeDatas;
+    private List<SpecimenDTO> specimenDatas;
+    private List<AntibioticDTO> antibioticDatas;
+    private List<OrganismDTO> organismDatas;
+
+    private List<WHONetMappingListsDTO> gridWHONetDatas;
+    WHONetMappingSearch searchWHONet = new WHONetMappingSearch();
+    WHONetMappingDataDTO objWHONetMapping = new WHONetMappingDataDTO();
+
+    private List<SpecimenMappingListsDTO> gridSpecimenDatas;
+    SpecimenMappingSearch searchSpecimen = new SpecimenMappingSearch();
+    SpecimenMappingDataDTO objSpecimenMapping = new SpecimenMappingDataDTO();
+
+    private List<OrganismMappingListsDTO> gridOrganismDatas;
+    OrganismMappingSearch searchOrganism = new OrganismMappingSearch();
+    OrganismMappingDataDTO objOrganismMapping = new OrganismMappingDataDTO();
+
+    private List<WardTypeMappingListsDTO> gridWardTypeDatas;
+    WardTypeMappingSearch searchWardType = new WardTypeMappingSearch();
+    WardTypeMappingDataDTO objWardTypeMapping = new WardTypeMappingDataDTO();
+
+    private List<TemplateFileListsDTO> gridTemplateFileDatas;
+
+    private List<WHONETColumnDTO> WHONetMasterList;
+    private List<AntibioticDTO> AntibioticMasterList;
+
+
+    private string _Username;
+    private string _Group;
+    private string _ModifiedDate;
+    private string _Version;
+    private string _StrControl = "";
+    private string _Program;
+    private string _WHOnetFieldSelected = "";
+    private string _TemplateFieldSelected = "";
+    private string _isAntibioticFieldTest = "";
+    private string _Labname = "";
+    private bool _isAntibioticField = false;
+    private int value = 1;
+    private bool showModal = false;
+    private string _CurrentTab = "WHONET";
+
+    private bool ShowWHONETMappingPopup = false;
+    private bool ShowSpecimenMappingPopup = false;
+    private bool ShowOrganismMappingPopup = false;
+    private bool ShowWardTypeMappingPopup = false;
+
+    private bool Expired = false;
+    private bool pageLoading = true;
+    private string tempid = "";
+
+    MappingSearchDTO searchLabModel = new MappingSearchDTO();
+
+    string[] programs = new[]
+           {
+                "MLAB",
+                "WHONET",
+                "OTHER"
+            };
+
+
+    string[] filetype = new[]
+           {
+                "DISK",
+                "MIC",
+                "ETEST",
+                "ALL(DISK+MIC)"
+            };
+
+    string[] dateformat = new[]
+          {
+                "dd/mm/yyyy",
+                "mm/dd/yyyy",
+                "dd-mm-yyyy",
+                "mm-dd-yyyy"
+            };
+
+
+    MappingDataDTO mappingData = new MappingDataDTO();
+
+
+    Dictionary<DateTime, string> events = new Dictionary<DateTime, string>();
+
+
+    IFileListEntry file;
+    async Task HandleSelection(IFileListEntry[] files)
+    {
+        showModal = true;
+        file = files.FirstOrDefault();
+
+        var type = Path.GetExtension(file.Name);
+        if (type != ".xlsx" && type != ".xls" && type != ".csv" && type != ".txt")
+        {
+            if (file.Type != "")
+            {
+                showModal = false;
+                await jsRuntime.InvokeAsync<object>("ShowAlert", "ไม่สามารถ Upload ไฟล์ " + file.Name);
+                return;
+            }
+        }
+
+        if (file != null)
+        {
+            gridTemplateFileDatas = await fileUpload.UploadAsync(file, mappingData.mp_firstlineisheader);
+            if (gridTemplateFileDatas.Count == 0)
+            {
+                showModal = false;
+                await jsRuntime.InvokeAsync<object>("ShowAlert", "ไม่สามารถอ่านข้อมูลได้");
+                return;
+            }
+
+            StateHasChanged();
+            showModal = false;
+        }
+        else
+        {
+            showModal = false;
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "ไม่สามารถอ่านข้อมูลได้");
+            return;
+        }
+    }
+
+
+
+    void OnWHONetFieldSeleted(string whonetfield)
+    {
+        _WHOnetFieldSelected = whonetfield;
+
+    }
+
+    void OnTemplateFieldSeleted(string TemplateField)
+    {
+        _TemplateFieldSelected = TemplateField;
+    }
+
+    void onTabChange()
+    {
+        _WHOnetFieldSelected = "";
+        _TemplateFieldSelected = "";
+
+    }
+
+    void DropdownChange(object value, string name)
+    {
+        var str = value is IEnumerable<object> ? string.Join(", ", (IEnumerable<object>)value) : value;
+
+        events.Add(DateTime.Now, $"{name} value changed to {str}");
+        StateHasChanged();
+    }
+
+
+
+    private void DDL_Change(string ddl_name, object value)
+    {
+        if (ddl_name == "Arh" && value == null)
+        {
+            searchLabModel.mps_Province = null;
+            searchLabModel.mps_Hos = null;
+            searchLabModel.mps_lab = null;
+            mappingData.mp_hos_code = null;
+            mappingData.mp_lab = null;
+            _Labname = "";
+        }
+        else if (ddl_name == "Prv" && value == null)
+        {
+            searchLabModel.mps_Hos = null;
+            searchLabModel.mps_lab = null;
+            mappingData.mp_hos_code = null;
+            mappingData.mp_lab = null;
+            _Labname = "";
+        }
+        else if (ddl_name == "Prv" && value != null)
+        {
+            var prv_select = lab_ddl_List.FirstOrDefault(x => x.prv_code == value.ToString());
+
+            searchLabModel.mps_Area = prv_select.arh_code;
+        }
+        else if (ddl_name == "Hos" && value == null)
+        {
+            searchLabModel.mps_lab = null;
+            mappingData.mp_hos_code = null;
+            mappingData.mp_lab = null;
+            _Labname = "";
+        }
+        else if (ddl_name == "Hos" && value != null)
+        {
+            var hos_select = lab_ddl_List.FirstOrDefault(x => x.hos_code == value.ToString());
+
+            searchLabModel.mps_Province = hos_select.prv_code;
+            searchLabModel.mps_Area = hos_select.arh_code;
+            searchLabModel.mps_lab = null;
+            mappingData.mp_hos_code = hos_select.hos_code;
+            mappingData.mp_lab = null;
+            _Labname = "";
+        }
+        else if (ddl_name == "Lab" && value == null)
+        {
+
+            mappingData.mp_lab = null;
+            _Labname = "";
+        }
+        else if (ddl_name == "Lab" && value != null)
+        {
+            var lab_select = lab_ddl_List.FirstOrDefault(x => x.lab_code == value.ToString() && x.hos_code == mappingData.mp_hos_code); //Change 20/07/2020
+
+            mappingData.mp_lab = lab_select.lab_code;
+            _Labname = lab_select.lab_name;
+        }
+
+
+
+        StateHasChanged();
+    }
+    void Change(DateTime? value, string name, string format)
+    {
+        events.Add(DateTime.Now, $"{name} value changed to {value?.ToString(format)}");
+        StateHasChanged();
+    }
+
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0401") == false) navManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = "MNU_0401" });
+
+            var searchData = new HospitalLabDataDTO()
+            {
+                arh_code = searchLabModel.mps_Area = mainLayout.loginUser.arh_code,
+                prv_code = searchLabModel.mps_Province = mainLayout.loginUser.prv_code,
+                hos_code = searchLabModel.mps_Hos = mainLayout.loginUser.hos_code,
+                lab_code = searchLabModel.mps_lab = mainLayout.loginUser.lab_code
+            };
+
+            lab_ddl_List = await ddlDataService.GetAllLabListByModelAsync(searchData);
+
+
+
+            //_Username = mainLayout.loginUser.Username;
+            _Group = mainLayout.loginUser.hos_name;
+
+            var searchMasterTemplate = new MasterTemplateSearchDTO();
+            var ActiveMasterTemplate = await masterTemplateService.GetListByModelActiveAsync(searchMasterTemplate);
+
+            if (tempid != "")
+                id = tempid;
+
+            if (string.IsNullOrEmpty(id))
+            {
+                _StrControl = "N";
+
+                if (ActiveMasterTemplate == null)
+                {
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "ไม่พบ Master Template ที่มีสถานะเป็น Active (กรุณาติดต่อผู้ดูแลระบบ)");
+                    return;
+                    OpenMappingIndex();
+                }
+                else
+                {
+                    mappingData.mp_mst_code = ActiveMasterTemplate.mst_code;
+                    mappingData.mp_firstlineisheader = true;
+                    _Version = mappingData.mp_mst_code;
+                }
+
+            }
+            else
+            {
+
+                _StrControl = "E";
+                mappingData = await mappingservice.GetMappingDataAsync(id);
+
+                if (mappingData.mp_enddate != null)
+                {
+                    if (mappingData.mp_enddate < DateTime.Now) Expired = true;
+
+                }
+                if (ActiveMasterTemplate != null)
+                {
+                    if (mappingData.mp_mst_code != ActiveMasterTemplate.mst_code)
+                    {
+                        await jsRuntime.InvokeAsync<object>("ShowAlert", "กรุณาสร้าง Template Mapping ใหม่เนื่องจาก Master Template (" + mappingData.mp_mst_code + ") ไม่ตรงกับ Version ปัจจุบัน (" + ActiveMasterTemplate.mst_code + ")");
+                        return;
+                        OpenMappingIndex();
+                    }
+                }
+                if (mappingData.mp_status != 'A')
+                {
+                    mappingData.mp_status = 'E';
+                }
+
+                _Username = mappingData.mp_updateuser;
+                _ModifiedDate = mappingData.mp_updatedate.ToString();
+                _Version = mappingData.mp_version.ToString() + " (" + mappingData.mp_mst_code + ")";
+                _Program = mappingData.mp_program;
+                searchWHONet.wnm_mappingid = mappingData.mp_id;
+                searchWHONet.wnm_mst_code = mappingData.mp_mst_code;
+                searchSpecimen.spm_mappingid = mappingData.mp_id;
+                searchSpecimen.spm_mst_code = mappingData.mp_mst_code;
+                searchOrganism.ogm_mappingid = mappingData.mp_id;
+                searchOrganism.ogm_mst_code = mappingData.mp_mst_code;
+                searchWardType.wdm_mappingid = mappingData.mp_id;
+                searchWardType.wdm_mst_code = mappingData.mp_mst_code;
+
+
+                gridWHONetDatas = await mappingservice.GetWHONetMappingListByModelAsync(searchWHONet);
+                gridSpecimenDatas = await mappingservice.GetSpecimenMappingListByModelAsync(searchSpecimen);
+                gridOrganismDatas = await mappingservice.GetOrganismMappingListByModelAsync(searchOrganism);
+                gridWardTypeDatas = await mappingservice.GetWardTypeMappingListByModelAsync(searchWardType);
+
+                WHONETColumnDTO searchWHONETColumn = new WHONETColumnDTO();
+                searchWHONETColumn.wnc_code = mappingData.mp_mst_code;
+                WHONetMasterList = await whonetcolumnservice.GetListByModelActiveAsync(searchWHONETColumn);
+
+                // Antibiotic Name from Master
+
+                var AntibioticData = await whonetService.GetDataList_TCWHONET_Antibiotics_Async();
+                    foreach (var item in AntibioticData)
+                    {
+                        WHONetMasterList.Add(new WHONETColumnDTO()
+                        {
+                            wnc_name = item.who_ant_code
+                        });
+                    }
+
+                // End
+
+                foreach (WHONetMappingListsDTO item in gridWHONetDatas)
+                {
+                    var itemToRemove = WHONetMasterList.SingleOrDefault(r => r.wnc_name == item.wnm_whonetfield);
+                    if (itemToRemove != null)
+                        WHONetMasterList.Remove(itemToRemove);
+                }
+
+
+                var labInfo = lab_ddl_List.FirstOrDefault(x => x.lab_code == mappingData.mp_lab && x.hos_code == mappingData.mp_hos_code);
+                if (labInfo != null)
+                {
+                    _Labname = labInfo.lab_name;
+
+                    searchLabModel.mps_Hos = labInfo.hos_code;
+                    searchLabModel.mps_Province = labInfo.prv_code;
+                    searchLabModel.mps_Area = labInfo.arh_code;
+                    searchLabModel.mps_lab = labInfo.lab_code;
+
+                }
+                _StrControl = "E";
+            }
+
+            pageLoading = false;
+            StateHasChanged();
+        }
+    }
+    private async Task GetData()
+    {
+        showModal = true;
+
+        //_Username = mainLayout.loginUser.Username;
+        _Group = mainLayout.loginUser.hos_name;
+
+        var searchMasterTemplate = new MasterTemplateSearchDTO();
+        var ActiveMasterTemplate = await masterTemplateService.GetListByModelActiveAsync(searchMasterTemplate);
+
+        if (tempid != "")
+            id = tempid;
+
+        if (string.IsNullOrEmpty(id))
+        {
+            _StrControl = "N";
+
+            if (ActiveMasterTemplate == null)
+            {
+                await jsRuntime.InvokeAsync<object>("ShowAlert", "ไม่พบ Master Template ที่มีสถานะเป็น Active (กรุณาติดต่อผู้ดูแลระบบ)");
+                return;
+                OpenMappingIndex();
+            }
+            else
+            {
+                mappingData.mp_mst_code = ActiveMasterTemplate.mst_code;
+                _Version = mappingData.mp_mst_code;
+            }
+
+        }
+        else
+        {
+
+            _StrControl = "E";
+            mappingData = await mappingservice.GetMappingDataAsync(id);
+
+            if (mappingData.mp_enddate != null)
+            {
+                if (mappingData.mp_enddate < DateTime.Now) Expired = true;
+
+            }
+            if (ActiveMasterTemplate != null)
+            {
+                if (mappingData.mp_mst_code != ActiveMasterTemplate.mst_code)
+                {
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "กรุณาสร้าง Template Mapping ใหม่เนื่องจาก Master Template (" + mappingData.mp_mst_code + ") ไม่ตรงกับ Version ปัจจุบัน (" + ActiveMasterTemplate.mst_code + ")");
+                    return;
+                    OpenMappingIndex();
+                }
+            }
+            if (mappingData.mp_status != 'A')
+            {
+                mappingData.mp_status = 'E';
+            }
+
+            _Username = mappingData.mp_updateuser;
+            _ModifiedDate = mappingData.mp_updatedate.ToString();
+            _Version = mappingData.mp_version.ToString() + " (" + mappingData.mp_mst_code + ")";
+            _Program = mappingData.mp_program;
+            searchWHONet.wnm_mappingid = mappingData.mp_id;
+            searchWHONet.wnm_mst_code = mappingData.mp_mst_code;
+            searchSpecimen.spm_mappingid = mappingData.mp_id;
+            searchSpecimen.spm_mst_code = mappingData.mp_mst_code;
+            searchOrganism.ogm_mappingid = mappingData.mp_id;
+            searchOrganism.ogm_mst_code = mappingData.mp_mst_code;
+            searchWardType.wdm_mappingid = mappingData.mp_id;
+            searchWardType.wdm_mst_code = mappingData.mp_mst_code;
+
+
+            gridWHONetDatas = await mappingservice.GetWHONetMappingListByModelAsync(searchWHONet);
+            gridSpecimenDatas = await mappingservice.GetSpecimenMappingListByModelAsync(searchSpecimen);
+            gridOrganismDatas = await mappingservice.GetOrganismMappingListByModelAsync(searchOrganism);
+            gridWardTypeDatas = await mappingservice.GetWardTypeMappingListByModelAsync(searchWardType);
+
+            WHONETColumnDTO searchWHONETColumn = new WHONETColumnDTO();
+            searchWHONETColumn.wnc_code = mappingData.mp_mst_code;
+            WHONetMasterList = await whonetcolumnservice.GetListByModelActiveAsync(searchWHONETColumn);
+
+            //AntibioticDTO searchAntibiotic = new AntibioticDTO();
+            //searchAntibiotic.ant_mst_code = mappingData.mp_mst_code;
+            //AntibioticMasterList = await antibioticservice.GetListByModelActiveAsync(searchAntibiotic);
+
+            var AntibioticData = await whonetService.GetDataList_TCWHONET_Antibiotics_Async();
+            foreach (var item in AntibioticData)
+            {
+                WHONetMasterList.Add(new WHONETColumnDTO()
+                {
+                    wnc_name = item.who_ant_code
+                });
+            }
+
+            foreach (WHONetMappingListsDTO item in gridWHONetDatas)
+            {
+                var itemToRemove = WHONetMasterList.SingleOrDefault(r => r.wnc_name == item.wnm_whonetfield);
+                if (itemToRemove != null)
+                    WHONetMasterList.Remove(itemToRemove);
+            }
+
+
+            var labInfo = lab_ddl_List.FirstOrDefault(x => x.lab_code == mappingData.mp_lab && x.hos_code == mappingData.mp_hos_code);
+            _Labname = labInfo.lab_name;
+            searchLabModel.mps_Hos = labInfo.hos_code;
+            searchLabModel.mps_Province = labInfo.prv_code;
+            searchLabModel.mps_Area = labInfo.arh_code;
+            searchLabModel.mps_lab = labInfo.lab_code;
+
+
+            _StrControl = "E";
+        }
+
+
+
+        showModal = false;
+        StateHasChanged();
+    }
+
+
+    void OpenMappingIndex()
+    {
+        navManager.NavigateTo("MappingIndex");
+    }
+
+    private async Task SaveMapping()
+    {
+        showModal = true;
+
+        mappingData = await mappingservice.SaveMappingDataAsync(mappingData);
+        _StrControl = "E";
+        tempid = mappingData.mp_id.ToString();
+
+        showModal = false;
+        //navManager.NavigateTo("MappingDetail/" + id);
+        await GetData();
+        StateHasChanged();
+    }
+
+    public string dialogmessage;
+
+    async Task ShowConfirmDialog(string type)
+    {
+
+
+        if (type.Equals("SaveMapping"))
+        {
+            var chkOldMappingData = await mappingservice.GetMappingDataByModelAsync(mappingData);
+            var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Confirm save data.");
+            if (result)
+            {
+                if (_StrControl == "N")
+                {
+                    var now = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
+                    if (mappingData.mp_startdate < now)
+                    {
+                        showModal = false;
+                        await jsRuntime.InvokeAsync<object>("ShowAlert", "วันที่เริ่มใช้งานไม่สามารถมีค่าก่อนวันที่ปัจจุบัน");
+                        return;
+                    }
+
+                    if (chkOldMappingData.mp_id != Guid.Empty)
+                    {
+                        //Dialog Confirm
+                        var result2 = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Found old version(" + @chkOldMappingData.mp_version.ToString() + ").Do you want to create new version?");
+
+                        if (result2)
+                        {
+                            if (mappingData.mp_startdate <= chkOldMappingData.mp_startdate && mappingData.mp_id != chkOldMappingData.mp_id)
+                            {
+                                showModal = false;
+                                await jsRuntime.InvokeAsync<object>("ShowAlert", "วันที่เริ่มใช้งานไม่สามารถมีค่าก่อนหรือวันเดียวกันกับวันที่เริ่มใช้งานของ Version ก่อนหน้า (" + @chkOldMappingData.mp_version.ToString() + ")(" + @chkOldMappingData.mp_startdate_str + ")");
+                                return;
+                            }
+                            mappingData.mp_version = Math.Floor(chkOldMappingData.mp_version + 1);
+                        }
+                        else
+                        {
+                            showModal = false;
+                            return;
+                        }
+                    }
+
+
+                    mappingData.mp_createuser = mainLayout.loginUser.Username;
+                }
+                else if (_StrControl == "E")
+                {
+                    if (mappingData.mp_startdate <= chkOldMappingData.mp_startdate && mappingData.mp_id != chkOldMappingData.mp_id)
+                    {
+                        showModal = false;
+                        await jsRuntime.InvokeAsync<object>("ShowAlert", "วันที่เริ่มใช้งานไม่สามารถมีค่าก่อนหรือวันเดียวกันกับวันที่เริ่มใช้งานของ Version ก่อนหน้า (" + @chkOldMappingData.mp_version.ToString() + ")(" + @chkOldMappingData.mp_startdate_str + ")");
+                        return;
+                    }
+                    mappingData.mp_status = 'E';
+                }
+                mappingData.mp_updateuser = mainLayout.loginUser.Username;
+                await SaveMapping();
+            }
+            else
+            {
+                return;
+            }
+        }
+        else if (type.Equals("ApproveMapping"))
+        {
+
+            var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Confirm approve data.");
+            if (result)
+            {
+                string Param_labno = "";
+                string Param_organism = "";
+                string Param_date = "";
+                string ErrorMessage = "";
+
+                var ParameterList = await ddlDataService.GetParameterListByModelAsync("UPLOAD_KEY");
+
+
+                if (ParameterList.Count != 0)
+                {
+                    Param_labno = ParameterList.FirstOrDefault(x => x.prm_code_minor == "LAB_NO").prm_value;
+                    Param_organism = ParameterList.FirstOrDefault(x => x.prm_code_minor == "ORGANISM").prm_value;
+                    Param_date = ParameterList.FirstOrDefault(x => x.prm_code_minor == "DATE").prm_value;
+                }
+
+                if (gridWHONetDatas.FirstOrDefault(x => x.wnm_whonetfield == Param_labno) == null)
+                    ErrorMessage += "- ไม่มีการ Mapping " + Param_labno + "\n";
+
+                if (gridWHONetDatas.FirstOrDefault(x => x.wnm_whonetfield == Param_organism) == null)
+                    ErrorMessage += "- ไม่มีการ Mapping " + Param_organism + "\n";
+
+                if (gridWHONetDatas.FirstOrDefault(x => x.wnm_whonetfield == Param_date) == null)
+                    ErrorMessage += "- ไม่มีการ Mapping " + Param_date + "\n";
+
+                if (ErrorMessage != "")
+                {
+                    ErrorMessage = "ไม่สามารถ Approve ได้ \n" + ErrorMessage;
+
+                    showModal = false;
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", ErrorMessage);
+                    return;
+
+                }
+
+                //var chkDuplicateMappingApproved = await mappingservice.GetchkDuplicateMappingApprovedAsync(mappingData);
+
+                //if (chkDuplicateMappingApproved.mp_id != Guid.Empty)
+                //{
+                //    showModal = false;
+                //    await jsRuntime.InvokeAsync<object>("ShowAlert", "ไม่สามารถ Approved ซ้ำกับ Template ที่มีการ Approved ก่อนหน้าแล้ว");
+                //    return;
+                //}
+
+
+                mappingData.mp_status = 'A';
+                mappingData.mp_approveduser = mainLayout.loginUser.Username;
+                mappingData.mp_updateuser = mainLayout.loginUser.Username;
+                SaveMapping();
+            }
+            else
+            {
+                return;
+            }
+
+
+        }
+
+
+    }
+
+
+    async Task ControlPopup(string type, bool control)
+    {
+        if (type == "WHONET")
+        {
+            ShowWHONETMappingPopup = control;
+            _isAntibioticField = false;
+            _CurrentTab = "WHONET";
+        }
+        else if (type == "Specimen")
+        {
+            ShowSpecimenMappingPopup = control;
+            _CurrentTab = "Specimen";
+
+        }
+        else if (type == "Organism")
+        {
+            ShowOrganismMappingPopup = control;
+            _CurrentTab = "Organism";
+        }
+        else if (type == "WardType")
+        {
+            ShowWardTypeMappingPopup = control;
+            _CurrentTab = "WardType";
+        }
+    }
+
+
+
+
+    #region Whonet
+
+    async Task DoubleClickWHONETMapping()
+    {
+        if (_WHOnetFieldSelected != "" && _TemplateFieldSelected != "")
+        {
+            ShowWHONetMappingDialog("N", "");
+        }
+    }
+    private void SearchInboxDataTemplateFileGrid()
+    {
+        if (TemplateFileGrid.radzenGrid != null) TemplateFileGrid.radzenGrid.GoToPage(0);
+        StateHasChanged();
+    }
+
+    private void SearchInboxDataWHONETColumnGrid()
+    {
+        if (WHONETColumnGrid.radzenGrid != null) WHONETColumnGrid.radzenGrid.GoToPage(0);
+        StateHasChanged();
+    }
+
+    private void SearchInboxDataWHONetMapping()
+    {
+        if (whonetGrid.radzenGrid != null) whonetGrid.radzenGrid.GoToPage(0);
+        StateHasChanged();
+    }
+
+    async Task ShowWHONetMappingDialog(string action, string wnm_Id)
+    {
+        showModal = true;
+        if (action.Equals("E") || action.Equals("N"))
+        {
+            if (string.IsNullOrEmpty(wnm_Id))
+            {
+
+                objWHONetMapping = new WHONetMappingDataDTO()
+                {
+                    wnm_mappingid = searchWHONet.wnm_mappingid,
+                    wnm_status = 'N',
+                    wnm_whonetfield = _WHOnetFieldSelected,
+                    wnm_originalfield = _TemplateFieldSelected,
+                    wnm_type = WHONetMasterList.FirstOrDefault(w => w.wnc_name == _WHOnetFieldSelected).wnc_data_type,
+                    wnm_fieldformat = WHONetMasterList.FirstOrDefault(w => w.wnc_name == _WHOnetFieldSelected).wnc_date_format,
+                    wnm_encrypt = WHONetMasterList.FirstOrDefault(w => w.wnc_name == _WHOnetFieldSelected).wnc_encrypt,
+                    wnm_mandatory = WHONetMasterList.FirstOrDefault(w => w.wnc_name == _WHOnetFieldSelected).wnc_mendatory,
+                    wnm_createuser = mainLayout.loginUser.Username,
+                    wnm_updateuser = mainLayout.loginUser.Username
+                };
+            }
+            else
+            {
+                objWHONetMapping = await mappingservice.GetWHONetMappingDataAsync(wnm_Id);
+                objWHONetMapping.wnm_status = 'E';
+                objWHONetMapping.wnm_updateuser = mainLayout.loginUser.Username;
+            }
+            ControlPopup("WHONET", true);
+
+            showModal = false;
+        }
+        else
+        {
+            objWHONetMapping = await mappingservice.GetWHONetMappingDataAsync(wnm_Id);
+            objWHONetMapping.wnm_status = 'E';
+            objWHONetMapping.wnm_flagdelete = true;
+            objWHONetMapping.wnm_updateuser = mainLayout.loginUser.Username;
+
+            showModal = false;
+            var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Confirm delete data.");
+            if (result)
+            {
+                SaveWHONetMappingData();
+            }
+            else
+            {
+                return;
+            }
+        }
+    }
+    async void SaveWHONetMappingData()
+    {
+        showModal = true;
+        var chkWHONetMappingDup = await mappingservice.GetWHONetMappingDataByModelAsync(objWHONetMapping);
+        //wnm_mappingid, wnm_whonetfield or wnm_originalfield
+
+        if (chkWHONetMappingDup.wnm_id == Guid.Empty || objWHONetMapping.wnm_flagdelete == true || _isAntibioticField == true)
+        {
+            //if(objWHONetMapping.wnm_status == 'N'  && _isAntibioticField == true && objWHONetMapping.wnm_antibioticcolumn == null)
+            //{
+            //    showModal = false;
+            //    await jsRuntime.InvokeAsync<object>("ShowAlert", "Please select antibiotic column.");
+            //    return;
+            //}
+
+            //if (objWHONetMapping.wnm_status == 'N' && _isAntibioticField == true && objWHONetMapping.wnm_antibiotic == null)
+            //{
+            //    showModal = false;
+            //    await jsRuntime.InvokeAsync<object>("ShowAlert", "Please input antibiotic name.");
+            //    return;
+            //}
+            if (!checkAntibioticColumn || !checkAntibioticName || !checkFormat)
+            {
+                showModal = false;
+                await jsRuntime.InvokeAsync<object>("ShowAlert", "Data not valid to save.");
+
+                return;
+            }
+            var result = await mappingservice.SaveWHONetMappingDataAsync(objWHONetMapping);
+            if (result.wnm_status == 'N')
+            {
+                WHONetMasterList.Remove(WHONetMasterList.Single(s => s.wnc_name == _WHOnetFieldSelected));
+                _WHOnetFieldSelected = "";
+
+                if (_isAntibioticField == false)
+                {
+                    gridTemplateFileDatas.Remove(gridTemplateFileDatas.Single(s => s.tmp_header == _TemplateFieldSelected));
+                    _TemplateFieldSelected = "";
+                }
+                _isAntibioticField = false;
+
+            }
+            else if (result.wnm_status == 'E' && result.wnm_flagdelete == true)
+            {
+                WHONetMasterList.Add(new WHONETColumnDTO() { wnc_name = result.wnm_whonetfield });
+            }
+
+            ControlPopup("WHONET", false);
+            showModal = false;
+            await GetData();
+            StateHasChanged();
+        }
+        else
+        {
+            showModal = false;
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate data.");
+            return;
+        }
+    }
+
+
+    private bool checkAntibioticColumn { get { return ((_isAntibioticField != true) || (objWHONetMapping.wnm_antibioticcolumn != null)); } }
+    private bool checkAntibioticName { get { return ((_isAntibioticField != true) || (objWHONetMapping.wnm_antibiotic != null)); } }
+    private bool checkFormat { get { return ((objWHONetMapping.wnm_type != "Date") || (objWHONetMapping.wnm_fieldformat != null)); } }
+
+    private void ClearAntibiotic()
+    {
+        if (_isAntibioticField == false)
+        {
+            objWHONetMapping.wnm_antibioticcolumn = null;
+            objWHONetMapping.wnm_antibiotic = null;
+
+        }
+
+
+
+    }
+
+    #endregion
+
+    #region Specimen
+    private void SearchInboxDataSpecimen()
+    {
+        if (specimenGrid.radzenGrid != null) specimenGrid.radzenGrid.GoToPage(0);
+        StateHasChanged();
+    }
+
+    async Task ShowSpecimenMappingDialog(string action, string spm_Id)
+    {
+        showModal = true;
+        if (action.Equals("E") || action.Equals("N"))
+        {
+            if (string.IsNullOrEmpty(spm_Id))
+            {
+                objSpecimenMapping = new SpecimenMappingDataDTO()
+                {
+                    spm_mappingid = searchSpecimen.spm_mappingid,
+                    spm_status = 'N',
+                    spm_createuser = mainLayout.loginUser.Username,
+                    spm_updateuser = mainLayout.loginUser.Username
+                };
+            }
+            else
+            {
+                objSpecimenMapping = await mappingservice.GetSpecimenMappingDataAsync(spm_Id);
+                objSpecimenMapping.spm_status = 'E';
+                objSpecimenMapping.spm_updateuser = mainLayout.loginUser.Username;
+            }
+
+            //Get Specimen Master
+
+            specimenDatas = await specimenService.GetListByModelActiveAsync(new SpecimenDTO() { spc_mst_code = mappingData.mp_mst_code });
+
+            ControlPopup("Specimen", true);
+
+
+            showModal = false;
+        }
+        else
+        {
+            objSpecimenMapping = await mappingservice.GetSpecimenMappingDataAsync(spm_Id);
+            objSpecimenMapping.spm_status = 'E';
+            objSpecimenMapping.spm_flagdelete = true;
+            objSpecimenMapping.spm_updateuser = mainLayout.loginUser.Username;
+
+            showModal = false;
+            var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Confirm delete data.");
+            if (result)
+            {
+                SaveSpecimenMappingData();
+            }
+            else
+            {
+                return;
+            }
+
+        }
+    }
+    async void SaveSpecimenMappingData()
+    {
+        showModal = true;
+        var chkSpecimenMappingDup = await mappingservice.GetSpecimenMappingDataByModelAsync(objSpecimenMapping);
+        //spm_mappingid,spm_localspecimencode
+        if (chkSpecimenMappingDup.spm_id == Guid.Empty || objSpecimenMapping.spm_flagdelete == true || objSpecimenMapping.spm_status == 'E')
+        {
+            var result = await mappingservice.SaveSpecimenMappingDataAsync(objSpecimenMapping);
+
+            ControlPopup("Specimen", false);
+
+            await GetData();
+
+            showModal = false;
+            StateHasChanged();
+        }
+        else
+        {
+            showModal = false;
+            StateHasChanged();
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate data.");
+            return;
+        }
+
+    }
+
+    #endregion
+
+    #region Organism
+    private void SearchInboxDataOrganism()
+    {
+        if (organismGrid.radzenGrid != null) organismGrid.radzenGrid.GoToPage(0);
+        StateHasChanged();
+    }
+
+    async Task ShowOrganismMappingDialog(string action, string ogm_Id)
+    {
+        showModal = true;
+        if (action.Equals("E") || action.Equals("N"))
+        {
+            if (string.IsNullOrEmpty(ogm_Id))
+            {
+                objOrganismMapping = new OrganismMappingDataDTO()
+                {
+                    ogm_mappingid = searchOrganism.ogm_mappingid,
+                    ogm_status = 'N',
+                    ogm_createuser = mainLayout.loginUser.Username,
+                    ogm_updateuser = mainLayout.loginUser.Username
+                };
+            }
+            else
+            {
+                objOrganismMapping = await mappingservice.GetOrganismMappingDataAsync(ogm_Id);
+                objOrganismMapping.ogm_status = 'E';
+                objOrganismMapping.ogm_updateuser = mainLayout.loginUser.Username;
+            }
+
+            //Get Organism Master
+
+            organismDatas = await organismService.GetListByModelActiveAsync(new OrganismDTO() { org_mst_code = mappingData.mp_mst_code });
+
+            ControlPopup("Organism", true);
+            showModal = false;
+        }
+        else
+        {
+            objOrganismMapping = await mappingservice.GetOrganismMappingDataAsync(ogm_Id);
+            objOrganismMapping.ogm_status = 'E';
+            objOrganismMapping.ogm_flagdelete = true;
+            objOrganismMapping.ogm_updateuser = mainLayout.loginUser.Username;
+            showModal = false;
+
+            var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Confirm delete data.");
+            if (result)
+            {
+                SaveOrganismMappingData();
+            }
+            else
+            {
+                return;
+            }
+
+        }
+    }
+    async void SaveOrganismMappingData()
+    {
+        showModal = true;
+        var chkOrganismMappingDup = await mappingservice.GetOrganismMappingDataByModelAsync(objOrganismMapping);
+
+        if (chkOrganismMappingDup.ogm_id == Guid.Empty || objOrganismMapping.ogm_flagdelete == true || objOrganismMapping.ogm_status == 'E')
+        {
+
+            var result = await mappingservice.SaveOrganismMappingDataAsync(objOrganismMapping);
+            //ogm_mappingid,ogm_localorganismcode
+            ControlPopup("Organism", false);
+
+            await GetData();
+            showModal = false;
+            StateHasChanged();
+        }
+        else
+        {
+            showModal = false;
+            StateHasChanged();
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate data.");
+            return;
+        }
+    }
+
+    private void OrganismCode_DDL_Change()
+    {
+        var value = objOrganismMapping.ogm_whonetcode;
+        if (value != null)
+        {
+
+            objOrganismMapping.ogm_whonetdesc = organismDatas.FirstOrDefault(x => x.org_mst_ORG == value).org_mst_ORGANISM;
+
+        }
+
+
+        StateHasChanged();
+    }
+    #endregion
+
+    #region WardType
+    bool ShowWardTypePopup = false;
+
+    private void SearchInboxDataWardType()
+    {
+        if (wardTypeGrid.radzenGrid != null) wardTypeGrid.radzenGrid.GoToPage(0);
+        StateHasChanged();
+    }
+
+
+    async Task ShowWardTypeMappingDialog(string action, string wdm_Id)
+    {
+        showModal = true;
+        if (action.Equals("E") || action.Equals("N"))
+        {
+            if (string.IsNullOrEmpty(wdm_Id))
+            {
+                objWardTypeMapping = new WardTypeMappingDataDTO()
+                {
+                    wdm_mappingid = searchWardType.wdm_mappingid,
+                    wdm_status = 'N',
+                    wdm_createuser = mainLayout.loginUser.Username,
+                    wdm_updateuser = mainLayout.loginUser.Username
+                };
+            }
+            else
+            {
+                objWardTypeMapping = await mappingservice.GetWardTypeMappingDataAsync(wdm_Id);
+                objWardTypeMapping.wdm_status = 'E';
+                objWardTypeMapping.wdm_updateuser = mainLayout.loginUser.Username;
+            }
+
+            //Get WardType Master
+
+            wardTypeDatas = await wardTypeService.GetListByModelActiveAsync(new WardTypeDTO() { wrd_mst_code = mappingData.mp_mst_code });
+
+
+            await ControlPopup("WardType", true);
+            showModal = false;
+        }
+        else
+        {
+            objWardTypeMapping = await mappingservice.GetWardTypeMappingDataAsync(wdm_Id);
+            objWardTypeMapping.wdm_status = 'E';
+            objWardTypeMapping.wdm_flagdelete = true;
+            objWardTypeMapping.wdm_updateuser = mainLayout.loginUser.Username;
+            showModal = false;
+            var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Confirm delete data.");
+            if (result)
+            {
+                SaveWardTypeMappingData();
+            }
+            else
+            {
+                return;
+            }
+
+
+        }
+    }
+    async void SaveWardTypeMappingData()
+    {
+        showModal = true;
+        var chkWardTypeMappingDup = await mappingservice.GetWardTypeMappingDataByModelAsync(objWardTypeMapping);
+        //wdm_mappingid,wdm_wardtype,wdm_localwardname
+        if (chkWardTypeMappingDup.wdm_id == Guid.Empty || objWardTypeMapping.wdm_flagdelete == true || objWardTypeMapping.wdm_status == 'E')
+        {
+            var result = await mappingservice.SaveWardTypeMappingDataAsync(objWardTypeMapping);
+
+            ControlPopup("WardType", false);
+
+            await GetData();
+            showModal = false;
+            StateHasChanged();
+        }
+        else
+        {
+            showModal = false;
+            StateHasChanged();
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate data.");
+            return;
+        }
+    }
+    private void WardType_DDL_Change()
+    {
+        var value = objWardTypeMapping.wdm_wardtype;
+        if (value != null)
+        {
+
+            objWardTypeMapping.wdm_warddesc = wardTypeDatas.FirstOrDefault(x => x.wrd_code == value).wrd_name;
+
+        }
+
+
+        StateHasChanged();
+    }
+
+    #endregion
+
+
+
+
+
+
+
+
+
+
+
+}
+

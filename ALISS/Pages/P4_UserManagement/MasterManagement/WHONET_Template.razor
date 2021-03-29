@@ -1,0 +1,166 @@
+﻿@page "/WHONET_Template"
+
+@using NARST_WHONET_WEBPT.Data
+@using NARST_WHONET_WEBPT.Data.MasterManagement
+@using Radzen
+@using Radzen.Blazor
+@inject MasterTemplateService masterTemplateService
+
+<div style="width: 1200px;">
+    <div class="divHead">
+        Master Template
+    </div>
+</div>
+
+@if (gridDatas == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div style="width:1200px;">
+        <div class="divBox">
+            <div class="divLabel">
+                <label>Template code</label>
+            </div>
+            <div class="divColon">
+                <label>:</label>
+            </div>
+            <div class="divInput">
+                <input type="text" style="background: #FFFFFF 0% 0% no-repeat padding-box; border: 1px solid #E4E4E4; border-radius: 3px; opacity: 1;font: Regular 14px/22px Arial;" />
+            </div>
+        </div>
+        <div class="divBox">
+            <div class="divLabel">
+                <label>WHONET version</label>
+            </div>
+            <div class="divColon">
+                <label>:</label>
+            </div>
+            <div class="divInput">
+                <input type="text" style="background: #FFFFFF 0% 0% no-repeat padding-box; border: 1px solid #E4E4E4; border-radius: 3px; opacity: 1;font: Regular 14px/22px Arial;" />
+            </div>
+        </div>
+        <div class="divBox">
+            <div class="divLabel">
+            </div>
+            <div class="divColon">
+            </div>
+            <div class="divInput">
+            </div>
+        </div>
+        <div class="divBox">
+            <div class="divLabel">
+                <label>Effective date from</label>
+            </div>
+            <div class="divColon">
+                <label>:</label>
+            </div>
+            <div class="divInput">
+                <RadzenDatePicker @bind-Value="Date1" />
+            </div>
+        </div>
+        <div class="divBox">
+            <div class="divLabel">
+                <label>Effective date to</label>
+            </div>
+            <div class="divColon">
+                <label>:</label>
+            </div>
+            <div class="divInput">
+                <RadzenDatePicker @bind-Value="Date1" />
+            </div>
+        </div>
+
+        <br />
+
+        <div style="text-align:right;">
+            <input type="button" style="width: 131px;height: 38px;background: #FFFFFF 0% 0% no-repeat padding-box;border: 1px solid #0A6839;border-radius: 3px;color: #0A6839;" value="Search" />
+        </div>
+    </div>
+
+    <hr />
+
+    <div style="width:1200px;">
+        <div style="text-align:right;">
+            <RadzenButton Icon="add" Style="width: 200px;height: 38px;background: #0A6839 0% 0% no-repeat padding-box;border-radius: 3px;color: #FFFFFF;" Text="Add Template" />
+        </div>
+
+        <br />
+
+        <div style="width:90%;margin:0px auto;">
+            <RadzenGrid AllowPaging="true" PageSize="4" Data="@gridDatas" TItem="GridData" ColumnWidth="200px">
+                <Columns>
+                    <RadzenGridColumn TItem="GridData" Property="Column_01" Title="" Width="50px">
+                        <Template>
+                            <RadzenButton Icon="edit" Style="background: #0A6839 0% 0% no-repeat padding-box;"/>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="GridData" Property="Column_01" Title="" Width="50px">
+                        <Template>
+                            <RadzenButton Icon="file_copy" Style="background: #0A6839 0% 0% no-repeat padding-box;"/>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="GridData" Property="Column_01" Title="Template code" />
+                    <RadzenGridColumn TItem="GridData" Property="Column_02" Title="WHONET Version" />
+                    <RadzenGridColumn TItem="GridData" Property="Column_03" Title="Effective date" />
+                    <RadzenGridColumn TItem="GridData" Property="Column_04" Title="Status" />
+                </Columns>
+            </RadzenGrid>
+        </div>
+
+        <br />
+
+    </div>
+
+    <hr />
+}
+
+@code {
+    private GridData[] gridDatas;
+    private GridData[] historys;
+    private string tmpData = "กรุณาเลือก";
+    private DateTime Date1;
+    int value = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        gridDatas = await masterTemplateService.GetDataAsync();
+        historys = await masterTemplateService.GetHistoryAsync();
+    }
+
+    string[] options = new[]
+           {
+                "One",
+                "Two",
+                "Three"
+            };
+
+    Dictionary<DateTime, string> events = new Dictionary<DateTime, string>();
+
+    void RadioChange(int? value, string name)
+    {
+        events.Add(DateTime.Now, $"{name} value changed to {value}");
+    }
+
+    void DropdownChange(object value, string name)
+    {
+        var str = value is IEnumerable<object> ? string.Join(", ", (IEnumerable<object>)value) : value;
+
+        events.Add(DateTime.Now, $"{name} value changed to {str}");
+        StateHasChanged();
+    }
+
+    void ChangeBound(object value, string name)
+    {
+        events.Add(DateTime.Now, $"{name} value changed to {tmpData}");
+        StateHasChanged();
+    }
+
+    void Change(object value, string name)
+    {
+        events.Add(DateTime.Now, $"{name} value changed to {tmpData}");
+        StateHasChanged();
+    }
+
+}

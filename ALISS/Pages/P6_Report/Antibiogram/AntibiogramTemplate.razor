@@ -1,0 +1,651 @@
+﻿@page "/Antibiogram/antibiogram_template"
+
+@using ALISS.Data.D6_Report.Antibiogram
+@using ALISS.Data.D0_Master
+@using ALISS.DropDownList.DTO
+@using ALISS.ANTIBIOGRAM.DTO
+@using Radzen
+@using Radzen.Blazor
+@using System.IO
+
+@inject IJSRuntime jsRuntime
+@inject AntibiogramTemplateService AntibiogramService
+@inject ReportService ReportService
+@inject DropDownListDataService ddlDataService
+@inject DialogService dialogService
+@inject NotificationService notificationService
+@inject ConfigDataService configDataService
+@inject SpecimenService specimenService
+@inject NavigationManager navigationManager
+
+<div>
+    <div class="divHead">
+        Antibiogram Template
+    </div>
+</div>
+
+@if (gridNationDatas == null)
+{
+    <p><em>Loading...</em></p>
+    <Loading ShowModel="true" />
+}
+else
+{
+    <RadzenFieldset Text=" รายงานระดับ" Style="width:100%">
+        <div class="container inputArea">
+            <RadzenRadioButtonList @bind-Value=@selectedReport TValue="eAntibiogramType" Change="@((args) => ChangeAntibiogramType())">
+                <Items>
+                    <RadzenRadioButtonListItem Text="โรงพยาบาล" Value="eAntibiogramType.Hospital" />
+                    <RadzenRadioButtonListItem Text="เขตสุขภาพ" Value="eAntibiogramType.AreaHealth" />
+                    <RadzenRadioButtonListItem Text="ประเทศ" Value="eAntibiogramType.Nation" />
+                </Items>
+            </RadzenRadioButtonList>
+        </div>
+    </RadzenFieldset>
+
+    @*<hr />*@
+
+    <RadzenFieldset Text=" Filter " Style="width:100%">
+        <div class="container inputArea">
+            <div class="row justify-content-start">
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-start divGroup">
+                        <div class="@classLabel">
+                            <LabelBox inputLabel="@configData.Get_Label("rpt_anttempnat_monthfrom")" />
+                        </div>
+                        <div class="@classMonth">
+                            <RadzenDropDown AllowClear="false" TValue="int" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            Placeholder="Select..."
+                                            AllowFiltering="false" @bind-Value=@iMonthFrom
+                                            Data="@MonthData" TextProperty="MonthName" ValueProperty="MonthValue" />
+                        </div>
+                        <div style="width:70px; vertical-align: middle;display: inline-block">
+                            <RadzenNumeric TValue="int" Min="2000" Max="9999" Value=@iYearFrom />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-start divGroup">
+                        <div class="@classLabel">
+                            <LabelBox inputLabel="@configData.Get_Label("rpt_anttempnat_monthto")" />
+                        </div>
+                        <div class="@classMonth">
+                            <RadzenDropDown AllowClear="false" TValue="int" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            Placeholder="Select..."
+                                            AllowFiltering="false" @bind-Value=@iMonthTo
+                                            Data="@MonthData" TextProperty="MonthName" ValueProperty="MonthValue" />
+                        </div>
+                        <div style="width:70px; vertical-align: middle;display: inline-block">
+                            <RadzenNumeric TValue="int" Min="2000" Max="9999" Value=@iYearTo />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row justify-content-start">
+
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-start divGroup">
+                        <div class="@classLabel">
+                            <LabelBox inputLabel="@configData.Get_Label("rpt_anttempnat_specimen")" />
+                        </div>
+                        <div class="@classInput">
+                            <RadzenDropDown AllowClear="true" TValue="string" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            @bind-Value=@searchAnti.spc_code AllowFiltering="false" Placeholder="Select..."
+                                            Data="@SpecimenMaster" TextProperty="spc_name" ValueProperty="spc_code" />
+                        </div>
+                    </div>
+                </div>
+
+
+                @if (selectedReport != eAntibiogramType.Nation)
+                {
+                    <div class="col-12 col-xl-4">
+                        <div class="row justify-content-start divGroup">
+                            <div class="@classLabel">
+                                <LabelBox inputLabel="@configData.Get_Label("rpt_anttempnat_arhcode")" />
+                            </div>
+                            <div class="@classInput">
+                                <RadzenDropDown @bind-Value="searchAnti.arh_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..."
+                                                Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name }).Distinct()" ValueProperty="arh_code" TextProperty="arh_name" />
+                            </div>
+                        </div>
+                    </div>
+
+                }
+
+                @if (selectedReport == eAntibiogramType.Hospital)
+                {
+                    <div class="col-12 col-xl-4">
+                        <div class="row justify-content-start divGroup">
+                            <div class="@classLabel">
+                                <LabelBox inputLabel="@configData.Get_Label("rpt_anttempnat_provcode")" />
+                            </div>
+                            <div class="@classInput">
+                                <RadzenDropDown @bind-Value="searchAnti.prv_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..."
+                                                Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name }).Where(x => (searchAnti.arh_code == null || x.arh_code == searchAnti.arh_code)).Distinct()" ValueProperty="prv_code" TextProperty="prv_name"
+                                                Change="@(args => DDL_Change("Prv", args))" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-xl-4">
+                        <div class="row justify-content-start divGroup">
+                            <div class="@classLabel">
+                                <LabelBox inputLabel="@configData.Get_Label("rpt_anttempnat_hospcode")" />
+                            </div>
+                            <div class="@classInput">
+                                <RadzenDropDown @bind-Value="searchAnti.hos_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..."
+                                                Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name, x.hos_code, x.hos_name }).Where(x => (searchAnti.arh_code == null || x.arh_code == searchAnti.arh_code) && (searchAnti.prv_code == null || x.prv_code == searchAnti.prv_code))"
+                                                ValueProperty="hos_code" TextProperty="hos_name" Change="@(args => DDL_Change("Hos", args))" />
+                            </div>
+                        </div>
+                    </div>
+
+                }
+            </div>
+
+            <div class="row justify-content-end">
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup buttonArea">
+                        <div class="col-auto">
+                            <RadzenButton class="btnSearch" Text="Search" Click="SearchData" />
+                        </div>
+                        <div class="col-auto">
+                            <RadzenButton class="btnClear" Text="Clear" Click="ClearData" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </RadzenFieldset>
+
+
+    @*<hr />*@
+
+    <div style="width:90%;margin:0px auto;">
+
+        @if (selectedReport == eAntibiogramType.AreaHealth)
+        {
+            <div class="container">
+                <div class="row justify-content-end">
+                    <div class="col-auto">
+                        <label>Rows : </label>
+                    </div>
+                    <div class="col-auto">
+                        <RadzenDropDown @bind-Value="inboxGridAreaHealth.PageSize" TValue="int" AllowFiltering="true" Data="inboxGridAreaHealth.PageSizeOption" Change="SearchData" Style="width:50px" />
+                    </div>
+                </div>
+            </div>
+            <RadzenGrid AllowPaging="true" AllowFiltering="true" AllowSorting="true" PageSize="@inboxGridAreaHealth.PageSize" @ref="inboxGridAreaHealth.radzenGrid" Data="@(gridArhDatas)" TItem="AntibiogramAreaHealthTemplateDTO">
+                <Columns>
+                    <RadzenGridColumn TItem="AntibiogramAreaHealthTemplateDTO" Property="spc_name" Title="ชนิดส่งตรวจ" Width="auto">
+                        <FooterTemplate>
+                            <label title="@inboxGridAreaHealth.FooterLabelString">@inboxGridAreaHealth.FooterLabelString</label>
+                        </FooterTemplate>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="AntibiogramAreaHealthTemplateDTO" Property="arh_name" Title="เขตสุขภาพ" Width="auto" />
+                    <RadzenGridColumn TItem="AntibiogramAreaHealthTemplateDTO" Property="file_name" Title="ชื่อไฟล์" Width="auto" />
+                     @if (string.IsNullOrEmpty(mainLayout.loginUser.arh_code) && string.IsNullOrEmpty(mainLayout.loginUser.hos_code) && string.IsNullOrEmpty(mainLayout.loginUser.lab_code))
+                     {
+                        <RadzenGridColumn TItem="AntibiogramAreaHealthTemplateDTO" Property="file_path" Title="ไฟล์ข้อมูล (Excel)" Width="auto" TextAlign="TextAlign.Center">
+                            <Template Context="selectedArhRow">
+                                <RadzenButton Click="@(args => DownloadAreaHealthFile(selectedArhRow,eDownloadType.Excel))" Text="Download"
+                                              Style="text-align:center; margin-bottom: 0px; width: 131px; height: 31px;background: #0A6839 0% 0% no-repeat padding-box;border: 1px solid #0A6839;border-radius: 3px;color: #FFFFFF; font-size:16px" />
+                            </Template>
+                        </RadzenGridColumn>
+                     }
+                    <RadzenGridColumn TItem="AntibiogramAreaHealthTemplateDTO" Property="file_path" Title="ไฟล์ข้อมูล (PDF)" Width="auto" TextAlign="TextAlign.Center">
+                        <Template Context="selectedArhRow">
+                            <RadzenButton Click="@(args => DownloadAreaHealthFile(selectedArhRow,eDownloadType.PDF))" Text="Download"
+                                          Style="text-align:center; margin-bottom: 0px; width: 131px; height: 31px;background: #0A6839 0% 0% no-repeat padding-box;border: 1px solid #0A6839;border-radius: 3px;color: #FFFFFF; font-size:16px" />
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        }
+        else if (selectedReport == eAntibiogramType.Nation)
+        {
+            <div class="container">
+                <div class="row justify-content-end">
+                    <div class="col-auto">
+                        <label>Rows : </label>
+                    </div>
+                    <div class="col-auto">
+                        <RadzenDropDown @bind-Value="inboxGridNation.PageSize" TValue="int" AllowFiltering="true" Data="inboxGridNation.PageSizeOption" Change="SearchData" Style="width:50px" />
+                    </div>
+                </div>
+            </div>
+            <RadzenGrid AllowPaging="true" AllowFiltering="true" AllowSorting="true" @ref="inboxGridNation.radzenGrid" PageSize="@inboxGridNation.PageSize" Data="@(gridNationDatas)" TItem="AntibiogramNationTemplateDTO" ColumnWidth="120px">
+                <Columns>
+                    <RadzenGridColumn TItem="AntibiogramNationTemplateDTO" Property="spc_name" Title="ชนิดส่งตรวจ" Width="auto">
+                        <FooterTemplate>
+                            <label title="@inboxGridNation.FooterLabelString">@inboxGridNation.FooterLabelString</label>
+                        </FooterTemplate>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="AntibiogramNationTemplateDTO" Property="file_name" Title="ชื่อไฟล์" Width="auto" />
+                    @if (string.IsNullOrEmpty(mainLayout.loginUser.arh_code) && string.IsNullOrEmpty(mainLayout.loginUser.hos_code) && string.IsNullOrEmpty(mainLayout.loginUser.lab_code))
+                    {
+                        <RadzenGridColumn TItem="AntibiogramNationTemplateDTO" Property="file_path" Title="ไฟล์ข้อมูล (Excel)" Width="auto" TextAlign="TextAlign.Center">
+                            <Template Context="selectedNationRow">
+                                <RadzenButton Click="@(args => DownloadNationFile(selectedNationRow,eDownloadType.Excel))" Text="Download" Style="text-align:center; margin-bottom: 0px; width: 131px; height: 31px;background: #0A6839 0% 0% no-repeat padding-box;border: 1px solid #0A6839;border-radius: 3px;color: #FFFFFF; font-size:16px" />
+                            </Template>
+                        </RadzenGridColumn>
+                    }
+                    <RadzenGridColumn TItem="AntibiogramNationTemplateDTO" Property="file_path" Title="ไฟล์ข้อมูล (PDF)" Width="auto" TextAlign="TextAlign.Center">
+                        <Template Context="selectedNationRow">
+                            <RadzenButton Click="@(args => DownloadNationFile(selectedNationRow,eDownloadType.PDF))" Text="Download" Style="text-align:center; margin-bottom: 0px; width: 131px; height: 31px;background: #0A6839 0% 0% no-repeat padding-box;border: 1px solid #0A6839;border-radius: 3px;color: #FFFFFF; font-size:16px" />
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        }
+        else
+        {
+            <div class="container">
+                <div class="row justify-content-end">
+                    <div class="col-auto">
+                        <label>Rows : </label>
+                    </div>
+                    <div class="col-auto">
+                        <RadzenDropDown @bind-Value="inboxGridHospital.PageSize" TValue="int" AllowFiltering="true" Data="inboxGridHospital.PageSizeOption" Change="SearchData" Style="width:50px" />
+                    </div>
+                </div>
+            </div>
+
+            <RadzenGrid AllowPaging="true" AllowFiltering="true" AllowSorting="true" @ref="inboxGridHospital.radzenGrid" PageSize="@inboxGridHospital.PageSize" Data="@(gridHospitalDatas)" TItem="AntibiogramHospitalTemplateDTO" ColumnWidth="120px">
+                <Columns>
+                    <RadzenGridColumn TItem="AntibiogramHospitalTemplateDTO" Property="spc_name" Title="ชนิดส่งตรวจ" Width="auto">
+                        <FooterTemplate>
+                            <label title="@inboxGridHospital.FooterLabelString">@inboxGridHospital.FooterLabelString</label>
+                        </FooterTemplate>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="AntibiogramHospitalTemplateDTO" Property="hos_name" Title="โรงพยาบาล" Width="auto" />
+                    <RadzenGridColumn TItem="AntibiogramHospitalTemplateDTO" Property="arh_name" Title="เขตสุขภาพ" Width="auto" />
+                    <RadzenGridColumn TItem="AntibiogramHospitalTemplateDTO" Property="file_name" Title="ชื่อไฟล์" Width="auto" />
+                    @if (string.IsNullOrEmpty(mainLayout.loginUser.arh_code) && string.IsNullOrEmpty(mainLayout.loginUser.hos_code) && string.IsNullOrEmpty(mainLayout.loginUser.lab_code))
+                    {
+                    <RadzenGridColumn TItem="AntibiogramHospitalTemplateDTO" Property="file_path" Title="ไฟล์ข้อมูล (Excel)" Width="auto" TextAlign="TextAlign.Center">
+                        <Template Context="selectedHospRow">
+                            <RadzenButton Click="@(args => DownloadHospitalFile(selectedHospRow,eDownloadType.Excel))" Text="Download" Style="text-align:center; margin-bottom: 0px; width: 131px; height: 31px;background: #0A6839 0% 0% no-repeat padding-box;border: 1px solid #0A6839;border-radius: 3px;color: #FFFFFF; font-size:16px" />
+                        </Template>
+                    </RadzenGridColumn>
+                    }
+                    <RadzenGridColumn TItem="AntibiogramHospitalTemplateDTO" Property="file_path" Title="ไฟล์ข้อมูล (PDF)" Width="auto" TextAlign="TextAlign.Center">
+                        <Template Context="selectedHospRow">
+                            <RadzenButton Click="@(args => DownloadHospitalFile(selectedHospRow,eDownloadType.PDF))" Text="Download" Style="text-align:center; margin-bottom: 0px; width: 131px; height: 31px;background: #0A6839 0% 0% no-repeat padding-box;border: 1px solid #0A6839;border-radius: 3px;color: #FFFFFF; font-size:16px" />
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        }
+
+    </div>
+
+    @if (!blnLoadComplete)
+    {
+        <Loading ShowModel="true" />
+    }
+    <hr />
+}
+
+
+@code {
+
+    #region "Variable"
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+    private const string MENU_CODE = "MNU_0704";
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private string classMonth = "col-4";
+    private List<HospitalLabDataDTO> lab_ddl_List;
+    private RadzenGridCustom<AntibiogramNationTemplateDTO> inboxGridNation = new RadzenGridCustom<AntibiogramNationTemplateDTO>();
+    private RadzenGridCustom<AntibiogramAreaHealthTemplateDTO> inboxGridAreaHealth = new RadzenGridCustom<AntibiogramAreaHealthTemplateDTO>();
+    private RadzenGridCustom<AntibiogramHospitalTemplateDTO> inboxGridHospital = new RadzenGridCustom<AntibiogramHospitalTemplateDTO>();
+
+    [Inject]
+    private IFileSave OIFileSave { get; set; }
+    private List<AntibiogramAreaHealthTemplateDTO> gridArhDatas;
+    private List<AntibiogramNationTemplateDTO> gridNationDatas;
+    private List<AntibiogramHospitalTemplateDTO> gridHospitalDatas;
+    AntiHospitalSearchDTO searchAnti = new AntiHospitalSearchDTO();
+    private int iMonthFrom = 1;
+    private int iMonthTo = DateTime.Today.Month;
+    private int iYearFrom = DateTime.Today.Year;
+    private int iYearTo = DateTime.Today.Year;
+    private DateTime dtStartDate;
+    private DateTime dtEndDate;
+    NotificationMessage notiMsg = new NotificationMessage();
+    AntibiogramHospitalTemplateDTO selectedHospRow = new AntibiogramHospitalTemplateDTO();
+    AntibiogramAreaHealthTemplateDTO selectedArhRow = new AntibiogramAreaHealthTemplateDTO();
+    AntibiogramNationTemplateDTO selectedNationRow = new AntibiogramNationTemplateDTO();
+    private List<SpecimenDTO> SpecimenMaster = new List<SpecimenDTO>();
+    private eAntibiogramType selectedReport = eAntibiogramType.Nation;
+    private bool blnLoadComplete = true;
+
+    private List<HospitalDataDTO> arh_List;
+    private List<HospitalDataDTO> prv_List;
+    private List<HospitalDataDTO> arh_DDL_List;
+    private List<HospitalDataDTO> prv_DDL_List;
+    private List<HospitalDataDTO> arh_DL_DDL_List;
+    private List<HospitalDataDTO> prv_DL_DDL_List;
+
+    private enum eAntibiogramType
+    {
+        Hospital = 1,
+        AreaHealth = 2,
+        Nation = 3
+    }
+
+    private enum eDownloadType
+    {
+        Excel = 1,
+        PDF = 2
+    }
+
+    private class MonthItem
+    {
+        public int MonthValue { get; set; }
+        public string MonthName { get; set; }
+    }
+
+    MonthItem[] MonthData = new MonthItem[] {
+        new MonthItem
+        {
+            MonthValue = 1,
+            MonthName = "January"
+        },
+        new MonthItem
+        {
+           MonthValue = 2,
+           MonthName = "Febuary"
+        },
+        new MonthItem
+        {
+          MonthValue = 3,
+          MonthName = "March"
+        },
+        new MonthItem
+        {
+           MonthValue = 4,
+           MonthName = "April"
+        },
+        new MonthItem
+        {
+           MonthValue = 5,
+           MonthName = "May"
+        },
+        new MonthItem
+        {
+            MonthValue = 6,
+            MonthName = "June"
+        },
+        new MonthItem
+        {
+           MonthValue = 7,
+            MonthName = "July"
+        },
+        new MonthItem
+        {
+           MonthValue = 8,
+            MonthName = "August"
+        },
+        new MonthItem
+        {
+            MonthValue = 9,
+            MonthName = "September"
+        },
+        new MonthItem
+        {
+           MonthValue = 10,
+            MonthName = "October"
+        },
+        new MonthItem
+        {
+            MonthValue = 11,
+            MonthName = "November"
+        },
+        new MonthItem
+        {
+           MonthValue = 12,
+           MonthName = "December"
+        }
+    };
+
+    #endregion
+
+    #region "Event"
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission(MENU_CODE) == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = MENU_CODE });
+            var searchData = new HospitalLabDataDTO()
+            {
+                arh_code = searchAnti.arh_code = mainLayout.loginUser.arh_code,
+                prv_code = searchAnti.prv_code = mainLayout.loginUser.prv_code,
+                hos_code = searchAnti.hos_code = mainLayout.loginUser.hos_code,
+            };
+            lab_ddl_List = await ddlDataService.GetAllLabListByModelAsync(searchData);
+            SpecimenMaster = await specimenService.GetListByModelActiveAsync(new SpecimenDTO());
+            LoadData();
+            //gridArhDatas = await AntibiogramService.GetAntibiogramAreaHealthTemplateListModelAsync(searchAnti);
+        }
+
+    }
+
+    #endregion
+
+    #region "Method"
+
+    private async Task SearchData()
+    {
+        dtStartDate = new DateTime(iYearFrom, iMonthFrom, 1);
+
+        int numberOfDays = DateTime.DaysInMonth(iYearTo, iMonthTo);
+        dtEndDate = new DateTime(iYearTo, iMonthTo, numberOfDays);
+
+        searchAnti.start_date = dtStartDate;
+        searchAnti.end_date = dtEndDate;
+
+        await LoadData();
+        StateHasChanged();
+    }
+
+    private async Task ChangeAntibiogramType()
+    {
+        await ClearData();
+        await LoadData();
+        StateHasChanged();
+    }
+
+    private async Task LoadData()
+    {
+        if (selectedReport == eAntibiogramType.AreaHealth)
+        {
+            gridArhDatas = await AntibiogramService.GetAntibiogramAreaHealthTemplateListModelAsync(searchAnti);
+        }
+        else if (selectedReport == eAntibiogramType.Nation)
+        {
+            gridNationDatas = await AntibiogramService.GetAntibiogramNationTemplateListModelAsync(searchAnti);
+        }
+        else
+        {
+            gridHospitalDatas = await AntibiogramService.GetAntibiogramHospitalTemplateListModelAsync(searchAnti);
+        }
+    }
+
+    private async Task ClearData()
+    {
+       
+        searchAnti.arh_code = mainLayout.loginUser.arh_code;
+        searchAnti.prv_code = mainLayout.loginUser.prv_code;
+        searchAnti.hos_code = mainLayout.loginUser.hos_code;
+        searchAnti.spc_code = null;
+
+    }
+
+    private async Task DownloadHospitalFile(AntibiogramHospitalTemplateDTO Selecteditem, eDownloadType eReportType)
+    {
+        if (!string.IsNullOrEmpty(Selecteditem.file_name) && !string.IsNullOrEmpty(Selecteditem.file_path))
+        {
+            blnLoadComplete = false;
+            string ServerFileName = string.Format("{0}\\{1}", Selecteditem.file_path.Remove(0, 1), Selecteditem.file_name);
+            var extension = Path.GetExtension(Selecteditem.file_name);
+            string contentType;
+            string OutputFileName;
+
+            if (eReportType == eDownloadType.PDF)
+            {
+                contentType = "application/pdf";
+                OutputFileName = Selecteditem.file_name.Replace(extension, ".pdf");
+
+                string statuscode = await AntibiogramService.DownloadPDFFileAsync(Selecteditem);
+
+                if (statuscode == "OK") { await OIFileSave.DownloadFile(ServerFileName, OutputFileName, contentType); }
+                else if (statuscode == "ERR_PATH") { await jsRuntime.InvokeAsync<object>("ShowAlert", "ไม่พบ Config PATH กรุณาติดต่อผู้ดูแลระบบ"); }
+                else { await jsRuntime.InvokeAsync<object>("ShowAlert", "File not Found"); }
+            }
+            else
+            {
+                contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                OutputFileName = Selecteditem.file_name;
+                await OIFileSave.DownloadFile(ServerFileName, OutputFileName, contentType);
+            }
+            blnLoadComplete = true;
+        }
+        else
+        {
+            //Path incorrect or null
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Path Incorrect");
+        }
+    }
+
+    private async Task DownloadAreaHealthFile(AntibiogramAreaHealthTemplateDTO Selecteditem, eDownloadType eReportType)
+    {
+        if (!string.IsNullOrEmpty(Selecteditem.file_name) && !string.IsNullOrEmpty(Selecteditem.file_path))
+        {
+            blnLoadComplete = false;
+            string ServerFileName = string.Format("{0}\\{1}", Selecteditem.file_path.Remove(0, 1), Selecteditem.file_name);
+            var extension = Path.GetExtension(Selecteditem.file_name);
+            string contentType;
+            string OutputFileName;
+
+            if (eReportType == eDownloadType.PDF)
+            {
+                contentType = "application/pdf";
+                OutputFileName = Selecteditem.file_name.Replace(extension, ".pdf");
+
+                string statuscode = await AntibiogramService.DownloadPDFFileAsync(Selecteditem);
+
+                if (statuscode == "OK") { await OIFileSave.DownloadFile(ServerFileName, OutputFileName, contentType); }
+                else if (statuscode == "ERR_PATH") { await jsRuntime.InvokeAsync<object>("ShowAlert", "ไม่พบ Config PATH กรุณาติดต่อผู้ดูแลระบบ"); }
+                else { await jsRuntime.InvokeAsync<object>("ShowAlert", "File not Found"); }
+
+            }
+            else
+            {
+                contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                OutputFileName = Selecteditem.file_name;
+
+                await OIFileSave.DownloadFile(ServerFileName, OutputFileName, contentType);
+            }
+            blnLoadComplete = true;
+        }
+        else
+        {
+            //Path incorrect or null
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Path Incorrect");
+        }
+    }
+
+    private async Task DownloadNationFile(AntibiogramNationTemplateDTO Selecteditem, eDownloadType eReportType)
+    {
+        if (!string.IsNullOrEmpty(Selecteditem.file_name) && !string.IsNullOrEmpty(Selecteditem.file_path))
+        {
+            blnLoadComplete = false;
+            string ServerFileName = string.Format("{0}//{1}", Selecteditem.file_path.Remove(0, 1), Selecteditem.file_name);
+            var extension = Path.GetExtension(Selecteditem.file_name);
+            string contentType;
+            string OutputFileName;
+
+            if (eReportType == eDownloadType.PDF)
+            {
+                contentType = "application/pdf";
+                OutputFileName = Selecteditem.file_name.Replace(extension, ".pdf");
+
+                string statuscode = await AntibiogramService.DownloadPDFFileAsync(Selecteditem);
+
+                if (statuscode == "OK") { await OIFileSave.DownloadFile(ServerFileName, OutputFileName, contentType); }
+                else if (statuscode == "ERR_PATH") { await jsRuntime.InvokeAsync<object>("ShowAlert", "ไม่พบ Config PATH กรุณาติดต่อผู้ดูแลระบบ"); }
+                else { await jsRuntime.InvokeAsync<object>("ShowAlert", "File not Found"); }
+            }
+            else
+            {
+                contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                OutputFileName = Selecteditem.file_name;
+
+                await OIFileSave.DownloadFile(ServerFileName, OutputFileName, contentType);
+            }
+            blnLoadComplete = true;
+
+        }
+        else
+        {
+            //Path incorrect or null
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Path Incorrect");
+        }
+
+    }
+
+    async Task ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+        await InvokeAsync(() => { StateHasChanged(); });
+    }
+
+    private void DDL_Change(string ddl_name, object value)
+    {
+        if (ddl_name == "Arh" && value == null)
+        {
+            searchAnti.prv_code = null;
+            searchAnti.hos_code = null;
+        }
+        else if (ddl_name == "Prv" && value == null)
+        {
+            searchAnti.hos_code = null;
+        }
+        else if (ddl_name == "Prv" && value != null)
+        {
+            var prv_select = lab_ddl_List.FirstOrDefault(x => x.prv_code == value.ToString());
+
+            searchAnti.arh_code = prv_select.arh_code;
+        }
+        else if (ddl_name == "Hos" && value == null)
+        {
+            //searchModel.mps_lab = null;
+        }
+        else if (ddl_name == "Hos" && value != null)
+        {
+            var hos_select = lab_ddl_List.FirstOrDefault(x => x.hos_code == value.ToString());
+
+            searchAnti.prv_code = hos_select.prv_code;
+            searchAnti.arh_code = hos_select.arh_code;
+        }
+
+        StateHasChanged();
+    }
+
+    #endregion
+
+}

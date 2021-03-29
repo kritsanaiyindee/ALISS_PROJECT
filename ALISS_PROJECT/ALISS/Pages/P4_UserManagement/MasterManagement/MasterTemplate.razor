@@ -1,0 +1,218 @@
+﻿@page "/MasterManagement/MasterTemplate"
+
+@inject IJSRuntime jsRuntime
+@inject NavigationManager navigationManager
+
+@inject ConfigDataService configDataService
+@inject MasterTemplateService masterTemplateService
+
+<div>
+    <div class="divHead">
+        Master Template
+    </div>
+</div>
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>
+
+    <Loading ShowModel="true" />
+}
+else
+{
+    <div class="container inputArea">
+        <div class="row">
+            <InputBox ConfigData="@(configData.Get_ConfigRow("mst_code"))">
+                <RadzenTextBox @bind-Value="@searchModel.mst_code" />
+            </InputBox>
+
+            <InputBox ConfigData="@(configData.Get_ConfigRow("mst_version"))">
+                <RadzenTextBox @bind-Value="@searchModel.mst_version" />
+            </InputBox>
+        </div>
+        <div class="row justify-content-between">
+            <InputBox ConfigData="@(configData.Get_ConfigRow("mst_date_from"))">
+                <RadzenDatePicker @bind-Value="@searchModel.mst_date_from" DateFormat="dd/MM/yyyy" ReadOnly="true" Style="width:100%;" DateRender="DateRenderFrom" />
+            </InputBox>
+
+            <InputBox ConfigData="@(configData.Get_ConfigRow("mst_date_to"))">
+                <RadzenDatePicker @bind-Value="@searchModel.mst_date_to" DateFormat="dd/MM/yyyy" ReadOnly="true" Style="width:100%;" DateRender="DateRenderTo" />
+            </InputBox>
+
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup buttonArea">
+                    <div class="col-auto">
+                        <RadzenButton class="btnSearch" Text="Search" Click="SearchInboxData" />
+                    </div>
+                    <div class="col-auto">
+                        <RadzenButton class="btnClear" Text="Clear" Click="ClearInboxData" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div style="width:1200px;">
+        <div class="container">
+            <div class="row justify-content-end">
+                <div class="col-auto buttonArea">
+                    <RadzenButton Icon="add" class="btnAdd" Text="Add Template" Click="@(() => NavigateToDetailPage(""))" />
+                </div>
+            </div>
+        </div>
+
+        <br />
+
+        <div style="width:90%;margin:0px auto;">
+            <div class="container">
+                <div class="row justify-content-end">
+                    <div class="col-auto">
+                        <label>Rows : </label>
+                    </div>
+                    <div class="col-auto">
+                        <RadzenDropDown @bind-Value="inboxGrid.PageSize" TValue="int" AllowFiltering="true" Data="inboxGrid.PageSizeOption" Change="SearchInboxData" Style="width:50px" />
+                    </div>
+                </div>
+            </div>
+            <RadzenGrid TItem="MasterTemplateDTO" @ref="inboxGrid.radzenGrid" Data="@searchResultList" PageSize="inboxGrid.PageSize" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                <Columns>
+                    <RadzenGridColumn TItem="MasterTemplateDTO" Property="mst_code" Title="" Width="50px" Context="data">
+                        <Template>
+                            <RadzenButton Icon="edit" Style="background: #0A6839 0% 0% no-repeat padding-box;" Click="@(() => NavigateToDetailPage(data.mst_code))" />
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="MasterTemplateDTO" Property="mst_code" Title="" Width="50px" Context="data">
+                        <Template>
+                            <RadzenButton Icon="file_copy" Style="background: #0A6839 0% 0% no-repeat padding-box;" Click="@(() => NavigateToCopyDetailPage(data.mst_code))" />
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="MasterTemplateDTO" Property="mst_code" Title="@(configData.Get_Label("mst_code"))">
+                        <FooterTemplate>
+                            <label title="@inboxGrid.FooterLabelString">@inboxGrid.FooterLabelString</label>
+                        </FooterTemplate>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="MasterTemplateDTO" Property="mst_version" Title="@(configData.Get_Label("mst_version"))" />
+                    <RadzenGridColumn TItem="MasterTemplateDTO" Property="mst_date_from" Title="@(configData.Get_Label("mst_date_from"))" />
+                    <RadzenGridColumn TItem="MasterTemplateDTO" Property="mst_active" Title="@(configData.Get_Label("mst_active"))" Context="data">
+                        <Template>
+                            @if (data.mst_active == true)
+                            {
+                                <label>Active</label>
+                            }
+                            else
+                            {
+                                <label>Inactive</label>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+
+        <br />
+
+    </div>
+
+    <hr />
+
+    <Loading ShowModel="showLoading" />
+}
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private bool showLoading;
+
+    private RadzenGridCustom<MasterTemplateDTO> inboxGrid = new RadzenGridCustom<MasterTemplateDTO>();
+    private MasterTemplateSearchDTO searchModel = new MasterTemplateSearchDTO();
+    private List<MasterTemplateDTO> searchResultList;
+
+    private bool pageLoading { get { return (searchResultList == null); } }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0202") == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = "MNU_0202" });
+
+            searchResultList = await masterTemplateService.GetListByModelAsync(searchModel);
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task SearchInboxData()
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        searchModel.mst_code = searchModel.mst_code?.Trim();
+        searchModel.mst_version = searchModel.mst_version?.Trim();
+
+        searchResultList = await masterTemplateService.GetListByModelAsync(searchModel);
+        if (inboxGrid.radzenGrid != null) inboxGrid.radzenGrid.GoToPage(0);
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task ClearInboxData()
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        searchModel = new MasterTemplateSearchDTO();
+
+        await SearchInboxData();
+    }
+
+    private void NavigateToDetailPage(string mst_code)
+    {
+        navigationManager.NavigateTo("MasterManagement/MasterTemplate/DataDetail/" + mst_code);
+    }
+
+    private async void NavigateToCopyDetailPage(string mst_code)
+    {
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to copy master data?");
+        if (result)
+        {
+            showLoading = true;
+            StateHasChanged();
+
+            //Save data
+            var copyModel = new MasterTemplateDTO()
+            {
+                mst_code = mst_code,
+                mst_createuser = mainLayout.loginUser.Username
+            };
+
+            var saveResult = await masterTemplateService.SaveCopyDataAsync(copyModel);
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Copy master data complete.");
+
+            showLoading = false;
+            StateHasChanged();
+
+            navigationManager.NavigateTo("MasterManagement/MasterTemplate/DataDetail/" + saveResult.mst_code);
+        }
+    }
+
+    void DateRenderFrom(DateRenderEventArgs args)
+    {
+        args.Disabled = ((searchModel.mst_date_to != null && args.Date > searchModel.mst_date_to) || (args.Date > DateTime.Now));
+    }
+
+    void DateRenderTo(DateRenderEventArgs args)
+    {
+        args.Disabled = ((searchModel.mst_date_from != null && args.Date < searchModel.mst_date_from) || (args.Date > DateTime.Now));
+    }
+}

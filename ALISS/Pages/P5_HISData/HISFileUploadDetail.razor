@@ -1,0 +1,291 @@
+﻿@page "/HISFileUploadDetail"
+@page "/HISFileUploadDetail/{HISuploadID}"
+
+@using ALISS.Data.D5_HISData
+@using ALISS.HISUpload.DTO
+
+@inject NavigationManager navigationManager
+@inject ConfigDataService configDataService
+@inject HISFileUploadService HISFileUploadservice
+@inject IJSRuntime iJSRuntime;
+
+
+<div>
+    <div class="divHead">
+        HIS Upload Summary - @HISFileUploadData.hfu_file_name (@HISFileUploadData.hfu_file_type)
+    </div>
+</div>
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <br />
+    <div class="container inputArea">
+        <div class="row">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="ชื่อโรงพยาบาล" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenTextBox @bind-Value="@HISFileUploadData.hos_name" Disabled="true" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="จังหวัด" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenTextBox @bind-Value="@HISFileUploadData.prv_name" Disabled="true" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="เขต" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenTextBox @bind-Value="@HISFileUploadData.arh_name"  Disabled="true" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-start divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="Total Record(s)" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenTextBox Value="@HISFileUploadData.hfu_total_records.ToString()" Disabled="true" Style="text-align:right" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-start divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="Error Record(s)" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenTextBox Value="@HISFileUploadData.hfu_error_records.ToString()" Disabled="true" Style="text-align:right" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-start divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="Upload Date" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenTextBox Value="@HISFileUploadData.hfu_createdate_str" Disabled="true" />
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-start divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="Match Record(s)" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenTextBox Value="@HISFileUploadData.hfu_matching_records.ToString()" Disabled="true" Style="text-align:right" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-start divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="Dup Record(s)" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenTextBox Value="@HISFileUploadData.hfu_duplicate_records.ToString()" Disabled="true" Style="text-align:right" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-start divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="Status" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenTextBox Value="@HISFileUploadData.hfu_status_str" Disabled="true" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+     <div style="width:90%;margin:0px auto;">
+                              
+                <div class="container">
+                    <div class="row justify-content-start">
+                        <label>Error List</label>
+                    </div>
+
+                    <div class="row justify-content-end">
+                        <div class="col-auto">
+                            <label>Rows : </label>
+                        </div>
+                        <div class="col-auto">
+                            <RadzenDropDown @bind-Value="inboxGrid.PageSize" TValue="int" AllowFiltering="true" Data="inboxGrid.PageSizeOption" Style="width:50px" />
+                        </div>
+                    </div>
+                </div>
+                <RadzenGrid AllowFiltering="true" AllowSorting="true" AllowPaging="true" PageSize="inboxGrid.PageSize" @ref="inboxGrid.radzenGrid" Data="@gridHISFileSummary.OrderBy(o=> o.hus_error_fieldrecord_int)" ColumnWidth="70px"
+                            TItem="HISFileUploadSummaryDTO" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+
+                    <Columns>
+                        <RadzenGridColumn TItem="HISFileUploadSummaryDTO" Property="hus_error_fieldrecord_int" Title="Row No." />
+                        <RadzenGridColumn TItem="HISFileUploadSummaryDTO" Property="hus_error_fieldname" Title="Field" />
+                        <RadzenGridColumn TItem="HISFileUploadSummaryDTO" Property="hus_error_fielddescr" Title="Description">                          
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+                          
+    </div>
+    <br />
+
+    <div class="row justify-content-between buttonArea">
+        <div class="col-6 col-xl-4">
+            <div class="row justify-content-start divGroup buttonArea">
+                <div class="col-auto">
+                    <RadzenButton Text="Back" class="btnCancel" Click="@OpenHISFileUploadIndex" />
+                </div>
+                <div class="col-auto">
+                    <RadzenButton Text="Export" class="btnSave" Click="@GenerateExcelSummary" />
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-4">
+            <div class="row justify-content-end divGroup buttonArea">
+                <div class="col-auto">
+                    @if (mainLayout.loginUser.PagePermission.rop_cancel)
+                    {
+                        <RadzenButton Text="Cancel" class="btnCancel" Click="@(() => ShowConfirmDialog("Cancel"))"
+                                      Disabled="@(HISFileUploadData.hfu_status == 'W' || (HISFileUploadData.hfu_status == 'P') || (HISFileUploadData.hfu_status == 'F')? true : false)" />
+                    }
+
+                </div>
+                <div class="col-auto">
+                    @if (mainLayout.loginUser.PagePermission.rop_approve)
+                    {
+                        <RadzenButton Text="Approve" class="btnSave" Click="@(() => ShowConfirmDialog("Approve"))"
+                                      Disabled="@((HISFileUploadData.hfu_status == 'A') || (HISFileUploadData.hfu_status == 'P') || (HISFileUploadData.hfu_status == 'F') ? true : false)" />
+                    }
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <br />
+}
+
+<Loading ShowModel="showModal" />
+
+@code
+{
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+
+    [Parameter]
+    public string HISUploadID { get; set; }
+
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private const string MENU_CODE = "MNU_0501";
+
+    private ConfigData configData = new ConfigData();
+    HISUploadDataDTO HISFileUploadData = new HISUploadDataDTO();
+    List<HISFileUploadSummaryDTO> gridHISFileSummary = new List<HISFileUploadSummaryDTO>();
+    private RadzenGridCustom<HISFileUploadSummaryDTO> inboxGrid = new RadzenGridCustom<HISFileUploadSummaryDTO>();
+    private bool showModal = true;
+    private bool pageLoading { get { return (HISFileUploadData == null); } }
+    //private string hfu_total_records_str { get { return (HISFileUploadData.hfu_total_records.ToString()); } }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission(MENU_CODE) == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = MENU_CODE });
+
+            HISFileUploadData = await HISFileUploadservice.GetHISFileUploadDataByIdAsync(Convert.ToInt32(HISUploadID));
+            gridHISFileSummary = await HISFileUploadservice.GetHISFileUploadSummaryListByIdAsync(Convert.ToInt32(HISUploadID));
+
+            showModal = false;
+            StateHasChanged();
+        }
+    }
+
+    void OpenHISFileUploadIndex()
+    {
+        navigationManager.NavigateTo("HISFileUpload");
+    }
+
+    private async Task GenerateExcelSummary()
+    {
+        showModal = true;
+
+        var blnErr = HISFileUploadservice.GenerateExportWithError(iJSRuntime, gridHISFileSummary,HISFileUploadData);
+
+        showModal = false;
+    }
+
+    private async Task ShowConfirmDialog(string type)
+    {
+        if (type.Equals("Approve"))
+        {
+            var result = await iJSRuntime.InvokeAsync<bool>("ShowConfirm", "Confirm Approve data.");
+            if (result)
+            {
+                HISFileUploadData.hfu_approveduser = mainLayout.loginUser.Username;
+                HISFileUploadData.hfu_approveddate = DateTime.Now;
+                HISFileUploadData.hfu_updateuser = mainLayout.loginUser.Username;
+                HISFileUploadData.hfu_status = 'A';
+                await SaveHISFileUpload(type);
+            }
+        }
+
+        else if (type.Equals("Cancel"))
+        {
+            var result = await iJSRuntime.InvokeAsync<bool>("ShowConfirm", "Confirm cancel data.");
+            if (result)
+            {
+                HISFileUploadData.hfu_status = 'D';
+                HISFileUploadData.hfu_updateuser = mainLayout.loginUser.Username;
+                await SaveHISFileUpload(type);
+            }
+        }
+
+    }
+
+    private async Task SaveHISFileUpload(string type)
+    {
+        showModal = true;
+
+        HISFileUploadData = await HISFileUploadservice.SaveHISFileUploadDataAsync(HISFileUploadData);
+
+        await iJSRuntime.InvokeAsync<object>("ShowAlert", type + " Success");
+
+        HISFileUploadData = await HISFileUploadservice.GetHISFileUploadDataByIdAsync(Convert.ToInt32(HISUploadID));
+        gridHISFileSummary = await HISFileUploadservice.GetHISFileUploadSummaryListByIdAsync(Convert.ToInt32(HISUploadID));
+
+        showModal = false;
+        StateHasChanged();
+    }
+}
+

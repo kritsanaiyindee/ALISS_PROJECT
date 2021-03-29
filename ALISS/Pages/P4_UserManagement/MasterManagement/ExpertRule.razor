@@ -1,0 +1,285 @@
+﻿@page "/MasterManagement/MasterTemplate/ExpertRules/{mst_code}"
+
+@inject IJSRuntime jsRuntime
+@inject NavigationManager navigationManager
+@inject DialogService dialogService
+
+@inject LoginUserData loginUserData
+@inject ExpertRuleService expertRuleService
+
+<div style="width: 1200px;">
+    <div class="divHead">
+        ExpertRules
+    </div>
+</div>
+
+<Loading ShowModel="showModal" />
+
+@if (gridDatas == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="container inputArea">
+        <div class="row justify-content-between">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="col">
+                        <LabelBox inputLabel="CATEGORY" />
+                    </div>
+                    <div class="col">
+                        <RadzenTextBox @bind-Value="@searchData.exr_code" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="col" style="text-align:right;">
+                        <RadzenButton class="btnSearch" Text="Search" />
+                    </div>
+                    <div class="col">
+                        <RadzenButton class="btnClear" Text="Clear" Click="OnInitializedAsync" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div style="width:1200px;">
+        <div style="text-align:right;">
+            <RadzenButton Icon="add" Text="Add ExpertRules" Click="@(() => ShowDataDetailDialog(new ExpertRuleDTO()))" />
+        </div>
+
+        <br />
+
+        <div style="width:90%;margin:0px auto;">
+            <RadzenGrid TItem="ExpertRuleDTO" Data="@gridDatas" PageSize="4" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                <Columns>
+                    <RadzenGridColumn TItem="ExpertRuleDTO" Property="" Title="" Width="50px" Filterable="false" Context="data">
+                        <Template>
+                            <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowDataDetailDialog(data))" />
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="ExpertRuleDTO" Property="exr_code" Title="ID" />
+                    <RadzenGridColumn TItem="ExpertRuleDTO" Property="exr_mst_CATEGORY" Title="CATEGORY" />
+                    <RadzenGridColumn TItem="ExpertRuleDTO" Property="exr_mst_PRIORITY" Title="PRIORITY" />
+                    <RadzenGridColumn TItem="ExpertRuleDTO" Property="exr_mst_ORGANISMS" Title="ORGANISMS" />
+                    <RadzenGridColumn TItem="ExpertRuleDTO" Property="exr_mst_DESCRIPTION" Title="DESCRIPTION" />
+                    <RadzenGridColumn TItem="ExpertRuleDTO" Property="exr_active" Title="Status" Context="data">
+                        <Template>
+                            @if (data.exr_active == true)
+                            {
+                                <label>Active</label>
+                            }
+                            else
+                            {
+                                <label>Inactive</label>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+
+        <br />
+
+        <div style="text-align: right">
+            <RadzenButton class="btnCancel" Text="Cancel" Click="RedirectToInbox" />
+        </div>
+
+    </div>
+
+    <hr />
+}
+
+@code {
+    [Parameter] public string mst_code { get; set; }
+
+    private List<ExpertRuleDTO> gridDatas;
+    private List<LogProcessDTO> historys;
+    ExpertRuleDTO searchData = new ExpertRuleDTO();
+    ExpertRuleDTO modelData = new ExpertRuleDTO();
+    private bool CreateMode = true;
+    private bool showModal = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SearchInboxData();
+    }
+
+    private async void SearchInboxData()
+    {
+        showModal = true;
+
+        gridDatas = await expertRuleService.GetListByModelAsync(new ExpertRuleDTO() { exr_mst_code = mst_code, exr_code = searchData.exr_code });
+        historys = new List<LogProcessDTO>();
+
+        showModal = false;
+
+        StateHasChanged();
+    }
+
+    private void RedirectToInbox()
+    {
+        navigationManager.NavigateTo("MasterManagement/MasterTemplate/DataDetail/" + mst_code);
+    }
+
+    private async void SaveData(DialogService ds)
+    {
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (result)
+        {
+            if (CreateMode)
+            {
+                //Check duplicate
+                var duplicate = await expertRuleService.GetDataAsync(modelData.exr_code);
+
+                if (string.IsNullOrEmpty(duplicate.exr_code) == false)
+                {
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate code.");
+                    return;
+                }
+                modelData.exr_createuser = loginUserData.CurrentLoginUser.Username;
+            }
+            else
+            {
+                modelData.exr_updateuser = loginUserData.CurrentLoginUser.Username;
+            }
+
+            //Save data
+            var returnData = await expertRuleService.SaveDataAsync(modelData);
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save data complete.");
+
+            ds.Close();
+        }
+    }
+
+    private async Task ShowDataDetailDialog(ExpertRuleDTO modelData1)
+    {
+        modelData = modelData1;
+
+        if (string.IsNullOrEmpty(modelData.exr_code))
+        {
+            CreateMode = true;
+            modelData = new ExpertRuleDTO()
+            {
+                exr_status = "N",
+                exr_createuser = "SYSTEM"
+            };
+        }
+        else
+        {
+            CreateMode = false;
+            //modelData = await expertRuleService.GetDataAsync(modelData.exr_code);
+            modelData.exr_status = "E";
+            modelData.exr_updateuser = "SYSTEM";
+        }
+
+        await dialogService.OpenAsync("Add ExpertRules", ds =>
+    @<RadzenCard Style="padding: 20px;">
+         <div class="container inputArea">
+             <div class="row justify-content-center">
+                 <div class="col-xl-12">
+                     <div class="row justify-content-center divGroup">
+                         <div class="col">
+                             <LabelBox inputLabel="ExpertRules code" />
+                         </div>
+                         <div class="col">
+                             @if (CreateMode)
+                             {
+                                 <RadzenTextBox @bind-Value="@modelData.exr_code" />
+                             }
+                             else
+                             {
+                                 <RadzenTextBox @bind-Value="@modelData.exr_code" ReadOnly="true" />
+                             }
+                         </div>
+                     </div>
+                 </div>
+             </div>
+             <div class="row justify-content-center">
+                 <div class="col-xl-12">
+                     <div class="row justify-content-center divGroup">
+                         <div class="col">
+                             <LabelBox inputLabel="CATEGORY" />
+                         </div>
+                         <div class="col">
+                             <RadzenTextBox @bind-Value="@modelData.exr_mst_CATEGORY" />
+                         </div>
+                     </div>
+                 </div>
+             </div>
+             <div class="row justify-content-center">
+                 <div class="col-xl-12">
+                     <div class="row justify-content-center divGroup">
+                         <div class="col">
+                             <LabelBox inputLabel="PRIORITY" />
+                         </div>
+                         <div class="col">
+                             <RadzenTextBox @bind-Value="@modelData.exr_mst_PRIORITY" />
+                         </div>
+                     </div>
+                 </div>
+             </div>
+             <div class="row justify-content-center">
+                 <div class="col-xl-12">
+                     <div class="row justify-content-center divGroup">
+                         <div class="col">
+                             <LabelBox inputLabel="ORGANISMS" />
+                         </div>
+                         <div class="col">
+                             <RadzenTextBox @bind-Value="@modelData.exr_mst_ORGANISMS" />
+                         </div>
+                     </div>
+                 </div>
+             </div>
+             <div class="row justify-content-center">
+                 <div class="col-xl-12">
+                     <div class="row justify-content-center divGroup">
+                         <div class="col">
+                             <LabelBox inputLabel="DESCRIPTION" />
+                         </div>
+                         <div class="col">
+                             <RadzenTextBox @bind-Value="@modelData.exr_mst_DESCRIPTION" />
+                         </div>
+                     </div>
+                 </div>
+             </div>
+             <div class="row justify-content-center">
+                 <div class="col-xl-12">
+                     <div class="row justify-content-center divGroup">
+                         <div class="col">
+                             <LabelBox inputLabel="Status" />
+                         </div>
+                         <div class="col">
+                             <RadzenRadioButtonList @bind-Value="@modelData.exr_active" TValue="bool">
+                                 <Items>
+                                     <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                     <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                 </Items>
+                             </RadzenRadioButtonList>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+             <div class="row justify-content-center">
+                 <div class="col-xl-12">
+                     <div class="row justify-content-center divGroup">
+                         <div class="col" style="text-align:right;">
+                             <RadzenButton class="btnCancel" Text="Cancel" Click="(()=> ds.Close(false))" />
+                         </div>
+                         <div class="col">
+                             <RadzenButton Icon="save" class="btnSave" Text="Save" Click="(() => SaveData(ds))" />
+                         </div>
+                     </div>
+                 </div>
+             </div>
+         </div>
+    </RadzenCard>
+    );
+    }
+}

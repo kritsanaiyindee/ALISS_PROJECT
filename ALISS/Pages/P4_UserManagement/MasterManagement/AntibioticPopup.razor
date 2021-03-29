@@ -1,0 +1,91 @@
+﻿@page "/AntibioticPopup/{AntibioticCode}"
+
+@using NARST_WHONET_WEBPT.Data
+@using NARST_WHONET_WEBPT.Data.MasterManagement
+@using Radzen
+@using Radzen.Blazor
+@inject AntibioticService antibioticService
+@inject DialogService dialogService
+
+<RadzenCard Style="padding: 20px;">
+    <div class="row">
+        <div class="divBox">
+            <div class="divLabel">
+                <label>Antibiotic Code</label>
+            </div>
+            <div class="divColon">
+                <label>:</label>
+            </div>
+            <div class="divInput">
+                <input type="text" style="background: #FFFFFF 0% 0% no-repeat padding-box; border: 1px solid #E4E4E4; border-radius: 3px; opacity: 1;font: Regular 14px/22px Arial;" />
+            </div>
+        </div>
+        <div class="divBox">
+            <div class="divLabel">
+                <label>Antibiotic</label>
+            </div>
+            <div class="divColon">
+                <label>:</label>
+            </div>
+            <div class="divInput">
+                <input type="text" style="background: #FFFFFF 0% 0% no-repeat padding-box; border: 1px solid #E4E4E4; border-radius: 3px; opacity: 1;font: Regular 14px/22px Arial;" />
+            </div>
+        </div>
+        <div class="divBox">
+            <div class="divLabel">
+                <label>Status</label>
+            </div>
+            <div class="divColon">
+                <label>:</label>
+            </div>
+            <div class="divInput">
+                <RadzenRadioButtonList @bind-Value="value" TValue="int">
+                    <Items>
+                        <RadzenRadioButtonListItem Text="Active" Value="1" />
+                        <RadzenRadioButtonListItem Text="Inactive" Value="2" />
+                    </Items>
+                </RadzenRadioButtonList>
+            </div>
+        </div>
+        <div class="col-md-12">
+            <div style="text-align: right">
+                <input type="button" style="width: 131px;height: 38px;display: inline-block;background: #EBEBEB 0% 0% no-repeat padding-box;border: 1px solid #E4E4E4;border-radius: 3px;color: #999999;" value="ยกเลิก" />
+                <div style="width: 5px;display: inline-block;"></div>
+                <input type="button" style="width: 131px;height: 38px;display: inline-block;background: #41AA88 0% 0% no-repeat padding-box;border-radius: 3px;color: #FFFFFF;" value="ตกลง" />
+            </div>
+            @*<RadzenButton Text="Save" Click="()=> ds.Close(true)" Style="margin-bottom: 10px; width: 150px" />
+                <RadzenButton Text="Cancel" Click="()=> ds.Close(false)" ButtonStyle="ButtonStyle.Secondary" Style="margin-bottom: 10px; width: 150px" />*@
+        </div>
+    </div>
+</RadzenCard>
+
+@code {
+    [Parameter] public string AntibioticCode { get; set; }
+
+    private GridData[] gridDatas;
+    private GridData[] historys;
+    private string tmpData = "กรุณาเลือก";
+    private DateTime Date1;
+    int value = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        gridDatas = await antibioticService.GetDataAsync();
+        historys = await antibioticService.GetHistoryAsync();
+    }
+
+    string[] options = new[]
+           {
+                "One",
+                "Two",
+                "Three"
+            };
+
+    Dictionary<DateTime, string> events = new Dictionary<DateTime, string>();
+
+    void Change(object value, string name)
+    {
+        events.Add(DateTime.Now, $"{name} value changed to {tmpData}");
+        StateHasChanged();
+    }
+}

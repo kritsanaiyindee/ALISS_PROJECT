@@ -1,0 +1,316 @@
+﻿@page "/MasterManagement/MasterTemplate/Antibiotic/{mst_code}"
+
+@inject IJSRuntime jsRuntime
+@inject NavigationManager navigationManager
+@inject DialogService dialogService
+
+@inject LoginUserData loginUserData
+@inject AntibioticService antibioticService
+
+<div style="width: 1200px;">
+    <div class="divHead">
+        Antibiotic
+    </div>
+</div>
+
+@if (gridDatas == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="container inputArea">
+        <div class="row justify-content-between">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="col">
+                        <LabelBox inputLabel="Antibiotic" />
+                    </div>
+                    <div class="col">
+                        <RadzenTextBox @bind-Value="@searchData.ant_code" Placeholder="a-zA-Z0-9_-" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup buttonArea">
+                    <div class="col-auto">
+                        <RadzenButton class="btnSearch" Text="Search" />
+                    </div>
+                    <div class="col-auto">
+                        <RadzenButton class="btnClear" Text="Clear" Click="OnInitializedAsync" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div>
+        <div style="text-align:right;">
+            <RadzenButton Icon="add" Text="Add Antibiotic" Click="@(() => ShowDataDetailDialog(new AntibioticDTO()))" />
+        </div>
+
+        <br />
+
+        <div style="width:90%;margin:0px auto;">
+            <RadzenGrid TItem="AntibioticDTO" Data="@gridDatas" PageSize="4" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                <Columns>
+                    <RadzenGridColumn TItem="AntibioticDTO" Property="" Title="" Width="50px" Filterable="false" Context="data">
+                        <Template>
+                            <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowDataDetailDialog(data))" />
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="AntibioticDTO" Property="ant_code" Title="WHON5_CODE" />
+                    <RadzenGridColumn TItem="AntibioticDTO" Property="ant_name" Title="Antibiotic" />
+                    <RadzenGridColumn TItem="AntibioticDTO" Property="ant_mst_GUIDELINES" Title="Guide Line" />
+                    <RadzenGridColumn TItem="AntibioticDTO" Property="ant_mst_ABX_NUMBER" Title="ABX_NUMBER" />
+                    <RadzenGridColumn TItem="AntibioticDTO" Property="ant_mst_POTENCY" Title="POTENCY" />
+                    <RadzenGridColumn TItem="AntibioticDTO" Property="ant_active" Title="Status" Context="data">
+                        <Template>
+                            @if (data.ant_active == true)
+                            {
+                                <label>Active</label>
+                            }
+                            else
+                            {
+                                <label>Inactive</label>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+
+        <br />
+
+        <div style="text-align: right">
+            <RadzenButton class="btnCancel" Text="Cancel" Click="RedirectToInbox" />
+        </div>
+
+    </div>
+
+    <hr />
+}
+
+@if (ShowPopup)
+{
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@modelData" OnInvalidSubmit="HandleInvalidSubmit" OnValidSubmit="HandleValidSubmit">
+                        <DataAnnotationsValidator />
+
+                        <div class="container inputArea">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col">
+                                            <LabelBox inputLabel="Antibiotic code" />
+                                        </div>
+                                        <div class="col">
+                                            @if (CreateMode)
+                                            {
+                                                <RadzenTextBox @bind-Value="@modelData.ant_code" />
+                                                <ValidationMessage For="@(() => modelData.ant_code)" />
+                                            }
+                                            else
+                                            {
+                                                <RadzenTextBox @bind-Value="@modelData.ant_code" ReadOnly="true" />
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col">
+                                            <LabelBox inputLabel="Antibiotic" />
+                                        </div>
+                                        <div class="col">
+                                            <RadzenTextBox @bind-Value="@modelData.ant_name" />
+                                            <ValidationMessage For="@(() => modelData.ant_name)" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col">
+                                            <LabelBox inputLabel="GUIDELINES" />
+                                        </div>
+                                        <div class="col">
+                                            <RadzenTextBox @bind-Value="@modelData.ant_mst_GUIDELINES" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col">
+                                            <LabelBox inputLabel="ABX_NUMBER" />
+                                        </div>
+                                        <div class="col">
+                                            <RadzenTextBox @bind-Value="@modelData.ant_mst_ABX_NUMBER" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col">
+                                            <LabelBox inputLabel="POTENCY" />
+                                        </div>
+                                        <div class="col">
+                                            <RadzenTextBox @bind-Value="@modelData.ant_mst_POTENCY" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col">
+                                            <LabelBox inputLabel="Status" />
+                                        </div>
+                                        <div class="col">
+                                            <RadzenRadioButtonList @bind-Value="modelData.ant_active" TValue="bool">
+                                                <Items>
+                                                    <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                                    <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                                </Items>
+                                            </RadzenRadioButtonList>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col" style="text-align:right;">
+                                            <RadzenButton class="btnCancel" Text="Cancel" Click="ClosePopup" />
+                                        </div>
+                                        <div class="col">
+                                            <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="OK" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<Loading ShowModel="showModal" />
+
+@code {
+    [Parameter] public string mst_code { get; set; }
+
+    private List<AntibioticDTO> gridDatas;
+    private List<LogProcessDTO> historys;
+    private AntibioticDTO searchData = new AntibioticDTO();
+    private bool CreateMode = true;
+    private bool showModal = true;
+    private AntibioticDTO modelData;
+    bool ShowPopup = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        searchData = new AntibioticDTO();
+
+        SearchInboxData();
+    }
+
+    private async void SearchInboxData()
+    {
+        showModal = true;
+
+        gridDatas = await antibioticService.GetListByModelAsync(new AntibioticDTO() { ant_mst_code = mst_code, ant_code = searchData.ant_code, ant_name = searchData.ant_name });
+        historys = new List<LogProcessDTO>();
+
+        showModal = false;
+
+        StateHasChanged();
+    }
+
+    private void RedirectToInbox()
+    {
+        navigationManager.NavigateTo("MasterManagement/MasterTemplate/DataDetail/" + mst_code);
+    }
+
+    private void ShowDataDetailDialog(AntibioticDTO modelData1)
+    {
+        modelData = modelData1;
+
+        if (modelData.ant_id == 0)
+        {
+            CreateMode = true;
+            modelData = new AntibioticDTO()
+            {
+                ant_status = "N",
+                ant_createuser = loginUserData.CurrentLoginUser.Username
+            };
+        }
+        else
+        {
+            CreateMode = false;
+            modelData.ant_status = "E";
+            modelData.ant_updateuser = loginUserData.CurrentLoginUser.Username;
+        }
+
+        ShowPopup = true;
+    }
+
+    void ClosePopup()
+    {
+        // Close the Popup
+        modelData = new AntibioticDTO();
+        ShowPopup = false;
+
+        StateHasChanged();
+    }
+
+    private void HandleInvalidSubmit()
+    {
+
+    }
+
+    private async void HandleValidSubmit()
+    {
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (result)
+        {
+            showModal = true;
+
+            if (CreateMode)
+            {
+                //Check duplicate
+                var duplicate = await antibioticService.GetDataAsyncById(modelData.ant_id);
+
+                if (string.IsNullOrEmpty(duplicate.ant_code) == false)
+                {
+                    showModal = false;
+
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate code.");
+
+                    return;
+                }
+                modelData.ant_createuser = loginUserData.CurrentLoginUser.Username;
+            }
+            else
+            {
+                modelData.ant_updateuser = loginUserData.CurrentLoginUser.Username;
+            }
+
+            //Save data
+            var returnData = await antibioticService.SaveDataAsync(modelData);
+
+            showModal = false;
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save data complete.");
+
+            ClosePopup();
+        }
+    }
+}

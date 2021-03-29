@@ -1,0 +1,88 @@
+﻿@page "/MasterManagement/MasterHospital"
+@page "/MasterManagement/MasterHospital{hos_code}"
+
+@inject MasterHospitalService hospitalService
+@inject NavigationManager navigationManager
+
+<div style="width: 1200px;">
+    <div class="divHead">
+        Hospital - @objHospital.hos_name (@objHospital.hos_code)
+    </div>
+</div>
+
+@if (objHospital == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <EditForm Model="@objHospital">
+        <div class="row">
+            <div class="divBox">
+                <div class="divLabel">
+                    <label>Hospital Code</label>
+                </div>
+                <div class="divColon">
+                    <label>:</label>
+                </div>
+                <div class="divInput">
+                    <input type="text" @bind-value="@objHospital.hos_code" style="background: #FFFFFF 0% 0% no-repeat padding-box; border: 1px solid #E4E4E4; border-radius: 3px; opacity: 1;font: Regular 14px/22px Arial;" />
+                </div>
+            </div>
+            <div class="divBox">
+                <div class="divLabel">
+                    <label>ชื่อ</label>
+                </div>
+                <div class="divColon">
+                    <label>:</label>
+                </div>
+                <div class="divInput">
+                    <input type="text" @bind-value="@objHospital.hos_name" style="background: #FFFFFF 0% 0% no-repeat padding-box; border: 1px solid #E4E4E4; border-radius: 3px; opacity: 1;font: Regular 14px/22px Arial;" />
+                </div>
+            </div>
+            <div class="col-md-12">
+                <div style="text-align: right">
+                    <RadzenButton Style="background: #EBEBEB;border: 1px solid #E4E4E4;border-radius: 3px;color: #999999;" Text="Cancel" Click="()=> ShowSimpleInbox()" />
+                    &nbsp;&nbsp;&nbsp;&nbsp;
+                    <RadzenButton Icon="save" Style="background: #41AA88;border-radius: 3px;color: #FFFFFF;" Text="Save" Click="()=> SaveData()" />
+                </div>
+            </div>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public string hos_code { get; set; }
+
+    private HospitalDTO objHospital = new HospitalDTO();
+    private List<LogProcessDTO> historys;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(hos_code))
+        {
+            objHospital = new HospitalDTO()
+            {
+                hos_status = "N",
+                hos_createuser = "SYSTEM"
+            };
+        }
+        else
+        {
+            objHospital = await hospitalService.GetDataAsync(hos_code);
+            objHospital.hos_status = "E";
+            objHospital.hos_updateuser = "SYSTEM";
+        }
+        historys = await hospitalService.GetHistoryAsync(new LogProcessSearchDTO() { log_mnu_name = "MasterHospital" });
+    }
+
+    void ShowSimpleInbox()
+    {
+        navigationManager.NavigateTo("/MasterManagement/MasterHospital/");
+    }
+
+    async void SaveData()
+    {
+        var result = hospitalService.SaveDataAsync(objHospital);
+    }
+}

@@ -1,0 +1,243 @@
+﻿@page "/Glass/GlassPublicNation"
+
+@using ALISS.Data.D6_Report.Glass
+@using ALISS.GLASS.DTO
+@using Radzen
+@using Radzen.Blazor
+@using ALISS.Master.DTO
+@using System.Globalization
+
+@inject IJSRuntime jsRuntime
+@inject GlassService ReportService
+@inject DialogService dialogService
+@inject NotificationService notificationService
+@inject ConfigDataService configDataService
+@inject NavigationManager navigationManager
+
+<div>
+    <div class="divHead">
+        Glass - ระดับประเทศ
+    </div>
+</div>
+
+@if (gridDatas == null)
+{
+    <p><em>Loading...</em></p>
+    <Loading ShowModel="true" />
+}
+else
+{
+    <div class="container inputArea">
+        <br />
+        <div class="row justify-content-start">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("rpt_glsnat_yearfrom")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenNumeric TValue="int" Min="2000" Max="9999" @bind-Value=@iYearFrom />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("rpt_glsnat_yearto")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenNumeric TValue="int" Min="2000" Max="9999" @bind-Value=@iYearTo />
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row justify-content-end">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup buttonArea">
+                    <div class="col-auto">
+                        <RadzenButton class="btnSearch" Text="Search" Click="SearchData" />
+                    </div>
+                    <div class="col-auto">
+                        <RadzenButton class="btnClear" Text="Clear" Click="ClearData" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <hr />
+
+    <div style="width:90%;margin:0px auto;">
+        <div class="container">
+            <div class="row justify-content-end">
+                <div class="col-auto">
+                    <label>Rows : </label>
+                </div>
+                <div class="col-auto">
+                    <RadzenDropDown @bind-Value="inboxGrid.PageSize" TValue="int" AllowFiltering="true" Data="inboxGrid.PageSizeOption" Change="SearchData" Style="width:50px" />
+                </div>
+            </div>
+        </div>
+        <RadzenGrid AllowPaging="true" AllowFiltering="true" AllowSorting="true" PageSize="@inboxGrid.PageSize" @ref="inboxGrid.radzenGrid" Data="@(gridDatas.Where(s=> s.who_flag == true).OrderBy(o=> o.year).ToList())" TItem="GlassFileListDTO" ColumnWidth=" 120px">
+            <Columns>
+                <RadzenGridColumn TItem="GlassFileListDTO" Property="year" Title="Glass Year" Width="90px">
+                    <FooterTemplate>
+                        <label title="@inboxGrid.FooterLabelString">@inboxGrid.FooterLabelString</label>
+                    </FooterTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="GlassFileListDTO" Property="ris_file_name" Title="RIS File" Width="100px" TextAlign="TextAlign.Center">
+                    <Template Context="selectedRow">
+                        <RadzenButton Click="@(args => DownloadRISFile(selectedRow))" Text="Download" Style="text-align:center; margin-bottom: 0px; width: 131px; height: 31px;background: #0A6839 0% 0% no-repeat padding-box;border: 1px solid #0A6839;border-radius: 3px;color: #FFFFFF; font-size:16px" />
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="GlassFileListDTO" Property="sample_file_name" Title="Sample File" Width="100px" TextAlign="TextAlign.Center">
+                    <Template Context="selectedRow">
+                        <RadzenButton Click="@(args => DownloadSampleFile(selectedRow))" Text="Download" Style="text-align:center; margin-bottom: 0px; width: 131px; height: 31px;background: #0A6839 0% 0% no-repeat padding-box;border: 1px solid #0A6839;border-radius: 3px;color: #FFFFFF; font-size:16px" />
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="GlassFileListDTO" Property="createuser" Title="Request By" Width="100px" />
+                <RadzenGridColumn TItem="GlassFileListDTO" Property="createdate" Title="Request Datetime" Width="100px" />
+                <RadzenGridColumn TItem="GlassFileListDTO" Property="updateuser" Title="Approve By" Width="100px" />
+                <RadzenGridColumn TItem="GlassFileListDTO" Property="updatedate" Title="Approve Datetime" Width="100px" />
+            </Columns>
+        </RadzenGrid>
+    </div>
+    <hr />
+    @if (!blnLoadComplete)
+    {
+        <Loading ShowModel="true" />
+    }
+}
+
+@code {
+
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+    private const string MENU_CODE = "MNU_0708";
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private RadzenGridCustom<GlassFileListDTO> inboxGrid = new RadzenGridCustom<GlassFileListDTO>();
+
+    [Inject]
+    private IFileSave OIFileSave { get; set; }
+
+    private int iYearFrom = DateTime.Today.Year - 1;
+    private int iYearTo = DateTime.Today.Year;
+    private List<GlassFileListDTO> gridDatas;
+    GlassFileListNationSearchDTO searchGlass = new GlassFileListNationSearchDTO();
+    GlassFileListDTO selectedRow = new GlassFileListDTO();
+
+    NotificationMessage notiMsg = new NotificationMessage();
+    //IList<GlassFileListDTO> selectedRow;
+    private bool blnLoadComplete = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission(MENU_CODE) == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = MENU_CODE });
+
+            searchGlass.start_year = iYearFrom;
+            searchGlass.end_year = iYearTo;
+            gridDatas = await ReportService.GetGlassPublicFileListModelAsync(searchGlass);
+
+            //dialogService.OnOpen += Open;
+            //dialogService.OnClose += Close;
+        }
+
+    }
+
+    //void Open(string title, Type type, Dictionary<string, object> parameters, DialogOptions options)
+    //{
+    //    StateHasChanged();
+    //}
+
+    //void Close(dynamic result)
+    //{
+    //    StateHasChanged();
+    //}
+
+    private async Task SearchData()
+    {
+        searchGlass.start_year = iYearFrom;
+        searchGlass.end_year = iYearTo;
+
+        gridDatas = null;
+        StateHasChanged();
+
+        gridDatas = await ReportService.GetGlassPublicFileListModelAsync(searchGlass);
+        StateHasChanged();
+    }
+
+    private async Task ClearData()
+    {
+        searchGlass.start_year = DateTime.Today.Year - 1;
+        searchGlass.end_year = DateTime.Today.Year;
+        StateHasChanged();
+
+        await SearchData();
+    }
+
+    private async Task DownloadSampleFile(GlassFileListDTO Selecteditem)
+    {
+        blnLoadComplete = false;
+        if (!string.IsNullOrEmpty(Selecteditem.sample_file_name) && !string.IsNullOrEmpty(Selecteditem.sample_file_path))
+        {
+            string ServerFileName = string.Format("{0}//{1}", Selecteditem.sample_file_path.Remove(0, 1), Selecteditem.sample_file_name);
+            string contentType = Selecteditem.sample_file_type;
+            string OutputFileName = Selecteditem.sample_file_name;
+
+            await OIFileSave.DownloadFile(ServerFileName, OutputFileName, contentType);
+        }
+        else
+        {
+            //ToDo: Path incorrect or null
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "File not Found");
+        }
+        blnLoadComplete = true;
+    }
+
+    async void DownloadRISFile(GlassFileListDTO Selecteditem)
+    {
+        blnLoadComplete = false;
+        if (!string.IsNullOrEmpty(Selecteditem.ris_file_name) && !string.IsNullOrEmpty(Selecteditem.ris_file_path))
+        {
+
+            string ServerFileName = string.Format("{0}//{1}", Selecteditem.ris_file_path.Remove(0, 1), Selecteditem.ris_file_name);
+            string contentType = Selecteditem.ris_file_type;
+            string OutputFileName = Selecteditem.ris_file_name;
+
+            await OIFileSave.DownloadFile(ServerFileName, OutputFileName, contentType);
+        }
+        else
+        {
+            //ToDo: Path incorrect or null
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "File not Found");
+        }
+        blnLoadComplete = true;
+    }
+
+    //async Task ShowNotification(NotificationMessage message)
+    //{
+    //    notificationService.Notify(message);
+    //    await InvokeAsync(() => { StateHasChanged(); });
+    //}
+
+    @*async Task ShowDialog() => await dialogService.OpenAsync("Dowload Complete", ds =>
+    @<RadzenCard Style="padding: 20px;">
+        <p Style="margin-bottom: 10px;">Confirm?</p>
+        <div class="row">
+            <div class="col-md-12">
+                <RadzenButton Text="Ok" Click="()=> ds.Close(true)" Style="margin-bottom: 10px; width: 100px" />              
+            </div>
+        </div>
+    </RadzenCard>);*@
+}
+

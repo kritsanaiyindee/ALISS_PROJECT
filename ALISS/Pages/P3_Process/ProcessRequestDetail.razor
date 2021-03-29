@@ -1,0 +1,517 @@
+﻿@page "/ProcessRequest/DataDetail"
+@page "/ProcessRequest/DataDetail/{pcr_code}"
+
+@inject IJSRuntime jsRuntime
+@inject DialogService dialogService
+@inject NavigationManager navigationManager
+
+@inject ConfigDataService configDataService
+@inject DropDownListDataService ddlDataService
+@inject SpecimenService specimenService
+@inject ProcessRequestService processRequestService
+
+<div>
+    <div class="divHead">
+        <RadzenLink Path="/ProcessRequest" Text="Process Request" /> - @(dataModel?.pcr_code ?? "New Process") (@(dataModel?.pcr_code ?? "-"))
+    </div>
+</div>
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>
+
+    <Loading ShowModel="true" />
+}
+else
+{
+    <EditForm Model="@dataModel" OnInvalidSubmit="HandleInvalidSubmit" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+
+        <div class="container inputArea">
+            <div class="row">
+                <InputBox ConfigData="@(configData.Get_ConfigRow("pcr_hos_code"))">
+                    @if (dataModel.pcr_status == "N")
+                    {
+                        <RadzenDropDown @bind-Value="dataModel.pcr_hos_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="All" Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name, x.hos_code, x.hos_name }).Where(x => (dataModel.pcr_arh_code == null || x.arh_code == dataModel.pcr_arh_code) && (dataModel.pcr_prv_code == null || x.prv_code == dataModel.pcr_prv_code))" ValueProperty="hos_code" TextProperty="hos_name" Change="@(args => DDL_Change("Hos", args))" Style="width:100%" />
+                    }
+                    else
+                    {
+                        <RadzenDropDown @bind-Value="dataModel.pcr_hos_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="All" Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name, x.hos_code, x.hos_name }).Where(x => (dataModel.pcr_arh_code == null || x.arh_code == dataModel.pcr_arh_code) && (dataModel.pcr_prv_code == null || x.prv_code == dataModel.pcr_prv_code))" ValueProperty="hos_code" TextProperty="hos_name" Disabled="true" Style="width:100%" />
+                    }
+                </InputBox>
+
+                <InputBox ConfigData="@(configData.Get_ConfigRow("pcr_prv_code"))">
+                    @if (dataModel.pcr_status == "N")
+                    {
+                        <RadzenDropDown @bind-Value="dataModel.pcr_prv_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="All" Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name }).Where(x => (dataModel.pcr_arh_code == null || x.arh_code == dataModel.pcr_arh_code)).Distinct()" TextProperty="prv_name" ValueProperty="prv_code" Change="@(args => DDL_Change("Prv", args))" Style="width:100%" />
+                    }
+                    else
+                    {
+                        <RadzenDropDown @bind-Value="dataModel.pcr_prv_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="All" Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name }).Where(x => (dataModel.pcr_arh_code == null || x.arh_code == dataModel.pcr_arh_code)).Distinct()" TextProperty="prv_name" ValueProperty="prv_code" Disabled="true" Style="width:100%" />
+                    }
+                </InputBox>
+
+                <InputBox ConfigData="@(configData.Get_ConfigRow("pcr_arh_code"))">
+                    @if (dataModel.pcr_status == "N")
+                    {
+                        <RadzenDropDown @bind-Value="dataModel.pcr_arh_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="All" Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name }).Distinct().OrderBy(x => x.arh_code)" TextProperty="arh_name" ValueProperty="arh_code" Change="@(args => DDL_Change("Arh", args))" Style="width:100%" />
+                    }
+                    else
+                    {
+                        <RadzenDropDown @bind-Value="dataModel.pcr_arh_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="All" Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name }).Distinct().OrderBy(x => x.arh_code)" TextProperty="arh_name" ValueProperty="arh_code" Disabled="true" Style="width:100%" />
+                    }
+                </InputBox>
+
+                <InputBox ConfigData="@(configData.Get_ConfigRow("pcr_active"))">
+                    <RadzenRadioButtonList @bind-Value="@dataModel.pcr_active" TValue="bool">
+                        <Items>
+                            <RadzenRadioButtonListItem Text="Active" Value="true" />
+                            <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                        </Items>
+                    </RadzenRadioButtonList>
+                </InputBox>
+
+            </div>
+            <div class="row">
+                <InputBox ConfigData="@(configData.Get_ConfigRow("pcr_month_start"))">
+                    <RadzenDropDown @bind-Value="dataModel.pcr_month_start" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="@(month_List.Where(x => Convert.ToInt32(x.data_Value) <= Convert.ToInt32(dataModel.pcr_month_end ?? "12")))" ValueProperty="data_Value" TextProperty="data_Text" Style="width:100%" Disabled="@(dataModel.pcr_status != "N")" />
+                    <ValidationMessage For="@(() => dataModel.pcr_month_start)" />
+                </InputBox>
+                <InputBox ConfigData="@(configData.Get_ConfigRow("pcr_month_end"))">
+                    <RadzenDropDown @bind-Value="dataModel.pcr_month_end" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="month_List.Where(x => Convert.ToInt32(x.data_Value) >= Convert.ToInt32(dataModel.pcr_month_start))" ValueProperty="data_Value" TextProperty="data_Text" Style="width:100%" Disabled="@(dataModel.pcr_status != "N")" />
+                    <ValidationMessage For="@(() => dataModel.pcr_month_end)" />
+                </InputBox>
+                <InputBox ConfigData="@(configData.Get_ConfigRow("pcr_year"))">
+                    <RadzenDropDown @bind-Value="dataModel.pcr_year" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="year_List" ValueProperty="data_Value" TextProperty="data_Text" Style="width:100%" Disabled="@(dataModel.pcr_status != "N")" />
+                    <ValidationMessage For="@(() => dataModel.pcr_year)" />
+                </InputBox>
+
+            </div>
+            <div class="row">
+                <InputBox ConfigData="@(configData.Get_ConfigRow("pcr_type"))">
+                    <RadzenDropDown @bind-Value="dataModel.pcr_type" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="prm_ddl_List" ValueProperty="prm_code_minor" TextProperty="prm_desc1" Disabled="@(dataModel.pcr_status == "E")" Style="width:100%" />
+                    <ValidationMessage For="@(() => dataModel.pcr_type)" />
+                </InputBox>
+                <InputBox ConfigData="@(configData.Get_ConfigRow("pcr_spc_code"))">
+                    <RadzenDropDown @bind-Value="dataModel.pcr_spc_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="All" Data="spc_ddl_List" ValueProperty="spc_code" TextProperty="spc_name" Disabled="@(dataModel.pcr_status == "E")" Style="width:100%" />
+                </InputBox>
+
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-12 col-xl-4">
+                    <div class="col-auto divGroup buttonArea">
+                        <RadzenButton class="btnSearch" Text="Check" Click="CheckData" />@*Disabled="@(dataModel.pcr_status != "N")" />*@
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr />
+
+        <div>
+            <div style="width:90%;margin:0px auto;">
+                <RadzenGrid TItem="ProcessRequestCheckDetailDTO" @ref="processDetailGrid.radzenGrid" Data="@processDetailList" PageSize="processDetailGrid.PageSize" ColumnWidth="75px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                    <Columns>
+                        <RadzenGridColumn TItem="ProcessRequestCheckDetailDTO" Property="pcd_hos_name" Title="@configData.Get_Label("pcd_hos_name")" Width="150px" />
+                        <RadzenGridColumn TItem="ProcessRequestCheckDetailDTO" Property="pcd_M01_qty" Title="@configData.Get_Label("pcd_M01_qty")" Context="data">
+                            <Template>
+                                <label>@data.pcd_M01_qty @((data.pcd_M01_qty_new != null) ? " (" + data.pcd_M01_qty_new + ")" : "")</label>
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="ProcessRequestCheckDetailDTO" Property="pcd_M01_qty" Title="@configData.Get_Label("pcd_M02_qty")" Context="data">
+                            <Template>
+                                <label>@data.pcd_M02_qty @((data.pcd_M02_qty_new != null) ? " (" + data.pcd_M02_qty_new + ")" : "")</label>
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="ProcessRequestCheckDetailDTO" Property="pcd_M02_qty" Title="@configData.Get_Label("pcd_M03_qty")" Context="data">
+                            <Template>
+                                <label>@data.pcd_M03_qty @((data.pcd_M03_qty_new != null) ? " (" + data.pcd_M03_qty_new + ")" : "")</label>
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="ProcessRequestCheckDetailDTO" Property="pcd_M03_qty" Title="@configData.Get_Label("pcd_M04_qty")" Context="data">
+                            <Template>
+                                <label>@data.pcd_M04_qty @((data.pcd_M04_qty_new != null) ? " (" + data.pcd_M04_qty_new + ")" : "")</label>
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="ProcessRequestCheckDetailDTO" Property="pcd_M04_qty" Title="@configData.Get_Label("pcd_M05_qty")" Context="data">
+                            <Template>
+                                <label>@data.pcd_M05_qty @((data.pcd_M05_qty_new != null) ? " (" + data.pcd_M05_qty_new + ")" : "")</label>
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="ProcessRequestCheckDetailDTO" Property="pcd_M05_qty" Title="@configData.Get_Label("pcd_M06_qty")" Context="data">
+                            <Template>
+                                <label>@data.pcd_M06_qty @((data.pcd_M06_qty_new != null) ? " (" + data.pcd_M06_qty_new + ")" : "")</label>
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="ProcessRequestCheckDetailDTO" Property="pcd_M06_qty" Title="@configData.Get_Label("pcd_M07_qty")" Context="data">
+                            <Template>
+                                <label>@data.pcd_M07_qty @((data.pcd_M07_qty_new != null) ? " (" + data.pcd_M07_qty_new + ")" : "")</label>
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="ProcessRequestCheckDetailDTO" Property="pcd_M07_qty" Title="@configData.Get_Label("pcd_M08_qty")" Context="data">
+                            <Template>
+                                <label>@data.pcd_M08_qty @((data.pcd_M08_qty_new != null) ? " (" + data.pcd_M08_qty_new + ")" : "")</label>
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="ProcessRequestCheckDetailDTO" Property="pcd_M08_qty" Title="@configData.Get_Label("pcd_M09_qty")" Context="data">
+                            <Template>
+                                <label>@data.pcd_M09_qty @((data.pcd_M09_qty_new != null) ? " (" + data.pcd_M09_qty_new + ")" : "")</label>
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="ProcessRequestCheckDetailDTO" Property="pcd_M09_qty" Title="@configData.Get_Label("pcd_M10_qty")" Context="data">
+                            <Template>
+                                <label>@data.pcd_M10_qty @((data.pcd_M10_qty_new != null) ? " (" + data.pcd_M10_qty_new + ")" : "")</label>
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="ProcessRequestCheckDetailDTO" Property="pcd_M10_qty" Title="@configData.Get_Label("pcd_M11_qty")" Context="data">
+                            <Template>
+                                <label>@data.pcd_M11_qty @((data.pcd_M11_qty_new != null) ? " (" + data.pcd_M11_qty_new + ")" : "")</label>
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="ProcessRequestCheckDetailDTO" Property="pcd_M11_qty" Title="@configData.Get_Label("pcd_M12_qty")" Context="data">
+                            <Template>
+                                <label>@data.pcd_M12_qty @((data.pcd_M12_qty_new != null) ? " (" + data.pcd_M12_qty_new + ")" : "")</label>
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="ProcessRequestCheckDetailDTO" Property="pcd_Total_qty" Title="@configData.Get_Label("pcd_Total_qty")" Context="data">
+                            <Template>
+                                <label>@data.pcd_Total_qty @((data.pcd_Total_qty_new != null) ? " (" + data.pcd_Total_qty_new + ")" : "")</label>
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+            </div>
+
+            <br />
+
+        </div>
+
+        <hr />
+
+        <div class="row justify-content-between buttonArea">
+            <div class="col-auto">
+                <RadzenButton class="btnCancel" Text="Cancel" Click="RedirectToInbox" />
+            </div>
+            <div class="col-auto">
+                @if ((mainLayout.loginUser.PagePermission.rop_create || mainLayout.loginUser.PagePermission.rop_edit) && dataModel.pcr_status == "N" && showProcess)
+                {
+                    <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Process" />
+                }
+                else if ((mainLayout.loginUser.PagePermission.rop_create || mainLayout.loginUser.PagePermission.rop_edit) && showProcess)
+                {
+                    <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Re-Process" />
+                }
+            </div>
+        </div>
+    </EditForm>
+
+    <hr />
+
+    <HistoryLog HistoryList="historyResultList" />
+
+    <Loading ShowModel="showLoading" />
+}
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+    [Parameter] public string pcr_code { get; set; }
+
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private bool showPopupDialog;
+    private bool showLoading;
+    private bool showProcess = false;
+
+    private ProcessRequestDTO dataModel;
+
+    private RadzenGridCustom<ProcessRequestCheckDetailDTO> processDetailGrid = new RadzenGridCustom<ProcessRequestCheckDetailDTO>();
+    private List<ProcessRequestCheckDetailDTO> processDetailList;
+    private List<ProcessRequestCheckDetailDTO> processDetailCheckList;
+
+    private List<HospitalLabDataDTO> lab_ddl_List;
+    private List<ParameterDTO> prm_ddl_List;
+    private List<SpecimenDTO> spc_ddl_List;
+    private List<DropDownListDTO> month_List;
+    private List<DropDownListDTO> year_List;
+
+    private List<LogProcessDTO> historyResultList_All, historyResultList;
+
+    private bool pageLoading { get { return (dataModel == null || processDetailList == null || historyResultList == null); } }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0601") == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = "MNU_0601" });
+
+            prm_ddl_List = await ddlDataService.GetParameterListByModelAsync("R01");
+            spc_ddl_List = await specimenService.GetListByModelActiveAsync(new SpecimenDTO());
+            month_List = ddlDataService.GetMonthList();
+            year_List = ddlDataService.GetYearList();
+
+            if (string.IsNullOrEmpty(pcr_code))
+            {
+                dataModel = new ProcessRequestDTO()
+                {
+                    pcr_status = "N",
+                    pcr_active = true,
+                    pcr_createuser = mainLayout.loginUser.Username
+                };
+
+                var searchData = new HospitalLabDataDTO()
+                {
+                    arh_code = mainLayout.loginUser.arh_code,
+                    prv_code = mainLayout.loginUser.prv_code,
+                    hos_code = mainLayout.loginUser.hos_code
+                };
+                lab_ddl_List = await ddlDataService.GetAllLabListByModelAsync(searchData);
+
+                processDetailList = new List<ProcessRequestCheckDetailDTO>();
+
+                historyResultList = new List<LogProcessDTO>();
+            }
+            else
+            {
+                dataModel = await processRequestService.GetDataAsync(pcr_code);
+                dataModel.pcr_prev_code = dataModel.pcr_code;
+                dataModel.pcr_status = "E";
+                dataModel.pcr_updateuser = mainLayout.loginUser.Username;
+
+                var searchData = new HospitalLabDataDTO()
+                {
+                    arh_code = dataModel.pcr_arh_code,
+                    prv_code = dataModel.pcr_prv_code,
+                    hos_code = dataModel.pcr_hos_code
+                };
+                lab_ddl_List = await ddlDataService.GetAllLabListByModelAsync(searchData);
+
+                processDetailList = await processRequestService.GetDetailListByModelAsync(dataModel);
+
+            }
+
+            historyResultList = new List<LogProcessDTO>();
+        }
+    }
+
+    private void DDL_Change(string ddl_name, object value)
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        if (ddl_name == "Arh" && value == null)
+        {
+            dataModel.pcr_prv_code = null;
+            dataModel.pcr_hos_code = null;
+        }
+        else if (ddl_name == "Prv" && value == null)
+        {
+            dataModel.pcr_hos_code = null;
+        }
+        else if (ddl_name == "Prv" && value != null)
+        {
+            var prv_select = lab_ddl_List.FirstOrDefault(x => x.prv_code == value.ToString());
+            dataModel.pcr_arh_code = prv_select.arh_code;
+        }
+        else if (ddl_name == "Hos" && value != null)
+        {
+            var hos_select = lab_ddl_List.FirstOrDefault(x => x.hos_code == value.ToString());
+            dataModel.pcr_arh_code = hos_select.arh_code;
+            dataModel.pcr_prv_code = hos_select.prv_code;
+        }
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private async void CheckData()
+    {
+        HandleInvalidSubmit();
+
+        showLoading = true;
+        StateHasChanged();
+
+        processDetailCheckList = await processRequestService.GetCheckDetailListByModelAsync(dataModel);
+
+        if (dataModel.pcr_status == "N")
+        {
+            processDetailList = processDetailCheckList;
+        }
+        else
+        {
+            foreach (var itemData in processDetailCheckList)
+            {
+                var item = processDetailList.FirstOrDefault(x => x.pcd_hos_code == itemData.pcd_hos_code && x.pcd_lab_code == itemData.pcd_lab_code);
+                if (item != null)
+                {
+                    item.pcd_M01_qty_new = itemData.pcd_M01_qty;
+                    item.pcd_M02_qty_new = itemData.pcd_M02_qty;
+                    item.pcd_M03_qty_new = itemData.pcd_M03_qty;
+                    item.pcd_M04_qty_new = itemData.pcd_M04_qty;
+                    item.pcd_M05_qty_new = itemData.pcd_M05_qty;
+                    item.pcd_M06_qty_new = itemData.pcd_M06_qty;
+                    item.pcd_M07_qty_new = itemData.pcd_M07_qty;
+                    item.pcd_M08_qty_new = itemData.pcd_M08_qty;
+                    item.pcd_M09_qty_new = itemData.pcd_M09_qty;
+                    item.pcd_M10_qty_new = itemData.pcd_M10_qty;
+                    item.pcd_M11_qty_new = itemData.pcd_M11_qty;
+                    item.pcd_M12_qty_new = itemData.pcd_M12_qty;
+                    item.pcd_Total_qty_new = itemData.pcd_Total_qty;
+                }
+                else
+                {
+                    itemData.pcd_M01_qty_new = itemData.pcd_M01_qty;
+                    itemData.pcd_M02_qty_new = itemData.pcd_M02_qty;
+                    itemData.pcd_M03_qty_new = itemData.pcd_M03_qty;
+                    itemData.pcd_M04_qty_new = itemData.pcd_M04_qty;
+                    itemData.pcd_M05_qty_new = itemData.pcd_M05_qty;
+                    itemData.pcd_M06_qty_new = itemData.pcd_M06_qty;
+                    itemData.pcd_M07_qty_new = itemData.pcd_M07_qty;
+                    itemData.pcd_M08_qty_new = itemData.pcd_M08_qty;
+                    itemData.pcd_M09_qty_new = itemData.pcd_M09_qty;
+                    itemData.pcd_M10_qty_new = itemData.pcd_M10_qty;
+                    itemData.pcd_M11_qty_new = itemData.pcd_M11_qty;
+                    itemData.pcd_M12_qty_new = itemData.pcd_M12_qty;
+                    itemData.pcd_Total_qty_new = itemData.pcd_Total_qty;
+
+                    itemData.pcd_M01_qty = null;
+                    itemData.pcd_M02_qty = null;
+                    itemData.pcd_M03_qty = null;
+                    itemData.pcd_M04_qty = null;
+                    itemData.pcd_M05_qty = null;
+                    itemData.pcd_M06_qty = null;
+                    itemData.pcd_M07_qty = null;
+                    itemData.pcd_M08_qty = null;
+                    itemData.pcd_M09_qty = null;
+                    itemData.pcd_M10_qty = null;
+                    itemData.pcd_M11_qty = null;
+                    itemData.pcd_M12_qty = null;
+                    itemData.pcd_Total_qty = null;
+
+                    processDetailList.Add(itemData);
+                }
+            }
+        }
+
+        showProcess = true;
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private void RedirectToInbox()
+    {
+        navigationManager.NavigateTo("/ProcessRequest/");
+    }
+
+    private void HandleInvalidSubmit()
+    {
+
+    }
+
+    private async void HandleValidSubmit()
+    {
+        CheckData();
+
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (result)
+        {
+            showLoading = true;
+            StateHasChanged();
+
+            if (dataModel.pcr_status == "N")
+            {
+                //Check duplicate
+                var searchModel = new ProcessRequestDTO()
+                {
+                    pcr_hos_code = dataModel.pcr_hos_code,
+                    pcr_prv_code = dataModel.pcr_prv_code,
+                    pcr_arh_code = dataModel.pcr_arh_code,
+                    pcr_month_start = dataModel.pcr_month_start,
+                    pcr_month_end = dataModel.pcr_month_end,
+                    pcr_year = dataModel.pcr_year,
+                    pcr_type = dataModel.pcr_type,
+                    pcr_spc_code = dataModel.pcr_spc_code
+                };
+
+                var duplicate = await processRequestService.GetDataWithModelAsync(searchModel);
+
+                if (duplicate != null && string.IsNullOrEmpty(duplicate.pcr_code) == false)
+                {
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate code.");
+
+                    showLoading = false;
+
+                    return;
+                }
+            }
+
+            //Save data
+            var saveResult = await processRequestService.SaveDataAsync(dataModel);
+
+            var processDetailDataList = new List<ProcessRequestDetailDTO>();
+
+            foreach (var item in processDetailList)
+            {
+                var objItem = new ProcessRequestDetailDTO()
+                {
+                    pcd_pcr_code = saveResult.pcr_code,
+                    pcd_hos_code = item.pcd_hos_code,
+                    pcd_lab_code = item.pcd_lab_code,
+                    pcd_createuser = saveResult.pcr_createuser
+                };
+
+                if (dataModel.pcr_status == "N")
+                {
+                    objItem.pcd_M01_qty = item.pcd_M01_qty;
+                    objItem.pcd_M02_qty = item.pcd_M02_qty;
+                    objItem.pcd_M03_qty = item.pcd_M03_qty;
+                    objItem.pcd_M04_qty = item.pcd_M04_qty;
+                    objItem.pcd_M05_qty = item.pcd_M05_qty;
+                    objItem.pcd_M06_qty = item.pcd_M06_qty;
+                    objItem.pcd_M07_qty = item.pcd_M07_qty;
+                    objItem.pcd_M08_qty = item.pcd_M08_qty;
+                    objItem.pcd_M09_qty = item.pcd_M09_qty;
+                    objItem.pcd_M10_qty = item.pcd_M10_qty;
+                    objItem.pcd_M11_qty = item.pcd_M11_qty;
+                    objItem.pcd_M12_qty = item.pcd_M12_qty;
+                }
+                else
+                {
+                    objItem.pcd_M01_qty = item.pcd_M01_qty_new;
+                    objItem.pcd_M02_qty = item.pcd_M02_qty_new;
+                    objItem.pcd_M03_qty = item.pcd_M03_qty_new;
+                    objItem.pcd_M04_qty = item.pcd_M04_qty_new;
+                    objItem.pcd_M05_qty = item.pcd_M05_qty_new;
+                    objItem.pcd_M06_qty = item.pcd_M06_qty_new;
+                    objItem.pcd_M07_qty = item.pcd_M07_qty_new;
+                    objItem.pcd_M08_qty = item.pcd_M08_qty_new;
+                    objItem.pcd_M09_qty = item.pcd_M09_qty_new;
+                    objItem.pcd_M10_qty = item.pcd_M10_qty_new;
+                    objItem.pcd_M11_qty = item.pcd_M11_qty_new;
+                    objItem.pcd_M12_qty = item.pcd_M12_qty_new;
+                }
+
+                processDetailDataList.Add(objItem);
+            }
+
+            var saveResultList = await processRequestService.SaveDetailDataAsync(processDetailDataList);
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save data complete.");
+
+            //historyResultList = await processRequestService.GetHistoryAsync(dataModel.pcr_code);
+
+            dataModel.pcr_status = "E";
+
+            showLoading = false;
+            StateHasChanged();
+
+            RedirectToInbox();
+        }
+    }
+
+}

@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup Label="Globals">
+    <SccProjectName>SAK</SccProjectName>
+    <SccProvider>SAK</SccProvider>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccLocalPath>SAK</SccLocalPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="DataAccess\NationStrategyContext.cs" />
+    <Compile Remove="INationHealthStrategy.cs" />
+    <Compile Remove="Models\RPNationHealthStrategy.cs" />
+    <Compile Remove="Models\RPYearlyIsolateListingRIS.cs" />
+    <Compile Remove="NationHealthStrategyService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="9.0.0" />
+    <PackageReference Include="EPPlus" Version="5.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="3.1.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="3.1.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\00_Library\Log4NetLibrary\Log4NetLibrary.csproj" />
+    <ProjectReference Include="..\ALISS.ANTIBIOGRAM.DTO\ALISS.ANTIBIOGRAM.DTO.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,34 @@
+﻿<div>
+    <div>
+        <label style="display: inline-block;font: Bold 18px/22px Arial;letter-spacing: 0;color: #999999;">Log</label>
+    </div>
+    <table class="historyTable" width="90%" align="center">
+        <thead>
+            <tr>
+                <th style="font:bold 14px/22px Arial;">User</th>
+                <th style="font:bold 14px/22px Arial;">Action</th>
+                <th style="font:bold 14px/22px Arial;">DateTime</th>
+                <th style="font:bold 14px/22px Arial;">Remark</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var history in HistoryList)
+            {
+                <tr>
+                    <td style="font:Regular 14px/22px Arial;">@history.log_usr_id</td>
+                    <td style="font:Regular 14px/22px Arial;">@history.log_action</td>
+                    <td style="font:Regular 14px/22px Arial;">@history.log_createdate</td>
+                    <td style="font:Regular 14px/22px Arial;">@history.log_desc</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<hr />
+<br />
+
+@code {
+    [Parameter] public List<LogProcessDTO> HistoryList { get; set; }
+
+}

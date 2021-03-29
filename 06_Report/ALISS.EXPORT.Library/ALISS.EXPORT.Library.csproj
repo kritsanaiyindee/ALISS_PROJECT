@@ -1,0 +1,139 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{BB4FED70-68F6-473B-BB95-E9EB04B7E6A4}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ALISS.EXPORT.Library</RootNamespace>
+    <AssemblyName>ALISS.EXPORT.Library</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
+    </Reference>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="DTO\AMRGraphDTO.cs" />
+    <Compile Include="DTO\AMRMapDTO.cs" />
+    <Compile Include="Model\ALISSExportContext.cs" />
+    <Compile Include="Model\AntimicrobialGraph.Context.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>AntimicrobialGraph.Context.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\AntimicrobialGraph.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>AntimicrobialGraph.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\AntimicrobialGraph.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>AntimicrobialGraph.edmx</DependentUpon>
+    </Compile>
+    <Compile Include="Model\sp_GET_RPAntibicromialResistance_Result.cs">
+      <DependentUpon>AntimicrobialGraph.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\sp_GET_RPAntibicromialResstAll_Result.cs">
+      <DependentUpon>AntimicrobialGraph.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\sp_GET_RPAntibicromialResstSpecimen_Result.cs">
+      <DependentUpon>AntimicrobialGraph.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\sp_GET_RPAntibicromialResstWard_Result.cs">
+      <DependentUpon>AntimicrobialGraph.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\sp_GET_RPAntibiotrendAMRStrategy_Result.cs">
+      <DependentUpon>AntimicrobialGraph.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\sp_GET_TCAntibiotic_Active_Result.cs">
+      <DependentUpon>AntimicrobialGraph.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\sp_GET_TCOrganism_Active_Result.cs">
+      <DependentUpon>AntimicrobialGraph.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\sp_GET_TCParameter_Result.cs">
+      <DependentUpon>AntimicrobialGraph.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\sp_GET_TCSpecimen_Active_Result.cs">
+      <DependentUpon>AntimicrobialGraph.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\sp_GET_TCWardType_Active_Result.cs">
+      <DependentUpon>AntimicrobialGraph.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <EntityDeploy Include="Model\AntimicrobialGraph.edmx">
+      <Generator>EntityModelCodeGenerator</Generator>
+      <LastGenOutput>AntimicrobialGraph.Designer.cs</LastGenOutput>
+    </EntityDeploy>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.Config" />
+    <None Include="Model\AntimicrobialGraph.edmx.diagram">
+      <DependentUpon>AntimicrobialGraph.edmx</DependentUpon>
+    </None>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Model\AntimicrobialGraph.Context.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>AntimicrobialGraph.Context.cs</LastGenOutput>
+      <DependentUpon>AntimicrobialGraph.edmx</DependentUpon>
+    </Content>
+    <Content Include="Model\AntimicrobialGraph.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>AntimicrobialGraph.edmx</DependentUpon>
+      <LastGenOutput>AntimicrobialGraph.cs</LastGenOutput>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

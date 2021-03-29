@@ -1,0 +1,280 @@
+﻿@page "/MasterManagement/MasterTemplate/QCRange/{mst_code}"
+
+@inject IJSRuntime jsRuntime
+@inject NavigationManager navigationManager
+@inject DialogService dialogService
+
+@inject LoginUserData loginUserData
+@inject QCRangeService qcrangeService
+
+<div style="width: 1200px;">
+    <div class="divHead">
+        QCRange
+    </div>
+</div>
+
+<Loading ShowModel="showModal" />
+
+@if (gridDatas == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="container inputArea">
+        <div class="row justify-content-between">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="col">
+                        <LabelBox inputLabel="GUIDELINE" />
+                    </div>
+                    <div class="col">
+                        <RadzenTextBox @bind-Value="@searchData.qcr_code" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="col" style="text-align:right;">
+                        <RadzenButton class="btnSearch" Text="Search" />
+                    </div>
+                    <div class="col">
+                        <RadzenButton class="btnClear" Text="Clear" Click="OnInitializedAsync" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div style="width:1200px;">
+        <div style="text-align:right;">
+            <RadzenButton Icon="add" Text="Add QCRange" Click="@(() => ShowDataDetailDialog(new QCRangeDTO()))" />
+        </div>
+
+        <br />
+
+        <div style="width:90%;margin:0px auto;">
+            <RadzenGrid TItem="QCRangeDTO" Data="@gridDatas" PageSize="4" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" AllowSorting="true">
+                <Columns>
+                    <RadzenGridColumn TItem="QCRangeDTO" Property="" Title="" Width="50px" Filterable="false" Context="data">
+                        <Template>
+                            <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowDataDetailDialog(data))" />
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="QCRangeDTO" Property="qcr_mst_GUIDELINE" Title="GUIDELINE" />
+                    <RadzenGridColumn TItem="QCRangeDTO" Property="qcr_mst_ORGANISM" Title="ORGANISM" />
+                    <RadzenGridColumn TItem="QCRangeDTO" Property="qcr_mst_ANTIBIOTIC" Title="ANTIBIOTIC" />
+                    <RadzenGridColumn TItem="QCRangeDTO" Property="qcr_mst_QC_RANGE" Title="QC_Range" />
+                    <RadzenGridColumn TItem="QCRangeDTO" Property="qcr_active" Title="Status" Context="data">
+                        <Template>
+                            @if (data.qcr_active == true)
+                            {
+                                <label>Active</label>
+                            }
+                            else
+                            {
+                                <label>Inactive</label>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+
+        <br />
+
+        <div style="text-align: right">
+            <RadzenButton class="btnCancel" Text="Cancel" Click="RedirectToInbox" />
+        </div>
+
+    </div>
+
+    <hr />
+}
+
+@code {
+    [Parameter] public string mst_code { get; set; }
+
+    private List<QCRangeDTO> gridDatas;
+    private List<LogProcessDTO> historys;
+    QCRangeDTO searchData = new QCRangeDTO();
+    QCRangeDTO modelData = new QCRangeDTO();
+    private bool CreateMode = true;
+
+    private bool showModal = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SearchInboxData();
+    }
+
+    private async void SearchInboxData()
+    {
+        showModal = true;
+
+        gridDatas = await qcrangeService.GetListByModelAsync(new QCRangeDTO() { qcr_mst_code = mst_code, qcr_code = searchData.qcr_code });
+        historys = new List<LogProcessDTO>();
+
+        showModal = false;
+
+        StateHasChanged();
+    }
+
+    private void RedirectToInbox()
+    {
+        navigationManager.NavigateTo("MasterManagement/MasterTemplate/DataDetail/" + mst_code);
+    }
+
+    private async void SaveData(DialogService ds)
+    {
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (result)
+        {
+            showModal = true;
+
+            if (CreateMode)
+            {
+                //Check duplicate
+                var duplicate = await qcrangeService.GetDataAsync(modelData.qcr_id.ToString());
+
+                if (string.IsNullOrEmpty(duplicate.qcr_code) == false)
+                {
+                    showModal = false;
+
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate code.");
+
+                    return;
+                }
+                modelData.qcr_createuser = loginUserData.CurrentLoginUser.Username;
+            }
+            else
+            {
+                modelData.qcr_updateuser = loginUserData.CurrentLoginUser.Username;
+            }
+
+            //Save data
+            var returnData = await qcrangeService.SaveDataAsync(modelData);
+
+            showModal = false;
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save data complete.");
+
+            ds.Close();
+        }
+    }
+
+    private async Task ShowDataDetailDialog(QCRangeDTO modelData1)
+    {
+        modelData = modelData1;
+
+        if (string.IsNullOrEmpty(modelData.qcr_code))
+        {
+            CreateMode = true;
+            modelData = new QCRangeDTO()
+            {
+                qcr_status = "N",
+                qcr_createuser = "SYSTEM"
+            };
+        }
+        else
+        {
+            CreateMode = false;
+            //modelData = await qcrangeService.GetDataAsync(qcr_code);
+            modelData.qcr_status = "E";
+            modelData.qcr_updateuser = "SYSTEM";
+        }
+
+        await dialogService.OpenAsync("Add QCRange", ds =>
+    @<RadzenCard Style="padding: 20px;">
+        <div class="container inputArea">
+            <div class="row justify-content-center">
+                <div class="col-xl-12">
+                    <div class="row justify-content-center divGroup">
+                        <div class="col">
+                            <LabelBox inputLabel="QCRange code" />
+                        </div>
+                        <div class="col">
+                            @if (CreateMode)
+                            {
+                                <RadzenTextBox @bind-Value="@modelData.qcr_code" />
+                            }
+                            else
+                            {
+                                <RadzenTextBox @bind-Value="@modelData.qcr_code" ReadOnly="true" />
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-xl-12">
+                    <div class="row justify-content-center divGroup">
+                        <div class="col">
+                            <LabelBox inputLabel="GUIDELINE" />
+                        </div>
+                        <div class="col">
+                            <RadzenTextBox @bind-Value="@modelData.qcr_mst_GUIDELINE" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-xl-12">
+                    <div class="row justify-content-center divGroup">
+                        <div class="col">
+                            <LabelBox inputLabel="ORGANISM" />
+                        </div>
+                        <div class="col">
+                            <RadzenTextBox @bind-Value="@modelData.qcr_mst_ORGANISM" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-xl-12">
+                    <div class="row justify-content-center divGroup">
+                        <div class="col">
+                            <LabelBox inputLabel="ANTIBIOTIC" />
+                        </div>
+                        <div class="col">
+                            <RadzenTextBox @bind-Value="@modelData.qcr_mst_ANTIBIOTIC" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-xl-12">
+                    <div class="row justify-content-center divGroup">
+                        <div class="col">
+                            <LabelBox inputLabel="Status" />
+                        </div>
+                        <div class="col">
+                            <RadzenRadioButtonList @bind-Value="@modelData.qcr_active" TValue="bool">
+                                <Items>
+                                    <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                    <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                </Items>
+                            </RadzenRadioButtonList>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-xl-12">
+                    <div class="row justify-content-center divGroup">
+                        <div class="col" style="text-align:right;">
+                            <RadzenButton class="btnCancel" Text="Cancel" Click="(()=> ds.Close(false))" />
+                        </div>
+                        <div class="col">
+                            <RadzenButton Icon="save" class="btnSave" Text="Save" Click="(() => SaveData(ds))" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </RadzenCard>
+    );
+    }
+}

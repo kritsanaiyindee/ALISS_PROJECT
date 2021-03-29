@@ -1,0 +1,378 @@
+﻿@page "/AUTH/ColumnConfig"
+
+@inject IJSRuntime jsRuntime
+@inject NavigationManager navigationManager
+
+@inject ConfigDataService configDataService
+@inject ColumnConfigService columnConfigService
+
+<div>
+    <div class="divHead">
+        Column config
+    </div>
+</div>
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>
+
+    <Loading ShowModel="true" />
+}
+else
+{
+    <div class="container inputArea">
+        <div class="row justify-content-between">
+            <InputBox ConfigData="@(configData.Get_ConfigRow("sch_mnu_code"))">
+                <RadzenTextBox @bind-Value="@searchModel.sch_mnu_code" />
+            </InputBox>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup buttonArea">
+                    <div class="col-auto">
+                        <RadzenButton class="btnSearch" Text="Search" Click="SearchInboxData" />
+                    </div>
+                    <div class="col-auto">
+                        <RadzenButton class="btnClear" Text="Clear" Click="ClearInboxData" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div>
+        <div class="container">
+            <div class="row justify-content-end">
+                <div class="col-auto buttonArea">
+                    @if (mainLayout.loginUser.PagePermission.rop_create)
+                    {
+                        <RadzenButton Icon="add" class="btnAdd" Text="Add Menu" Click="@(() => ShowPopupDialog(null))" />
+                    }
+                </div>
+            </div>
+        </div>
+
+        <br />
+
+        <div style="width:90%;margin:0px auto;">
+            <div class="container">
+                <div class="row justify-content-end">
+                    <div class="col-auto">
+                        <label>Rows : </label>
+                    </div>
+                    <div class="col-auto">
+                        <RadzenDropDown @bind-Value="inboxGrid.PageSize" TValue="int" AllowFiltering="true" Data="inboxGrid.PageSizeOption" Change="SearchInboxData" Style="width:50px" />
+                    </div>
+                </div>
+            </div>
+            <RadzenGrid TItem="ColumnConfigDTO" @ref="inboxGrid.radzenGrid" Data="@searchResultList" PageSize="inboxGrid.PageSize" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                <Columns>
+                    <RadzenGridColumn TItem="ColumnConfigDTO" Property="tbc_id" Title="" Width="50px" Context="data">
+                        <Template>
+                            @if (mainLayout.loginUser.PagePermission.rop_edit)
+                            {
+                                <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowPopupDialog(data))" />
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="ColumnConfigDTO" Property="tbc_mnu_code" Title="@(configData.Get_Label("tbc_mnu_code"))">
+                        <FooterTemplate>
+                            <label title="@inboxGrid.FooterLabelString">@inboxGrid.FooterLabelString</label>
+                        </FooterTemplate>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="ColumnConfigDTO" Property="tbc_column_name" Title="@(configData.Get_Label("tbc_column_name"))" />
+                    <RadzenGridColumn TItem="ColumnConfigDTO" Property="tbc_column_label" Title="@(configData.Get_Label("tbc_column_label"))" />
+                    <RadzenGridColumn TItem="ColumnConfigDTO" Property="tbc_column_placeholder" Title="@(configData.Get_Label("tbc_column_placeholder"))" />
+                    <RadzenGridColumn TItem="ColumnConfigDTO" Property="tbc_required_field" Title="@(configData.Get_Label("tbc_required_field"))" Context="data" Width="75px">
+                        <Template>
+                            @if (data.tbc_required_field == true)
+                            {
+                                <label>Active</label>
+                            }
+                            else
+                            {
+                                <label>Inactive</label>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="ColumnConfigDTO" Property="tbc_edit" Title="@(configData.Get_Label("tbc_edit"))" Context="data" Width="75px">
+                        <Template>
+                            @if (data.tbc_edit == true)
+                            {
+                                <label>Active</label>
+                            }
+                            else
+                            {
+                                <label>Inactive</label>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="ColumnConfigDTO" Property="tbc_active" Title="@(configData.Get_Label("tbc_active"))" Context="data" Width="75px">
+                        <Template>
+                            @if (data.tbc_active == true)
+                            {
+                                <label>Active</label>
+                            }
+                            else
+                            {
+                                <label>Inactive</label>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+
+        <br />
+
+    </div>
+
+    <hr />
+
+    <HistoryLog HistoryList="historyResultList" />
+
+    @if (showPopupDialog)
+    {
+        <div class="modal" tabindex="-1" style="display:block" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+
+                    </div>
+                    <div class="modal-body">
+                        <EditForm Model="@dataModel" OnInvalidSubmit="HandleInvalidSubmit" OnValidSubmit="HandleValidSubmit">
+                            <DataAnnotationsValidator />
+
+                            <div class="container inputArea">
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("tbc_mnu_code"))" classColumn="col-xl-12">
+                                        @if (dataModel.tbc_status == "N")
+                                        {
+                                            <RadzenTextBox @bind-Value="@dataModel.tbc_mnu_code" Placeholder="กรอกได้เฉพาะ a-zA-Z0-9_-" />
+                                            <ValidationMessage For="@(() => dataModel.tbc_mnu_code)" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenTextBox @bind-Value="@dataModel.tbc_mnu_code" ReadOnly="true" />
+                                        }
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("tbc_column_name"))" classColumn="col-xl-12">
+                                        <RadzenTextBox @bind-Value="@dataModel.tbc_column_name" />
+                                        <ValidationMessage For="@(() => dataModel.tbc_column_name)" />
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("tbc_column_label"))" classColumn="col-xl-12">
+                                        <RadzenTextBox @bind-Value="@dataModel.tbc_column_label" />
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("tbc_column_placeholder"))" classColumn="col-xl-12">
+                                        <RadzenTextBox @bind-Value="@dataModel.tbc_column_placeholder" />
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("tbc_required_field"))" classColumn="col-xl-12">
+                                        <RadzenRadioButtonList @bind-Value="@dataModel.tbc_required_field" TValue="bool">
+                                            <Items>
+                                                <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                                <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                            </Items>
+                                        </RadzenRadioButtonList>
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("tbc_edit"))" classColumn="col-xl-12">
+                                        <RadzenRadioButtonList @bind-Value="@dataModel.tbc_edit" TValue="bool">
+                                            <Items>
+                                                <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                                <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                            </Items>
+                                        </RadzenRadioButtonList>
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("tbc_active"))" classColumn="col-xl-12">
+                                        <RadzenRadioButtonList @bind-Value="@dataModel.tbc_active" TValue="bool">
+                                            <Items>
+                                                <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                                <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                            </Items>
+                                        </RadzenRadioButtonList>
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <div class="col-xl-12">
+                                        <div class="row justify-content-center divGroup buttonArea">
+                                            <div class="col" style="text-align:right;">
+                                                <RadzenButton class="btnCancel" Text="Cancel" Click="ClosePopup" />
+                                            </div>
+                                            <div class="col">
+                                                @if (mainLayout.loginUser.PagePermission.rop_create || mainLayout.loginUser.PagePermission.rop_edit)
+                                                {
+                                                    <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="OK" />
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <Loading ShowModel="showLoading" />
+}
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private bool showPopupDialog;
+    private bool showLoading;
+
+    private RadzenGridCustom<ColumnConfigDTO> inboxGrid = new RadzenGridCustom<ColumnConfigDTO>();
+    private ColumnConfigSearchDTO searchModel = new ColumnConfigSearchDTO();
+    private List<ColumnConfigDTO> searchResultList;
+
+    private ColumnConfigDTO dataModel = new ColumnConfigDTO();
+    private List<LogProcessDTO> historyResultList;
+
+    private bool pageLoading { get { return (searchResultList == null || historyResultList == null); } }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0105") == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = "MNU_0105" });
+            if (mainLayout.loginUser.rol_code == "ROL_00")
+            {
+                configData.ConfigDTOList.ForEach(x =>
+                {
+                    x.tbc_edit = true;
+                });
+            }
+
+            searchResultList = await columnConfigService.GetListByModelAsync(searchModel);
+
+            historyResultList = await columnConfigService.GetHistoryAsync();
+
+            ClosePopup();
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task SearchInboxData()
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        searchModel.sch_mnu_code = searchModel.sch_mnu_code?.Trim();
+
+        searchResultList = await columnConfigService.GetListByModelAsync(searchModel);
+        if (inboxGrid.radzenGrid != null) inboxGrid.radzenGrid.GoToPage(0);
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task ClearInboxData()
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        searchModel = new ColumnConfigSearchDTO();
+
+        await SearchInboxData();
+    }
+
+    private void ShowPopupDialog(ColumnConfigDTO selectModel)
+    {
+        if (selectModel == null)
+        {
+            dataModel = new ColumnConfigDTO()
+            {
+                tbc_status = "N",
+                tbc_active = true,
+                tbc_createuser = mainLayout.loginUser.Username
+            };
+        }
+        else
+        {
+            dataModel = selectModel;
+            dataModel.tbc_status = "E";
+            dataModel.tbc_updateuser = mainLayout.loginUser.Username;
+        }
+
+        // Open the Popup
+        showPopupDialog = true;
+
+        StateHasChanged();
+    }
+
+    private void ClosePopup()
+    {
+        // Close the Popup
+        dataModel = new ColumnConfigDTO();
+        showPopupDialog = false;
+
+        StateHasChanged();
+    }
+
+    private void HandleInvalidSubmit()
+    {
+
+    }
+
+    private async void HandleValidSubmit()
+    {
+        var confirmResult = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (confirmResult)
+        {
+            showLoading = true;
+            StateHasChanged();
+
+            if (dataModel.tbc_status == "N")
+            {
+                //Check duplicate
+                //var duplicate = searchResultList_All.Where(x => x.mnu_code == searchModel.mnu_code).ToList(); ;
+
+                if (searchResultList.Any(x => x.tbc_mnu_code == dataModel.tbc_mnu_code && x.tbc_column_name == dataModel.tbc_column_name))
+                {
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate code.");
+
+                    showLoading = false;
+                    StateHasChanged();
+
+                    return;
+                }
+            }
+
+            //Save data
+            var saveResult = columnConfigService.SaveDataAsync(dataModel);
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save data complete.");
+
+            searchResultList = await columnConfigService.GetListByModelAsync(searchModel);
+
+            historyResultList = await columnConfigService.GetHistoryAsync();
+
+            ClosePopup();
+
+            showLoading = false;
+            StateHasChanged();
+        }
+    }
+}

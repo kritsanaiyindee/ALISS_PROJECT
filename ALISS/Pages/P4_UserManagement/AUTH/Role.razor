@@ -1,0 +1,176 @@
+﻿@page "/AUTH/Role"
+
+@inject NavigationManager navigationManager
+
+@inject ConfigDataService configDataService
+@inject RoleService roleService
+
+<div>
+    <div class="divHead">
+        Role
+    </div>
+</div>
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>
+
+    <Loading ShowModel="true" />
+}
+else
+{
+    <div class="container inputArea">
+        <div class="row justify-content-between">
+            <InputBox ConfigData="@(configData.Get_ConfigRow("sch_rol_code"))" classLabel="col" classInput="col">
+                <RadzenTextBox @bind-Value="@searchModel.sch_rol_code" />
+            </InputBox>
+            <div class="@classColumn">
+                <div class="row justify-content-center divGroup buttonArea">
+                    <div class="col-auto">
+                        <RadzenButton class="btnSearch" Text="Search" Click="SearchInboxData" />
+                    </div>
+                    <div class="col-auto">
+                        <RadzenButton class="btnClear" Text="Clear" Click="ClearInboxData" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div>
+        <div class="container">
+            <div class="row justify-content-end">
+                <div class="col-auto buttonArea">
+                    @if (mainLayout.loginUser.PagePermission.rop_create)
+                    {
+                        <RadzenButton Icon="add" class="btnAdd" Text="Add Role" Click="@(() => NavigateToDetailPage(""))" />
+                    }
+                </div>
+            </div>
+        </div>
+
+        <br />
+
+        <div style="width:90%;margin:0px auto;">
+            <div class="container">
+                <div class="row justify-content-end">
+                    <div class="col-auto">
+                        <label>Rows : </label>
+                    </div>
+                    <div class="col-auto">
+                        <RadzenDropDown @bind-Value="inboxGrid.PageSize" TValue="int" AllowFiltering="true" Data="inboxGrid.PageSizeOption" Change="SearchInboxData" Style="width:50px" />
+                    </div>
+                </div>
+            </div>
+            <RadzenGrid TItem="RoleDTO" @ref="inboxGrid.radzenGrid" Data="@searchResultList" PageSize="inboxGrid.PageSize" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                <Columns>
+                    <RadzenGridColumn TItem="RoleDTO" Property="rol_code" Title="" Width="50px" Context="data">
+                        <Template>
+                            @if (mainLayout.loginUser.PagePermission.rop_edit)
+                            {
+                                <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => NavigateToDetailPage(data.rol_code))" />
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="RoleDTO" Property="rol_code" Title="@(configData.Get_Label("rol_code"))">
+                        <FooterTemplate>
+                            <label title="@inboxGrid.FooterLabelString">@inboxGrid.FooterLabelString</label>
+                        </FooterTemplate>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="RoleDTO" Property="rol_name" Title="@(configData.Get_Label("rol_name"))" />
+                    <RadzenGridColumn TItem="RoleDTO" Property="rol_desc" Title="@(configData.Get_Label("rol_desc"))" />
+                    <RadzenGridColumn TItem="RoleDTO" Property="rol_active" Title="@(configData.Get_Label("rol_active"))" Context="data">
+                        <Template>
+                            @if (data.rol_active == true)
+                            {
+                                <label>Active</label>
+                            }
+                            else
+                            {
+                                <label>Inactive</label>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+
+        <br />
+
+    </div>
+
+    <hr />
+
+    <Loading ShowModel="showLoading" />
+}
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+
+    private ConfigData configData = new ConfigData();
+    private string classColumn = "col-12 col-xl-4";
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private bool showLoading;
+
+    private RadzenGridCustom<RoleDTO> inboxGrid = new RadzenGridCustom<RoleDTO>();
+    private RoleSearchDTO searchModel = new RoleSearchDTO();
+    private List<RoleDTO> searchResultList;
+
+    private bool pageLoading { get { return (searchResultList == null); } }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0103") == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = "MNU_0103" });
+            if (mainLayout.loginUser.rol_code == "ROL_00")
+            {
+                configData.ConfigDTOList.ForEach(x =>
+                {
+                    x.tbc_edit = true;
+                });
+            }
+
+            searchResultList = await roleService.GetListByModelAsync(searchModel);
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task SearchInboxData()
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        searchModel.sch_rol_code = searchModel.sch_rol_code?.Trim();
+
+        searchResultList = await roleService.GetListByModelAsync(searchModel);
+        if (inboxGrid.radzenGrid != null) inboxGrid.radzenGrid.GoToPage(0);
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task ClearInboxData()
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        searchModel = new RoleSearchDTO();
+
+        await SearchInboxData();
+    }
+
+    private void NavigateToDetailPage(string rol_code)
+    {
+        navigationManager.NavigateTo("/Auth/RoleDetail/" + rol_code);
+    }
+
+}

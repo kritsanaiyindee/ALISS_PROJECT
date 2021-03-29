@@ -1,0 +1,68 @@
+﻿@page "/Home"
+
+@inject NavigationManager navigationManager
+
+@inject HomeService homeService
+
+<label style="font: Bold 22px/22px Arial; letter-spacing: 0px; color: #0A6839; opacity: 1;">Notifications</label>
+<br />
+<div style="background: #FFF9E0 0% 0% no-repeat padding-box; border: 1px solid #FED630; border-radius: 4px;">
+    <label style="text-align: left;font: Regular 18px/22px Arial;letter-spacing: 0px;color: #C6A003;">ช่วงเวลาอัพโหลดไฟล์ข้อมูล ทุกๆ6เดือน</label>
+</div>
+<br />
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>
+
+    <Loading ShowModel="true" />
+}
+else
+{
+    <div style="background: #FFFFFF 0% 0% no-repeat padding-box;border: 1px solid #EBEBEB;border-radius: 4px;">
+        <label style="font: Regular 16px/22px Arial;letter-spacing: 0px;color: #999999;">Sun 13/02/62 13:54</label><br />
+        <label style="font: Regular 18px/22px Arial;letter-spacing: 0px;">It is a long established fact that a reader will be distracted by the readable content . Mapping Data Management > files test.xls</label>
+        <br />
+        <br />
+        @foreach (var item in noticeMessageList)
+        {
+            var noticeDate = (item.noti_createdate != null ? item.noti_createdate.Value.ToString("ddd dd/MM/yyyy HH:mm") : "");
+            <label style="font: Regular 16px/22px Arial;letter-spacing: 0px;color: #999999;">@noticeDate</label><br />
+            <label style="font: Regular 18px/22px Arial;letter-spacing: 0px;">@item.noti_message >&nbsp;</label><NavLink href="@item.mnu_path" Match="NavLinkMatch.All">@item.mnu_name</NavLink><label>&nbsp;</label><RadzenButton Icon="close" class="btnSave" Click="(() => DeleteNoticeMessage(item))" />
+            <br />
+            <br />
+        }
+
+    </div>
+}
+
+@*Singleton Service - @loginUserData.CurrentLoginUser.SessionId*@
+
+@code{
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+
+    private List<TRNoticeMessageDTO> noticeMessageList;
+
+    private bool pageLoading { get { return (noticeMessageList == null); } }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (string.IsNullOrEmpty(mainLayout.loginUser.Username) == true) navigationManager.NavigateTo("/NoPermissionPage");
+
+            noticeMessageList = await homeService.GetListByModelAsync(new TRNoticeMessageDTO() { noti_username = mainLayout.loginUser.Username });
+
+            StateHasChanged();
+        }
+    }
+
+    private void DeleteNoticeMessage(TRNoticeMessageDTO noti)
+    {
+        noticeMessageList.Remove(noti);
+        StateHasChanged();
+    }
+
+}

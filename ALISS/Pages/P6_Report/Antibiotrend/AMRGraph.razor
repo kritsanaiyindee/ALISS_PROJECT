@@ -1,0 +1,1167 @@
+﻿@page "/Antibiotrend/AMRGraph"
+
+@using ALISS.Data.D6_Report.Antibiotrend
+@using ALISS.ANTIBIOTREND.DTO
+@using ALISS.EXPORT.Library.DTO;
+@using Radzen
+@using Radzen.Blazor
+@using System.Globalization
+@using System.Data.SqlClient
+@using System.Configuration
+
+@inject IJSRuntime JSRuntime
+@inject AMPService ReportService
+@inject ConfigDataService configDataService
+@inject NavigationManager navigationManager
+@inject OrganismService organismService
+@inject AntibioticService antibioticService
+@inject SpecimenService specimenService
+@inject IFileSave OIFileSave
+@inject MasterTemplateService masterTemplateService
+
+<div style="width: 100%;">
+    <div class="divHead">
+        Antimicrobial Resistance
+    </div>
+</div>
+
+@if (!blnLoadComplete)
+{
+    <Loading ShowModel="true" />
+
+}
+else
+{
+    <RadzenFieldset Text="Filter">
+        <div class="row justify-content-between">
+            <div class="col-md-4">
+                @*X-axis*@
+                <h5>@configData.Get_Label("rpt_graph_xaxis")</h5>
+                @configData.Get_Label("rpt_graph_yearfrom")
+                <RadzenNumeric TValue="int" Max="9999" Min="1900" style="width: 30%;" Name="from_year" @bind-Value=@iYearFrom />
+
+                @configData.Get_Label("rpt_graph_yearto")
+                <RadzenNumeric TValue="int" Max="9999" Min="1900" style="width: 30%;" Name="to_year" @bind-Value=@iYearTo />
+                <br /><br />
+            </div>
+            <div class="col-md-4">
+                @*Y-axis*@
+                <h5>@configData.Get_Label("rpt_graph_yaxis")</h5>
+                <RadzenRadioButtonList @bind-Value=@selectedSIRValue TValue="eSIRValue">
+                    <Items>
+                        <RadzenRadioButtonListItem Text="%S" Value="eSIRValue.S" />
+                        <RadzenRadioButtonListItem Text="%I" Value="eSIRValue.I" />
+                        <RadzenRadioButtonListItem Text="%R" Value="eSIRValue.R" />
+                    </Items>
+                </RadzenRadioButtonList>
+                <br /><br />
+            </div>
+            <div class="col-md-4">
+                @*Graph Format*@
+                <h5>@configData.Get_Label("rpt_graph_format")</h5>
+                <RadzenRadioButtonList @bind-Value="selectedGraphFormat" TValue="eGraphFormat">
+                    <Items>
+                        <RadzenRadioButtonListItem Text="Line" Value="eGraphFormat.Line" />
+                        <RadzenRadioButtonListItem Text="Bar" Value="eGraphFormat.Bar" />
+                    </Items>
+                </RadzenRadioButtonList>
+                <br /><br />
+            </div>
+        </div>
+
+        <div class="row justify-content-between">
+            <div class="col-md-4">
+                <h5>@configData.Get_Label("rpt_graph_organism")</h5>
+                <RadzenListBox AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" @bind-Value="multipleSelectedOrg" Multiple="true" Data="@OrganismMaster" TextProperty="org_mst_ORGANISM" ValueProperty="org_mst_ORG"
+                               Style="margin-bottom: 20px; height:300px; width:350px" />
+                @*<RadzenListBox AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" @bind-Value="multipleSelectedOrg" Multiple="true" Data="@orgDump" TextProperty="org_name" ValueProperty="org_code"
+                    Style="margin-bottom: 20px; height:300px; width:350px" />*@
+
+            </div>
+            <div class="col-md-4">
+                <h5>@configData.Get_Label("rpt_graph_antibiotic")</h5>
+                <RadzenListBox AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" @bind-Value="multipleSelectedAnti" Multiple="true" Data="@AntibioticMaster" TextProperty="ant_mst_ANTIBIOTIC" ValueProperty="ant_mst_WHON5_CODE"
+                               Style="margin-bottom: 20px; height:300px; width:350px" />
+                @*<RadzenListBox AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" @bind-Value="multipleSelectedAnti" Multiple="true" Data="@antiDump" TextProperty="anti_name" ValueProperty="anti_code"
+                    Style="margin-bottom: 20px; height:300px; width:350px" />*@
+            </div>
+            <div class="col-md-4">
+                <h5>@configData.Get_Label("rpt_graph_subgraph")</h5>
+                <RadzenRadioButtonList @bind-Value=@selectedSubGraph TValue="eSubGraph">
+                    <Items>
+                        <RadzenRadioButtonListItem Text="Specimen" Value="eSubGraph.Specimen" />
+                        <RadzenRadioButtonListItem Text="Ward Type" Value="eSubGraph.Ward" />
+                        <RadzenRadioButtonListItem Text="None" Value="eSubGraph.None" />
+                    </Items>
+                </RadzenRadioButtonList>
+
+                <br /><br />
+            </div>
+        </div>
+
+        <div class="row justify-content-between buttonArea">
+            <div class="col-6">
+                <div class="row justify-content-start divGroup buttonArea">
+                    <div class="col-auto">
+                        <RadzenButton class="btnDownload" Text="Export" Click="@ExportFile" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="row justify-content-end divGroup buttonArea">
+                    <div class="col-auto">
+                        <RadzenButton class="btnSearch" Text="Graph Result" Click="@GraphResult" />
+                    </div>
+                    <div class="col-auto">
+                        <RadzenButton class="btnClear" Text="Clear" Click="@ClearData" />
+                    </div>
+                    @*<div class="col-auto">
+                            <RadzenButton class="btnClear" Text="Clear Graph" Click="@ClearGraph" />
+                        </div>*@
+                </div>
+            </div>
+        </div>
+
+        @if (!blnExportComplete)
+        {
+            <Loading ShowModel="true" />
+        }
+
+    </RadzenFieldset>
+
+    @if (blnLoadData == true)
+    {
+
+        @if (selectedGraphFormat == eGraphFormat.Line)
+        {
+            <h1>@TitleChart</h1>
+            <div class="row">
+
+                @if (dictSubMain.Count > 0)
+                {
+                    @foreach (var ppMain in dictSubMain.Keys)
+                    {
+                        <div class="col-md-6 col-sm-12 p-4">
+                            <h1>@ppMain</h1>
+                            <RadzenChart>
+                                @foreach (var series in dictSubMain[ppMain])
+                                {
+                                    <RadzenLineSeries Data="@series.Value" CategoryProperty="Year" Title="@series.Key" LineType="Radzen.Blazor.LineType.Dashed" ValueProperty="SIR">
+                                        <RadzenCategoryAxis Step="1" />
+                                        <RadzenMarkers MarkerType="MarkerType.Square" />
+                                    </RadzenLineSeries>
+                                }
+                                <RadzenValueAxis Min="0" Max="100" Step="20" />
+                                <RadzenCategoryAxis Padding="20" />
+                                <RadzenValueAxis Formatter="@FormatValue">
+                                    <RadzenGridLines Visible="true" />
+                                    <RadzenAxisTitle Text="@SIRText" />
+                                </RadzenValueAxis>
+                            </RadzenChart>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="col-md-6 col-sm-12 p-4">
+                        <RadzenChart>
+                            @foreach (var pp in dictSeries)
+                            {
+                                <RadzenLineSeries Data="@pp.Value" CategoryProperty="Year" Title="@pp.Key" LineType="Radzen.Blazor.LineType.Dashed" ValueProperty="SIR">
+                                    <RadzenCategoryAxis Step="1" />
+                                    <RadzenMarkers MarkerType="MarkerType.Square" />
+                                </RadzenLineSeries>
+                            }
+                            <RadzenValueAxis Min="0" Max="100" Step="20" />
+                            <RadzenCategoryAxis Padding="20" />
+                            <RadzenValueAxis Formatter="@FormatValue">
+                                <RadzenGridLines Visible="true" />
+                                <RadzenAxisTitle Text="@SIRText" />
+                            </RadzenValueAxis>
+                        </RadzenChart>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (selectedGraphFormat == eGraphFormat.Bar)
+        {
+            <h1>@TitleChart</h1>
+            <div class="row">
+
+                @if (dictSubMain.Count > 0)
+                {
+                    @foreach (var ppMain in dictSubMain.Keys)
+                    {
+                        <div class="col-md-6 col-sm-12 p-4">
+                            <h1>@ppMain</h1>
+                            <RadzenChart>
+                                @foreach (var series in dictSubMain[ppMain])
+                                {
+                                    <RadzenColumnSeries Data="@series.Value" CategoryProperty="Year" Title=@series.Key LineType="Radzen.Blazor.LineType.Dashed" ValueProperty="SIR">
+                                        @*<RadzenCategoryAxis Step="1" />*@
+                                    </RadzenColumnSeries>
+                                }
+                                <RadzenColumnOptions Radius="5" />
+                                <RadzenValueAxis Min="0" Max="100" Step="20" />
+                                <RadzenValueAxis Formatter="@FormatValue">
+                                    <RadzenGridLines Visible="true" />
+                                    <RadzenAxisTitle Text="@SIRText" />
+                                </RadzenValueAxis>
+                            </RadzenChart>
+                        </div>
+                    }
+                }
+
+                else
+                {
+                    <div class="col-md-6 col-sm-12 p-4">
+                        <RadzenChart>
+                            @foreach (var series in dictSeries)
+                            {
+                                <RadzenColumnSeries Data="@series.Value" CategoryProperty="Year" Title=@series.Key LineType="Radzen.Blazor.LineType.Dashed" ValueProperty="SIR">
+                                    @*<RadzenCategoryAxis Step="1" />*@
+                                </RadzenColumnSeries>
+                            }
+                            <RadzenValueAxis Min="0" Max="100" Step="20" />
+                            <RadzenColumnOptions Radius="5" />
+                            <RadzenValueAxis Formatter="@FormatValue">
+                                <RadzenGridLines Visible="true" />
+                                <RadzenAxisTitle Text="@SIRText" />
+                            </RadzenValueAxis>
+                        </RadzenChart>
+                    </div>
+                }
+
+            </div>
+        }
+    }
+}
+
+
+@code {
+
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+    private const string MENU_CODE = "MNU_0705";
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-md-4";
+
+
+    string _Message;
+    Dictionary<DateTime, string> events = new Dictionary<DateTime, string>();
+    private int iYearFrom = (DateTime.Today.Year - 5);
+    private int iYearTo = DateTime.Today.Year;
+    private eSIRValue selectedSIRValue = eSIRValue.S;
+    private eSubGraph selectedSubGraph = eSubGraph.None;
+    private eGraphFormat selectedGraphFormat = eGraphFormat.Line;
+    private string SIRText;
+    private Boolean blnLoadData = false;
+    private Boolean blnLoadComplete = false;
+    private Boolean blnExportComplete = true;
+
+    ElementReference ContentToRender;
+    private String strHTML;
+    private string TitleChart;
+    private eSubGraph LoadAMRData ;
+
+    private List<SP_AntimicrobialResistanceDTO> AMRData;
+    SP_AntimicrobialResistanceSearchDTO searchAMR = new SP_AntimicrobialResistanceSearchDTO();
+    private AMRGraphSearchDTO modelExport = new AMRGraphSearchDTO();
+
+    private string titleChart;
+    private string chartName1;
+    private string chartName2;
+    IEnumerable<string> multipleSelectedOrg = new string[] { };
+    IEnumerable<string> multipleSelectedAnti = new string[] { };
+    private List<SpecimenDTO> SpecimenMaster = new List<SpecimenDTO>();
+    private List<OrganismDTO> OrganismMaster = new List<OrganismDTO>();
+    private List<AntibioticDTO> AntibioticMaster = new List<AntibioticDTO>();
+
+    private SpecimenDTO ActiveSpcimen = new SpecimenDTO();
+    private OrganismDTO ActiveOrganism = new OrganismDTO();
+    private AntibioticDTO ActiveAntibiotic = new AntibioticDTO();
+    private MasterTemplateDTO ActiveMasterTemplate = new MasterTemplateDTO();
+
+    List<string> WardTypeMaster = new List<string> { "opd", "ipd", "icu", "int" };
+
+    IEnumerable<DataReport> enumData = new DataReport[] { };
+    NotificationMessage notiMsg = new NotificationMessage();
+
+    private enum eGraphFormat
+    {
+        Line = 1,
+        Bar = 2,
+        Pie = 3
+    }
+
+    private enum eSubGraph
+    {
+        Specimen = 1,
+        Ward = 2,
+        None = 0
+    }
+
+    private enum eSIRValue
+    {
+        S = 1,
+        I = 2,
+        R = 3
+    }
+
+    class DataReport
+    {
+        public string Year { get; set; }
+        public double SIR { get; set; }
+    }
+
+    private Dictionary<string, IEnumerable<DataReport>> dictSeries = new Dictionary<string, IEnumerable<DataReport>>();
+    private Dictionary<string, Dictionary<string, IEnumerable<DataReport>>> dictSubMain = new Dictionary<string, Dictionary<string, IEnumerable<DataReport>>>();
+    private Dictionary<string, Dictionary<string, Dictionary<string, IEnumerable<DataReport>>>> dictDrugMain = new Dictionary<string, Dictionary<string, Dictionary<string, IEnumerable<DataReport>>>>();
+
+    class clsOrganism
+    {
+        public string org_code { get; set; }
+        public string org_name { get; set; }
+    }
+
+    class clsAntibiotic
+    {
+        public string anti_code { get; set; }
+        public string anti_name { get; set; }
+    }
+
+    clsAntibiotic[] antiDump = new clsAntibiotic[]
+    {
+        new clsAntibiotic
+        {
+            anti_code = "AMX",
+            anti_name = "Amoxicillin"
+        },
+         new clsAntibiotic
+        {
+            anti_code = "CEC",
+            anti_name = "Cefaclor"
+        },
+          new clsAntibiotic
+        {
+            anti_code = "OXA",
+            anti_name = "Oxacillin"
+        },
+           new clsAntibiotic
+        {
+            anti_code = "PEN",
+            anti_name = "Penicillin G"
+        },
+            new clsAntibiotic
+        {
+            anti_code = "PTZ",
+            anti_name = "Pentizidone"
+        },
+            new clsAntibiotic
+        {
+            anti_code = "RAM",
+            anti_name = "Ramoplanin"
+        },
+            new clsAntibiotic
+        {
+            anti_code = "VAN",
+            anti_name = "Vancomycin"
+        }
+                                    };
+
+    clsOrganism[] orgDump = new clsOrganism[]
+    {
+        new clsOrganism
+        {
+            org_code = "alc",
+            org_name = "Alcaligenes sp."
+        },
+        new clsOrganism
+        {
+            org_code = "bde",
+            org_name = "Bacteroides denticola"
+        },
+        new clsOrganism
+        {
+            org_code = "shf",
+            org_name = "Streptococcus hyointestinalis"
+        },
+        new clsOrganism
+        {
+            org_code = "sal",
+            org_name = "Salmonella sp."
+        },
+        new clsOrganism
+        {
+            org_code = "vic",
+            org_name = "Vibrio cholerae"
+        },
+        new clsOrganism
+        {
+            org_code = "ent",
+            org_name = "Enterococcus sp."
+        },
+        new clsOrganism
+        {
+            org_code = "ngo",
+            org_name = "Neisseria gonorrhoeae"
+        }
+                };
+
+    //protected bool Rendered = false;
+    //protected async override Task OnAfterRenderAsync(bool firstRender)
+    //{
+    //    if (!Rendered)
+    //    {
+    //        Rendered = true;
+    //        await OnAfterFirstRenderAsync();
+    //    }
+    //}
+    //protected async Task OnAfterFirstRenderAsync()
+    //{
+    //    //AMRData = await ReportService.GetAMRModelAsync(searchAMR);
+    //    AMRData = await ReportService.GetAMROverallModelAsync(searchAMR);
+    //    LoadAMRData = selectedSubGraph;
+    //}
+
+    //protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission(MENU_CODE) == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = MENU_CODE });
+
+            ActiveMasterTemplate = await masterTemplateService.GetListByModelActiveAsync(new MasterTemplateSearchDTO());
+            ActiveSpcimen.spc_mst_code = ActiveOrganism.org_mst_code = ActiveAntibiotic.ant_mst_code = ActiveMasterTemplate.mst_code;
+
+            SpecimenMaster = await specimenService.GetListByModelActiveAsync(ActiveSpcimen);
+            OrganismMaster = await organismService.GetListByModelActiveAsync(ActiveOrganism);
+            AntibioticMaster = await antibioticService.GetListByModelActiveAsync(ActiveAntibiotic);
+
+            searchAMR.start_year = iYearFrom;
+            searchAMR.end_year = iYearTo;
+
+            AMRData = await ReportService.GetAMROverallModelAsync(searchAMR);
+            blnLoadComplete = true;
+
+        }
+    }
+
+    private async Task ClearGraph()
+    {
+        dictSeries.Clear();
+        dictSubMain.Clear();
+        dictDrugMain.Clear();
+
+        blnLoadData = false;
+        StateHasChanged();
+    }
+
+    private async Task ClearData()
+    {
+        iYearFrom = (DateTime.Today.Year - 5);
+        iYearTo = DateTime.Today.Year;
+
+        searchAMR.start_year = iYearFrom;
+        searchAMR.end_year = iYearTo;
+
+        multipleSelectedOrg = new string[] { };
+        multipleSelectedAnti = new string[] { };
+
+        selectedSubGraph = eSubGraph.None;
+        selectedGraphFormat = eGraphFormat.Line;
+        selectedSIRValue = eSIRValue.S;
+
+        await ClearGraph();
+    }
+
+    async void ExportFile()
+    {
+        blnExportComplete = false;
+        modelExport.start_year = searchAMR.start_year;
+        modelExport.end_year = searchAMR.end_year;
+        if (selectedSIRValue == eSIRValue.S)
+        {
+            modelExport.sir = "S";
+        }
+        else if (selectedSIRValue == eSIRValue.I)
+        {
+            modelExport.sir = "I";
+        }
+        else
+        {
+            modelExport.sir = "R";
+        }
+        modelExport.graph_format = (int)selectedGraphFormat;
+        modelExport.sub_graph = (int)selectedSubGraph;
+        modelExport.organism = multipleSelectedOrg;
+        modelExport.antibiotic = multipleSelectedAnti;
+
+        string statuscode = await ReportService.ExportGraphFileDataAsync(modelExport);
+        if (statuscode == "OK")
+        {
+            string OutputFileName = string.Format("{0}-{1}_{2}"
+                                               , modelExport.start_year
+                                               , modelExport.end_year
+                                               , "AMRGraph.pdf");
+            string ServerFileName = "ANTIBIOTREND" + "/" + DateTime.Today.ToString("yyyyMMdd") + "/" + OutputFileName;
+            string contentType = "application/pdf";
+
+            await OIFileSave.DownloadFile(ServerFileName, OutputFileName, contentType);
+
+        }
+        else if (statuscode == "ERR_PATH")
+        {
+            await JSRuntime.InvokeAsync<object>("ShowAlert", "ไม่พบ Config PATH กรุณาติดต่อผู้ดูแลระบบ");
+        }
+        else
+        {
+            await JSRuntime.InvokeAsync<object>("ShowAlert", "File not Found");
+        }
+        blnExportComplete = true;
+    }
+
+    private async Task GraphResult()
+    {
+        blnLoadComplete = false;
+        await ClearGraph();
+
+        if (iYearFrom != 0 && iYearTo != 0)
+        {
+            searchAMR.start_year = iYearFrom;
+            searchAMR.end_year = iYearTo;
+
+            // y-axis
+            if (selectedSIRValue == eSIRValue.S)
+            {
+                SIRText = "%S";
+                TitleChart = "Susceptibility of ";
+            }
+            else if (selectedSIRValue == eSIRValue.I)
+            {
+                SIRText = "%I";
+                TitleChart = "Intermediate of ";
+            }
+            else
+            {
+                SIRText = "%R";
+                TitleChart = "Resistance of ";
+            }
+
+            //organism
+            if (multipleSelectedOrg.Count() == 0 && multipleSelectedAnti.Count() == 0)
+            {
+                _Message = "Please select Org and Anti";
+            }
+            // 1 or หลาย เชื้อ : 1 ยา >> series เชื้อ
+            else if (multipleSelectedOrg.Count() > 0 && multipleSelectedAnti.Count() == 1)
+            {
+                searchAMR.org_codes = string.Join(",", multipleSelectedOrg);
+                searchAMR.anti_codes = string.Join(",", multipleSelectedAnti);
+
+                DataReport dtReport = new DataReport { };
+                List<DataReport> EnumList = new List<DataReport>();
+                List<SP_AntimicrobialResistanceDTO> objAMRSearchResult;
+
+                dictSeries.Clear();
+                dictSeries = new Dictionary<string, IEnumerable<DataReport>>();
+
+                //await OnAfterRenderAsync(true);
+                //AMRData = await ReportService.GetAMRModelAsync(searchAMR);
+
+                if (selectedSubGraph == eSubGraph.None)
+                {
+                    if (selectedSubGraph != LoadAMRData)
+                    {
+                        AMRData = await ReportService.GetAMROverallModelAsync(searchAMR);
+                        LoadAMRData = selectedSubGraph;
+                    }
+                    objAMRSearchResult = AMRData.Where(w => (w.year >= searchAMR.start_year && w.year <= searchAMR.end_year)
+                                           && (multipleSelectedOrg.Contains(w.org_code))
+                                           && (multipleSelectedAnti.Contains(w.anti_code))
+                                           ).OrderBy(o => o.org_code).ToList();
+
+                    foreach (var obj in objAMRSearchResult)
+                    {
+                        if (!dictSeries.ContainsKey(obj.org_code))
+                        {
+                            EnumList = new List<DataReport>();
+                            for (var i = iYearFrom; i <= iYearTo; i++)
+                            {
+                                var newdata = new DataReport { Year = i.ToString(), SIR = 0 };
+                                EnumList.Add(newdata);
+                            }
+
+                            dictSeries.Add(obj.org_code, EnumList);
+                        }
+
+                        var obe = EnumList.Where(w => w.Year == obj.year.ToString()).FirstOrDefault();
+                        if (obe != null)
+                        {
+                            if (selectedSIRValue == eSIRValue.S) { obe.SIR = obj.percent_s; }
+                            else if (selectedSIRValue == eSIRValue.I) { obe.SIR = obj.percent_i; }
+                            else { obe.SIR = obj.percent_r; }
+                        }
+                    }
+                    // ------ Find Description ------
+                    //var SelectedAntiDesc = new List<string>();
+                    //foreach (var SelectedAntiCode in multipleSelectedAnti)
+                    //{
+                    //    var desc = AntibioticMaster.Find(t => t.ant_mst_WHON5_CODE == SelectedAntiCode);
+                    //    if (desc != null) { SelectedAntiDesc.Add(desc.ant_name); }
+                    //    else { SelectedAntiDesc.Add(SelectedAntiCode); }
+                    //}
+                    //var title = string.Join(" and ", SelectedAntiDesc);
+
+
+                    var title = string.Join(" and ", multipleSelectedOrg);
+                    chartName1 = multipleSelectedOrg.FirstOrDefault();
+                    TitleChart = TitleChart + title;
+                }
+
+                // have sub graph
+                else
+                {
+                    if (selectedSubGraph == eSubGraph.Specimen)
+                    {
+                        dictSeries.Clear();
+                        dictSubMain.Clear();
+                        dictSeries = new Dictionary<string, IEnumerable<DataReport>>();
+                        dictSubMain = new Dictionary<string, Dictionary<string, IEnumerable<DataReport>>>();
+                        List<SP_AntimicrobialResistanceDTO> objSpc = new List<SP_AntimicrobialResistanceDTO>();
+
+                        if (selectedSubGraph != LoadAMRData)
+                        {
+                            AMRData = await ReportService.GetAMRSpecimenModelAsync(searchAMR);
+                            LoadAMRData = selectedSubGraph;
+                        }
+                        objAMRSearchResult = AMRData.Where(w => (w.year >= searchAMR.start_year && w.year <= searchAMR.end_year)
+                                               && (multipleSelectedOrg.Contains(w.org_code))
+                                               && (multipleSelectedAnti.Contains(w.anti_code))
+                                               ).OrderBy(o => o.org_code).ToList();
+
+                        foreach (var orgn in multipleSelectedOrg)
+                        {
+                            dictSeries = new Dictionary<string, IEnumerable<DataReport>>();
+                            if (!dictSubMain.ContainsKey(orgn)) { dictSubMain.Add(orgn, dictSeries); }
+
+                            foreach (var spcCode in SpecimenMaster)
+                            {
+                                objSpc = objAMRSearchResult.Where(w => w.org_code == orgn
+                                                                    && w.spc_code == spcCode.spc_code
+                                                                    ).ToList();
+
+                                chartName1 = orgn;
+                                EnumList = new List<DataReport>();
+                                for (var i = iYearFrom; i <= iYearTo; i++)
+                                {
+                                    var newdata = new DataReport { Year = i.ToString(), SIR = 0 };
+                                    EnumList.Add(newdata);
+                                }
+
+                                dictSeries.Add(spcCode.spc_code, EnumList);
+
+                                foreach (var obj in objSpc)
+                                {
+                                    var obe = EnumList.Where(w => w.Year == obj.year.ToString()).FirstOrDefault();
+                                    if (obe != null)
+                                    {
+                                        if (selectedSIRValue == eSIRValue.S) { obe.SIR = obj.percent_s; }
+                                        else if (selectedSIRValue == eSIRValue.I) { obe.SIR = obj.percent_i; }
+                                        else { obe.SIR = obj.percent_r; }
+                                    }
+
+                                } // end objSpc1
+                            }
+                        }
+
+                        var title = string.Format("{0} to {1} by Specimen", multipleSelectedAnti.FirstOrDefault(), string.Join(",", multipleSelectedOrg));
+                        TitleChart = TitleChart + title;
+                    } // end sub graph : specimen
+
+                    if (selectedSubGraph == eSubGraph.Ward)
+                    {
+                        dictSeries.Clear();
+                        dictSubMain.Clear();
+                        dictSeries = new Dictionary<string, IEnumerable<DataReport>>();
+                        dictSubMain = new Dictionary<string, Dictionary<string, IEnumerable<DataReport>>>();
+                        List<SP_AntimicrobialResistanceDTO> objWard = new List<SP_AntimicrobialResistanceDTO>();
+
+                        if (selectedSubGraph != LoadAMRData)
+                        {
+                            AMRData = await ReportService.GetAMRWardTypeModelAsync(searchAMR);
+                            LoadAMRData = selectedSubGraph;
+                        }
+                        objAMRSearchResult = AMRData.Where(w => (w.year >= searchAMR.start_year && w.year <= searchAMR.end_year)
+                                               && (multipleSelectedOrg.Contains(w.org_code))
+                                               && (multipleSelectedAnti.Contains(w.anti_code))
+                                               ).OrderBy(o => o.org_code).ToList();
+                        foreach (var orgn in multipleSelectedOrg)
+                        {
+                            dictSeries = new Dictionary<string, IEnumerable<DataReport>>();
+                            if (!dictSubMain.ContainsKey(orgn))
+                            {
+                                dictSubMain.Add(orgn, dictSeries);
+                            }
+
+                            foreach (var wardCode in WardTypeMaster)
+                            {
+                                objWard = objAMRSearchResult.Where(w => w.org_code == orgn
+                                                                    && w.ward_type == wardCode
+                                                                    ).ToList();
+
+                                chartName1 = orgn;
+                                EnumList = new List<DataReport>();
+                                for (var i = iYearFrom; i <= iYearTo; i++)
+                                {
+                                    var newdata = new DataReport { Year = i.ToString(), SIR = 0 };
+                                    EnumList.Add(newdata);
+                                }
+
+                                dictSeries.Add(wardCode, EnumList);
+
+                                foreach (var obj in objWard)
+                                {
+                                    var obe = EnumList.Where(w => w.Year == obj.year.ToString()).FirstOrDefault();
+                                    if (obe != null)
+                                    {
+                                        if (selectedSIRValue == eSIRValue.S) { obe.SIR = obj.percent_s; }
+                                        else if (selectedSIRValue == eSIRValue.I) { obe.SIR = obj.percent_i; }
+                                        else { obe.SIR = obj.percent_r; }
+                                    }
+
+                                } // end objSpc1
+
+                            }
+                        }
+
+                        var title = string.Format("{0} to {1} by Ward Type", multipleSelectedAnti.FirstOrDefault(), string.Join(",", multipleSelectedOrg));
+                        TitleChart = TitleChart + title;
+                    } // end sub graph : Ward Type
+                }
+            }
+
+            // 1 เชื้อ : หลาย ยา >> series ยา
+            else if (multipleSelectedOrg.Count() == 1 && multipleSelectedAnti.Count() > 1)
+            {
+                searchAMR.org_codes = string.Join(",", multipleSelectedOrg);
+                searchAMR.anti_codes = string.Join(",", multipleSelectedAnti);
+
+                //await OnAfterRenderAsync(true);
+                //AMRData = await ReportService.GetAMRModelAsync(searchAMR);
+
+                List<SP_AntimicrobialResistanceDTO> objAMRSearchResult;
+                //objAMRSearchResult = AMRData.Where(w => (w.year >= searchAMR.start_year && w.year <= searchAMR.end_year)
+                //                           && (multipleSelectedOrg.Contains(w.org_code))
+                //                           && (multipleSelectedAnti.Contains(w.anti_code))
+                //                           ).OrderBy(o => o.anti_code).ToList();
+
+                DataReport dtReport = new DataReport { };
+                List<DataReport> EnumList = new List<DataReport>();
+                dictSeries.Clear();
+                dictSeries = new Dictionary<string, IEnumerable<DataReport>>();
+
+                if (selectedSubGraph == eSubGraph.None)
+                {
+                    if (selectedSubGraph != LoadAMRData)
+                    {
+                        AMRData = await ReportService.GetAMROverallModelAsync(searchAMR);
+                        LoadAMRData = selectedSubGraph;
+                    }
+                    objAMRSearchResult = AMRData.Where(w => (w.year >= searchAMR.start_year && w.year <= searchAMR.end_year)
+                                           && (multipleSelectedOrg.Contains(w.org_code))
+                                           && (multipleSelectedAnti.Contains(w.anti_code))
+                                           ).OrderBy(o => o.anti_code).ToList();
+
+                    foreach (var obj in objAMRSearchResult)
+                    {
+                        if (!dictSeries.ContainsKey(obj.anti_code))
+                        {
+                            EnumList = new List<DataReport>();
+                            for (var i = iYearFrom; i <= iYearTo; i++)
+                            {
+                                var newdata = new DataReport { Year = i.ToString(), SIR = 0 };
+                                EnumList.Add(newdata);
+                            }
+                            dictSeries.Add(obj.anti_code, EnumList);
+                        }
+
+                        var obe = EnumList.Where(w => w.Year == obj.year.ToString()).FirstOrDefault();
+                        if (obe != null)
+                        {
+                            if (selectedSIRValue == eSIRValue.S) { obe.SIR = obj.percent_s; }
+                            else if (selectedSIRValue == eSIRValue.I) { obe.SIR = obj.percent_i; }
+                            else { obe.SIR = obj.percent_r; }
+                        }
+                    }
+
+                    // ------- Find Description -------
+                    //var SelectedOrgDesc = new List<string>();
+                    //foreach (var SelectedorgCode in multipleSelectedOrg)
+                    //{
+                    //    var desc = OrganismMaster.Find(t => t.org_mst_ORG == SelectedorgCode);
+                    //    if (desc != null) { SelectedOrgDesc.Add(desc.org_mst_ORGANISM);}
+                    //    else { SelectedOrgDesc.Add(SelectedorgCode);}
+                    //}
+                    //var title = string.Join(" and ", SelectedOrgDesc);
+
+                    var title = string.Join(" and ", multipleSelectedOrg);
+                    chartName1 = multipleSelectedOrg.FirstOrDefault();
+                    TitleChart = TitleChart + title;
+                }
+
+                else
+                {
+                    if (selectedSubGraph == eSubGraph.Specimen)
+                    {
+                        dictSeries.Clear();
+                        dictSubMain.Clear();
+                        dictSeries = new Dictionary<string, IEnumerable<DataReport>>();
+                        dictSubMain = new Dictionary<string, Dictionary<string, IEnumerable<DataReport>>>();
+                        List<SP_AntimicrobialResistanceDTO> objSpc = new List<SP_AntimicrobialResistanceDTO>();
+
+                        if (selectedSubGraph != LoadAMRData)
+                        {
+                            AMRData = await ReportService.GetAMRSpecimenModelAsync(searchAMR);
+                            LoadAMRData = selectedSubGraph;
+                        }
+                        objAMRSearchResult = AMRData.Where(w => (w.year >= searchAMR.start_year && w.year <= searchAMR.end_year)
+                                          && (multipleSelectedOrg.Contains(w.org_code))
+                                          && (multipleSelectedAnti.Contains(w.anti_code))
+                                          ).OrderBy(o => o.anti_code).ToList();
+
+                        foreach (var drug in multipleSelectedAnti)
+                        {
+                            dictSeries = new Dictionary<string, IEnumerable<DataReport>>();
+                            if (!dictSubMain.ContainsKey(drug))
+                            {
+                                dictSubMain.Add(drug, dictSeries);
+                            }
+
+                            foreach (var spcCode in SpecimenMaster)
+                            {
+                                objSpc = objAMRSearchResult.Where(w => w.anti_code == drug
+                                                                    && w.spc_code == spcCode.spc_code
+                                                                    ).ToList();
+
+                                chartName1 = drug;
+                                EnumList = new List<DataReport>();
+                                for (var i = iYearFrom; i <= iYearTo; i++)
+                                {
+                                    var newdata = new DataReport { Year = i.ToString(), SIR = 0 };
+                                    EnumList.Add(newdata);
+                                }
+
+                                dictSeries.Add(spcCode.spc_code, EnumList);
+
+                                foreach (var obj in objSpc)
+                                {
+                                    var obe = EnumList.Where(w => w.Year == obj.year.ToString()).FirstOrDefault();
+                                    if (obe != null)
+                                    {
+                                        if (selectedSIRValue == eSIRValue.S) { obe.SIR = obj.percent_s; }
+                                        else if (selectedSIRValue == eSIRValue.I) { obe.SIR = obj.percent_i; }
+                                        else { obe.SIR = obj.percent_r; }
+                                    }
+
+                                } // end objSpc1
+                            }
+                        }
+
+                        var title = string.Format("{0} to {1} by Specimen", multipleSelectedOrg.FirstOrDefault(), string.Join(",", multipleSelectedAnti));
+                        TitleChart = TitleChart + title;
+                    } // end sub graph : specimen
+
+                    if (selectedSubGraph == eSubGraph.Ward)
+                    {
+                        dictSeries.Clear();
+                        dictSubMain.Clear();
+                        dictSeries = new Dictionary<string, IEnumerable<DataReport>>();
+                        dictSubMain = new Dictionary<string, Dictionary<string, IEnumerable<DataReport>>>();
+                        List<SP_AntimicrobialResistanceDTO> objWard = new List<SP_AntimicrobialResistanceDTO>();
+
+                        if (selectedSubGraph != LoadAMRData)
+                        {
+                            AMRData = await ReportService.GetAMRWardTypeModelAsync(searchAMR);
+                            LoadAMRData = selectedSubGraph;
+                        }
+                        objAMRSearchResult = AMRData.Where(w => (w.year >= searchAMR.start_year && w.year <= searchAMR.end_year)
+                                            && (multipleSelectedOrg.Contains(w.org_code))
+                                            && (multipleSelectedAnti.Contains(w.anti_code))
+                                            ).OrderBy(o => o.anti_code).ToList();
+
+                        foreach (var drug in multipleSelectedAnti)
+                        {
+
+                            dictSeries = new Dictionary<string, IEnumerable<DataReport>>();
+                            if (!dictSubMain.ContainsKey(drug))
+                            {
+                                dictSubMain.Add(drug, dictSeries);
+                            }
+
+                            foreach (var wardCode in WardTypeMaster)
+                            {
+                                objWard = objAMRSearchResult.Where(w => w.anti_code == drug
+                                                                    && w.ward_type == wardCode
+                                                                    ).ToList();
+
+                                chartName1 = drug;
+                                EnumList = new List<DataReport>();
+                                for (var i = iYearFrom; i <= iYearTo; i++)
+                                {
+                                    var newdata = new DataReport { Year = i.ToString(), SIR = 0 };
+                                    EnumList.Add(newdata);
+                                }
+
+                                dictSeries.Add(wardCode, EnumList);
+
+                                foreach (var obj in objWard)
+                                {
+                                    var obe = EnumList.Where(w => w.Year == obj.year.ToString()).FirstOrDefault();
+                                    if (obe != null)
+                                    {
+                                        if (selectedSIRValue == eSIRValue.S) { obe.SIR = obj.percent_s; }
+                                        else if (selectedSIRValue == eSIRValue.I) { obe.SIR = obj.percent_i; }
+                                        else { obe.SIR = obj.percent_r; }
+                                    }
+
+                                } // end objSpc1
+                            }
+                        }
+
+                        var title = string.Format("{0} to {1} by Ward Type", multipleSelectedOrg.FirstOrDefault(), string.Join(",", multipleSelectedAnti));
+                        TitleChart = TitleChart + title;
+                    } // end sub graph : Ward Type
+                }
+            }
+
+            // หลาย เชื้อ : หลาย ยา >> show series เชื้อ
+            else if (multipleSelectedOrg.Count() > 1 && multipleSelectedAnti.Count() > 1)
+            {
+
+                searchAMR.org_codes = string.Join(",", multipleSelectedOrg);
+                searchAMR.anti_codes = string.Join(",", multipleSelectedAnti);
+
+                //await OnAfterRenderAsync(true);
+                //AMRData = await ReportService.GetAMRModelAsync(searchAMR);
+
+                List<SP_AntimicrobialResistanceDTO> objAMRSearchResult;
+                //objAMRSearchResult = AMRData.Where(w => (w.year >= searchAMR.start_year && w.year <= searchAMR.end_year)
+                //                           && (multipleSelectedOrg.Contains(w.org_code))
+                //                           && (multipleSelectedAnti.Contains(w.anti_code))
+                //                           ).OrderBy(o => o.org_code).ToList();
+
+                dictSeries.Clear();
+                dictSeries = new Dictionary<string, IEnumerable<DataReport>>();
+                List<DataReport> EnumList = new List<DataReport>();
+                List<SP_AntimicrobialResistanceDTO> objOrg = new List<SP_AntimicrobialResistanceDTO>();
+                List<SP_AntimicrobialResistanceDTO> objSpc = new List<SP_AntimicrobialResistanceDTO>();
+                List<SP_AntimicrobialResistanceDTO> objWard = new List<SP_AntimicrobialResistanceDTO>();
+                // จำนวนกราฟ = จำนวนยา
+                if (selectedSubGraph == eSubGraph.None)
+                {
+                    if (selectedSubGraph != LoadAMRData)
+                    {
+                        AMRData = await ReportService.GetAMROverallModelAsync(searchAMR);
+                        LoadAMRData = selectedSubGraph;
+                    }
+                    objAMRSearchResult = AMRData.Where(w => (w.year >= searchAMR.start_year && w.year <= searchAMR.end_year)
+                                           && (multipleSelectedOrg.Contains(w.org_code))
+                                           && (multipleSelectedAnti.Contains(w.anti_code))
+                                           ).OrderBy(o => o.org_code).ToList();
+
+                    foreach (var drug in multipleSelectedAnti)
+                    {
+                        objOrg = objAMRSearchResult.Where(w => w.anti_code == drug).ToList();
+                        dictSeries = new Dictionary<string, IEnumerable<DataReport>>();
+
+                        if (!dictSubMain.ContainsKey(drug)) { dictSubMain.Add(drug, dictSeries); }
+
+                        foreach (var orgn in multipleSelectedOrg)
+                        {
+                            EnumList = new List<DataReport>();
+                            for (var i = iYearFrom; i <= iYearTo; i++)
+                            {
+                                var newdata = new DataReport { Year = i.ToString(), SIR = 0 };
+                                EnumList.Add(newdata);
+                            }
+
+                            var objOO = objOrg.Where(w => w.org_code == orgn).ToList();
+
+                            foreach (var obj in objOO)
+                            {
+                                if (!dictSeries.ContainsKey(obj.org_code)) { dictSeries.Add(obj.org_code, EnumList); };
+
+                                var obe = EnumList.Where(w => w.Year == obj.year.ToString()).FirstOrDefault();
+                                if (obe != null)
+                                {
+                                    if (selectedSIRValue == eSIRValue.S) { obe.SIR = obj.percent_s; }
+                                    else if (selectedSIRValue == eSIRValue.I) { obe.SIR = obj.percent_i; }
+                                    else { obe.SIR = obj.percent_r; }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // จำนวนกราฟ = จำนวนยา x จำนวนเชื้อ
+                if (selectedSubGraph == eSubGraph.Specimen)
+                {
+                    if (selectedSubGraph != LoadAMRData)
+                    {
+                        AMRData = await ReportService.GetAMROverallModelAsync(searchAMR);
+                        LoadAMRData = selectedSubGraph;
+                    }
+                    objAMRSearchResult = AMRData.Where(w => (w.year >= searchAMR.start_year && w.year <= searchAMR.end_year)
+                                           && (multipleSelectedOrg.Contains(w.org_code))
+                                           && (multipleSelectedAnti.Contains(w.anti_code))
+                                           ).OrderBy(o => o.org_code).ToList();
+
+                    foreach (var drug in multipleSelectedAnti)
+                    {
+                        objOrg = objAMRSearchResult.Where(w => w.anti_code == drug).ToList();
+                        dictSubMain = new Dictionary<string, Dictionary<string, IEnumerable<DataReport>>>();
+
+                        if (!dictDrugMain.ContainsKey(drug)) { dictDrugMain.Add(drug, dictSubMain); }
+
+                        foreach (var orgn in multipleSelectedOrg)
+                        {
+                            dictSeries = new Dictionary<string, IEnumerable<DataReport>>();
+                            if (!dictSubMain.ContainsKey(orgn)) { dictSubMain.Add(orgn, dictSeries); }
+
+                            foreach (var spcCode in SpecimenMaster)
+                            {
+                                objSpc = objOrg.Where(w => w.spc_code == spcCode.spc_code && w.org_code == orgn
+                                                       ).ToList();
+
+                                EnumList = new List<DataReport>();
+                                for (var i = iYearFrom; i <= iYearTo; i++)
+                                {
+                                    var newdata = new DataReport { Year = i.ToString(), SIR = 0 };
+                                    EnumList.Add(newdata);
+                                }
+
+                                dictSeries.Add(spcCode.spc_code, EnumList);
+
+                                foreach (var obj in objSpc)
+                                {
+                                    if (!dictSeries.ContainsKey(spcCode.spc_code))
+                                    {
+                                        var obe = EnumList.Where(w => w.Year == obj.year.ToString()).FirstOrDefault();
+                                        if (obe != null)
+                                        {
+                                            if (selectedSIRValue == eSIRValue.S) { obe.SIR = obj.percent_s; }
+                                            else if (selectedSIRValue == eSIRValue.I) { obe.SIR = obj.percent_i; }
+                                            else { obe.SIR = obj.percent_r; }
+                                        }
+                                    }
+
+                                    else
+                                    {
+                                        var obe = EnumList.Where(w => w.Year == obj.year.ToString()).FirstOrDefault();
+                                        if (obe != null)
+                                        {
+                                            if (selectedSIRValue == eSIRValue.S) { obe.SIR = obj.percent_s; }
+                                            else if (selectedSIRValue == eSIRValue.I) { obe.SIR = obj.percent_i; }
+                                            else { obe.SIR = obj.percent_r; }
+                                        }
+                                    }
+
+                                }
+
+                            }
+                        }
+                    }
+                }
+                // จำนวนกราฟ = จำนวนยา x จำนวนเชื้อ
+                if (selectedSubGraph == eSubGraph.Ward)
+                {
+                    if (selectedSubGraph != LoadAMRData)
+                    {
+                        AMRData = await ReportService.GetAMROverallModelAsync(searchAMR);
+                        LoadAMRData = selectedSubGraph;
+                    }
+                    objAMRSearchResult = AMRData.Where(w => (w.year >= searchAMR.start_year && w.year <= searchAMR.end_year)
+                                           && (multipleSelectedOrg.Contains(w.org_code))
+                                           && (multipleSelectedAnti.Contains(w.anti_code))
+                                           ).OrderBy(o => o.org_code).ToList();
+
+                    foreach (var drug in multipleSelectedAnti)
+                    {
+                        objOrg = objAMRSearchResult.Where(w => w.anti_code == drug).ToList();
+                        dictSubMain = new Dictionary<string, Dictionary<string, IEnumerable<DataReport>>>();
+
+                        if (!dictDrugMain.ContainsKey(drug))
+                        {
+                            dictDrugMain.Add(drug, dictSubMain);
+                        }
+
+                        foreach (var orgn in multipleSelectedOrg)
+                        {
+                            dictSeries = new Dictionary<string, IEnumerable<DataReport>>();
+                            if (!dictSubMain.ContainsKey(orgn)) { dictSubMain.Add(orgn, dictSeries); }
+
+                            foreach (var wardCode in WardTypeMaster)
+                            {
+                                objWard = objOrg.Where(w => w.ward_type == wardCode && w.org_code == orgn
+                                                       ).ToList();
+
+                                EnumList = new List<DataReport>();
+                                for (var i = iYearFrom; i <= iYearTo; i++)
+                                {
+                                    var newdata = new DataReport { Year = i.ToString(), SIR = 0 };
+                                    EnumList.Add(newdata);
+                                }
+
+                                dictSeries.Add(wardCode, EnumList);
+
+                                foreach (var obj in objWard)
+                                {
+                                    if (!dictSeries.ContainsKey(wardCode))
+                                    {
+                                        var obe = EnumList.Where(w => w.Year == obj.year.ToString()).FirstOrDefault();
+                                        if (obe != null)
+                                        {
+                                            if (selectedSIRValue == eSIRValue.S) { obe.SIR = obj.percent_s; }
+                                            else if (selectedSIRValue == eSIRValue.I) { obe.SIR = obj.percent_i; }
+                                            else { obe.SIR = obj.percent_r; }
+                                        }
+                                    }
+
+                                    else
+                                    {
+                                        var obe = EnumList.Where(w => w.Year == obj.year.ToString()).FirstOrDefault();
+                                        if (obe != null)
+                                        {
+                                            if (selectedSIRValue == eSIRValue.S) { obe.SIR = obj.percent_s; }
+                                            else if (selectedSIRValue == eSIRValue.I) { obe.SIR = obj.percent_i; }
+                                            else { obe.SIR = obj.percent_r; }
+                                        }
+                                    }
+
+                                }
+
+                            }
+                        }
+                    }
+                }
+
+                var title = string.Format("{0} to {1}", string.Join(",", multipleSelectedOrg), string.Join(",", multipleSelectedAnti));
+                TitleChart = TitleChart + title;
+            }
+
+            blnLoadData = true;
+            blnLoadComplete = true;
+        }
+    } // end GraphResult
+
+    string FormatValue(object value)
+    {
+        return String.Format("{0:00.0}", (double)value);
+    }
+
+}

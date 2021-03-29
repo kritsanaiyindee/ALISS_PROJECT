@@ -1,0 +1,337 @@
+﻿@page "/"
+
+@inject IJSRuntime jsRuntime
+@inject NavigationManager navigationManager
+
+@inject UserLoginService userLoginService
+@inject LoginUserService loginUserService
+@inject PasswordConfigService passwordConfigService
+@inject LoginLogService loginLogService
+@inject WHONETService whonetService
+
+@{
+    //loginUserData = new LoginUserData();
+}
+
+<Loading ShowModel="showModal" />
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-sm-8 col-xl-5">
+            <EditForm Model="@loginUserSearch">
+                <div style="text-align: center">
+                    <img src="/Images/logodmsc_login.png" style="width:105px;height:119px;" />
+                </div>
+                <br />
+                <div style="text-align: center;">
+                    <label style="font: Bold 20px/22px Arial;letter-spacing: 0px;color: #0A6839;opacity: 1;">ระบบเชื่อมโยงข้อมูลห้องปฏิบัติการเชื้อดื้อยา</label>
+                </div>
+                <br />
+                <div style="text-align: center;">
+                    <label style="font: Regular 21px/22px Arial;letter-spacing: 0px;color: #999999;opacity: 1;">AMR Lab Information Sharing System</label>
+                </div>
+                <br />
+                <div class="col-12 row">
+                    <label style="text-align: left;font: Bold 18px/22px Arial;letter-spacing: 0px;color: #333333;opacity: 1;">ชื่อผู้ใช้ </label>
+                    <input type="text" class="col-12" @bind-value="loginUserSearch.usr_username" style="text-align: left;font: Regular 16px/22px Arial;letter-spacing: 0px;color: #333333;opacity: 1;" />
+                </div>
+                <br />
+                <div class="col-12 row">
+                    <label style="text-align: left;font: Bold 18px/22px Arial;letter-spacing: 0px;color: #333333;opacity: 1;">รหัสผ่าน </label>
+                    <input type="password" class="col-12" @bind-value="txtPassword" style="text-align: left;font: Regular 16px/22px Arial;letter-spacing: 0px;color: #333333;opacity: 1;" @onkeyup="TxtPasswordKeyUp" />
+                </div>
+                <br />
+                <div class="col-12 row">
+                    <span class="col-12"></span>
+                    <input type="button" class="col-12 btn btn-primary" style="background: #6DC6A9 0% 0% no-repeat padding-box;border-radius: 3px;opacity: 1;text-align: left;font: Bold 18px/22px Arial;letter-spacing: 0px;color: #FFFFFF;opacity: 1;text-align:center;" value="เข้าสู่ระบบ" @onclick="ValidateUser" />
+                </div>
+                @if (string.IsNullOrEmpty(AccessFailedCountMsg) == false)
+                {
+                    <br />
+                    <div class="col-12 row">
+                        <label style="text-align: left;font: Bold 16px Arial;letter-spacing: 0px;color: red;opacity: 1;">@AccessFailedCountMsg</label>
+                    </div>
+                }
+                @if (string.IsNullOrEmpty(ErrMsg) == false)
+                {
+                    <br />
+                    <div class="col-12 row">
+                        <label style="text-align: left;font: Bold 16px Arial;letter-spacing: 0px;color: red;opacity: 1;">@ErrMsg</label>
+                    </div>
+                }
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@if (showPopupDialog)
+{
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <label>Change password</label>
+                </div>
+                <div class="modal-body">
+                    <div class="container inputArea">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="row justify-content-center divGroup">
+                                    <div class="@classLabel">
+                                        <LabelBox inputLabel="New password" />
+                                    </div>
+                                    <div class="@classInput">
+                                        <RadzenPassword @bind-Value="txtNewPassword" />
+                                        @if (errMessage.Count > 0)
+                                        {
+                                            foreach (var item in errMessage)
+                                            {
+                                                <div class="validation-message">@item</div>
+                                            }
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="row justify-content-center divGroup">
+                                    <div class="@classLabel">
+                                        <LabelBox inputLabel="Confirm new password" />
+                                    </div>
+                                    <div class="@classInput">
+                                        <RadzenPassword @bind-Value="txtNewPasswordConfirm" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row justify-content-center">
+                            <div class="col-12">
+                                <div class="row justify-content-center divGroup buttonArea">
+                                    <div class="col-auto">
+                                        <RadzenButton class="btnCancel" Text="Cancel" Click="ClosePopup" />
+                                    </div>
+                                    <div class="col-auto">
+                                        <RadzenButton Icon="save" class="btnSave" Text="OK" Click="ChangePassword" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private bool showPopupDialog;
+
+    private LoginUserSearchDTO loginUserSearch = new LoginUserSearchDTO();
+    private bool showModal = false;
+    private string txtPassword;
+    private string ErrMsg = "";
+    private string AccessFailedCountMsg = "";
+
+    private string txtNewPassword;
+    private string txtNewPasswordConfirm;
+
+    List<string> errMessage = new List<string>();
+
+    PasswordConfigDTO pwdCfg;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var dataTest = await whonetService.GetDataList_TCWHONET_Antibiotics_Async();
+        pwdCfg = await passwordConfigService.GetDataAsync();
+
+        loginUserSearch = new LoginUserSearchDTO();
+
+        txtPassword = "";
+        ErrMsg = "";
+        txtNewPassword = "";
+        txtNewPasswordConfirm = "";
+
+        //var tmp = loginUserService.Get_Session_Id();
+
+        ClosePopup();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.Logout();
+
+            StateHasChanged();
+        }
+    }
+
+    private async void ValidateUser()
+    {
+        showModal = true;
+
+        if ((string.IsNullOrEmpty(loginUserSearch.usr_username) == true) || (string.IsNullOrEmpty(txtPassword) == true))
+        {
+            ErrMsg = "* กรุณากรอกชื่อผู้ใช้ และรหัสผ่าน";
+        }
+        else
+        {
+            loginUserSearch.usr_password = CryptoHelper.EncryptMD5(txtPassword);
+
+            var loginUserCheck = await userLoginService.GetDataAsync(loginUserSearch.usr_username);
+
+            if (string.IsNullOrEmpty(loginUserCheck.usr_username) == false)
+            {
+                var encryptPassword = CryptoHelper.EncryptMD5(pwdCfg.pwc_default_password);
+
+                if (loginUserCheck.usr_active == false)
+                {
+                    ErrMsg = "* ชื่อผู้ใช้ไม่สามารถใช้งานได้ กรุณาติดต่อ Admin";
+                }
+                else if (loginUserSearch.usr_password != loginUserCheck.usr_password)
+                {
+                    var accessFailedCount = loginUserCheck.usr_accessFailedCount + 1;
+                    //ErrMsg = "* Invalid username or password. Please re-enter your user information.";
+
+                    AccessFailedCountMsg = $"Wrong password count : {accessFailedCount} ({pwdCfg.pwc_max_invalid})";
+
+                    if (accessFailedCount == pwdCfg.pwc_max_invalid)
+                    {
+                        var loginUserInactive = await loginUserService.Set_Inactive_DataAsync(loginUserSearch);
+                    }
+                    else
+                    {
+                        var loginUserWrongPassword = await loginUserService.Set_WrongPassword_DataAsync(loginUserSearch);
+                    }
+                }
+                else if (loginUserCheck.usr_password == encryptPassword)
+                {
+                    //Popup change password
+                    ErrMsg = "* กรุณาตั้งรหัสผ่านใหม่";
+
+                    showPopupDialog = true;
+                    StateHasChanged();
+                }
+                else if (loginUserCheck.usr_lockoutEndDateUtc != null && loginUserCheck.usr_lockoutEndDateUtc.Value.AddMonths(pwdCfg.pwc_force_reset) < DateTime.Now)
+                {
+                    //Popup change password
+                    ErrMsg = "* รหัสผ่านมีอายุการใช้งานเกินกำหนด กรุณาตั้งรหัสผ่านใหม่";
+
+                    showPopupDialog = true;
+                    StateHasChanged();
+                }
+                else
+                {
+                    var loginUser = await loginUserService.Check_LoginUser_DataAsync(loginUserSearch);
+
+                    if (string.IsNullOrEmpty(loginUser.Username) == false)
+                    {
+                        //loginUserData.AddLoginUser(loginUser);
+                        loginUser.SessionTimeout = pwdCfg.pwc_session_timeout;
+
+                        mainLayout.UpdateLoginUser(loginUser);
+
+                        navigationManager.NavigateTo("/Home");
+                    }
+                }
+            }
+            else
+            {
+                ErrMsg = "* Invalid username or password. Please re-enter your user information.";
+            }
+        }
+
+        showModal = false;
+        StateHasChanged();
+    }
+
+    void TxtPasswordKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            ValidateUser();
+        }
+    }
+
+    private void ClosePopup()
+    {
+        // Close the Popup
+        showPopupDialog = false;
+
+        StateHasChanged();
+    }
+
+    private void CheckPassword()
+    {
+        errMessage = new List<string>();
+
+        if (txtNewPassword != txtNewPasswordConfirm)
+        {
+            errMessage.Add("Password not match.");
+        }
+        else
+        {
+            if ((pwdCfg.pwc_min_char != 0) && (txtNewPassword.Length < pwdCfg.pwc_min_char))
+            {
+                errMessage.Add($"Password must >= {pwdCfg.pwc_min_char} chars.");
+            }
+
+            if ((pwdCfg.pwc_max_char != 0) && (txtNewPassword.Length > pwdCfg.pwc_max_char))
+            {
+                errMessage.Add($"Password must <= {pwdCfg.pwc_max_char} chars.");
+            }
+
+            if ((pwdCfg.pwc_lowwer_letter) && (!txtNewPassword.Any(c => char.IsLower(c))))
+            {
+                errMessage.Add($"Password must have lowwer case letter.");
+            }
+
+            if ((pwdCfg.pwc_upper_letter) && (!txtNewPassword.Any(c => char.IsUpper(c))))
+            {
+                errMessage.Add($"Password must have upper case letter.");
+            }
+
+            if ((pwdCfg.pwc_number) && (!txtNewPassword.Any(c => char.IsDigit(c))))
+            {
+                errMessage.Add($"Password must have number.");
+            }
+
+            if ((pwdCfg.pwc_special_char) && (!txtNewPassword.Any(c => !char.IsLetterOrDigit(c))))
+            {
+                errMessage.Add($"Password must have special character.");
+            }
+        }
+    }
+
+    private async void ChangePassword()
+    {
+        CheckPassword();
+
+        if (errMessage.Count > 0)
+        {
+            //var errMessageJoin = string.Join("\n", errMessage);
+            //await jsRuntime.InvokeAsync<object>("ShowAlert", errMessageJoin);
+
+            return;
+        }
+
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to change password?");
+        if (result)
+        {
+            UserLoginDTO dataModel = new UserLoginDTO() { usr_username = loginUserSearch.usr_username, usr_status = "E" };
+
+            var encryptPassword = CryptoHelper.EncryptMD5(txtNewPassword);
+            dataModel.usr_password = encryptPassword;
+
+            //Save data
+            var saveResult = await userLoginService.SavePasswordDataAsync(dataModel);
+
+            await OnInitializedAsync();
+        }
+    }
+}

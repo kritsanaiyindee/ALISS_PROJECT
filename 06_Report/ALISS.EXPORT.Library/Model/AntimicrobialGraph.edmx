@@ -1,0 +1,864 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+    <Schema Namespace="ALISSModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <Function Name="sp_GET_RPAntibicromialResistance" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="org_codes" Type="varchar(max)" Mode="In" />
+          <Parameter Name="anti_codes" Type="varchar(max)" Mode="In" />
+          <Parameter Name="start_year" Type="int" Mode="In" />
+          <Parameter Name="end_year" Type="int" Mode="In" />
+        </Function>
+        <Function Name="sp_GET_RPAntibicromialResstAll" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="org_codes" Type="varchar(max)" Mode="In" />
+          <Parameter Name="anti_codes" Type="varchar(max)" Mode="In" />
+          <Parameter Name="start_year" Type="int" Mode="In" />
+          <Parameter Name="end_year" Type="int" Mode="In" />
+        </Function>
+        <Function Name="sp_GET_RPAntibicromialResstSpecimen" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="org_codes" Type="varchar(max)" Mode="In" />
+          <Parameter Name="anti_codes" Type="varchar(max)" Mode="In" />
+          <Parameter Name="start_year" Type="int" Mode="In" />
+          <Parameter Name="end_year" Type="int" Mode="In" />
+        </Function>
+        <Function Name="sp_GET_RPAntibicromialResstWard" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="org_codes" Type="varchar(max)" Mode="In" />
+          <Parameter Name="anti_codes" Type="varchar(max)" Mode="In" />
+          <Parameter Name="start_year" Type="int" Mode="In" />
+          <Parameter Name="end_year" Type="int" Mode="In" />
+        </Function>
+        <Function Name="sp_GET_RPAntibiotrendAMRStrategy" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="month_start" Type="date" Mode="In" />
+          <Parameter Name="month_end" Type="date" Mode="In" />
+        </Function>
+        <Function Name="sp_GET_TCAntibiotic_Active" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="ant_mst_code" Type="varchar" Mode="In" />
+        </Function>
+        <Function Name="sp_GET_TCOrganism_Active" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="org_mst_code" Type="varchar" Mode="In" />
+        </Function>
+        <Function Name="sp_GET_TCParameter" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="prm_code_major" Type="nvarchar" Mode="In" />
+        </Function>
+        <Function Name="sp_GET_TCSpecimen_Active" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="spc_mst_code" Type="varchar" Mode="In" />
+        </Function>
+        <Function Name="sp_GET_TCWardType_Active" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="wrd_mst_code" Type="varchar" Mode="In" />
+        </Function>
+        <EntityContainer Name="ALISSModelStoreContainer" />
+      </Schema></edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="ALISSModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+        <EntityContainer Name="ALISSEntities" annotation:LazyLoadingEnabled="true" >
+          <FunctionImport Name="sp_GET_RPAntibicromialResistance" ReturnType="Collection(ALISSModel.sp_GET_RPAntibicromialResistance_Result)">
+            <Parameter Name="org_codes" Mode="In" Type="String" />
+            <Parameter Name="anti_codes" Mode="In" Type="String" />
+            <Parameter Name="start_year" Mode="In" Type="Int32" />
+            <Parameter Name="end_year" Mode="In" Type="Int32" />
+          </FunctionImport>
+          <FunctionImport Name="sp_GET_RPAntibiotrendAMRStrategy" ReturnType="Collection(ALISSModel.sp_GET_RPAntibiotrendAMRStrategy_Result)">
+            <Parameter Name="month_start" Mode="In" Type="DateTime" />
+            <Parameter Name="month_end" Mode="In" Type="DateTime" />
+          </FunctionImport>
+          <FunctionImport Name="sp_GET_TCSpecimen_Active" ReturnType="Collection(ALISSModel.sp_GET_TCSpecimen_Active_Result)">
+          <Parameter Name="spc_mst_code" Mode="In" Type="String" />
+          </FunctionImport>
+          <FunctionImport Name="sp_GET_TCWardType_Active" ReturnType="Collection(ALISSModel.sp_GET_TCWardType_Active_Result)">
+          <Parameter Name="wrd_mst_code" Mode="In" Type="String" />
+          </FunctionImport>
+          <FunctionImport Name="sp_GET_TCAntibiotic_Active" ReturnType="Collection(ALISSModel.sp_GET_TCAntibiotic_Active_Result)">
+          <Parameter Name="ant_mst_code" Mode="In" Type="String" />
+          </FunctionImport>
+          <FunctionImport Name="sp_GET_TCOrganism_Active" ReturnType="Collection(ALISSModel.sp_GET_TCOrganism_Active_Result)">
+          <Parameter Name="org_mst_code" Mode="In" Type="String" />
+          </FunctionImport>
+          <FunctionImport Name="sp_GET_TCParameter" ReturnType="Collection(ALISSModel.sp_GET_TCParameter_Result)">
+          <Parameter Name="prm_code_major" Mode="In" Type="String" />
+          </FunctionImport>
+          <FunctionImport Name="sp_GET_RPAntibicromialResstAll" ReturnType="Collection(ALISSModel.sp_GET_RPAntibicromialResstAll_Result)">
+            <Parameter Name="org_codes" Mode="In" Type="String" />
+            <Parameter Name="anti_codes" Mode="In" Type="String" />
+            <Parameter Name="start_year" Mode="In" Type="Int32" />
+            <Parameter Name="end_year" Mode="In" Type="Int32" />
+          </FunctionImport>
+          <FunctionImport Name="sp_GET_RPAntibicromialResstSpecimen" ReturnType="Collection(ALISSModel.sp_GET_RPAntibicromialResstSpecimen_Result)">
+            <Parameter Name="org_codes" Mode="In" Type="String" />
+            <Parameter Name="anti_codes" Mode="In" Type="String" />
+            <Parameter Name="start_year" Mode="In" Type="Int32" />
+            <Parameter Name="end_year" Mode="In" Type="Int32" />
+          </FunctionImport>
+          <FunctionImport Name="sp_GET_RPAntibicromialResstWard" ReturnType="Collection(ALISSModel.sp_GET_RPAntibicromialResstWard_Result)">
+            <Parameter Name="org_codes" Mode="In" Type="String" />
+            <Parameter Name="anti_codes" Mode="In" Type="String" />
+            <Parameter Name="start_year" Mode="In" Type="Int32" />
+            <Parameter Name="end_year" Mode="In" Type="Int32" />
+          </FunctionImport>
+        </EntityContainer>
+        <ComplexType Name="sp_GET_RPAntibicromialResistance_Result">
+          <Property Type="Int32" Name="year" Nullable="false" />
+          <Property Type="String" Name="spc_code" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ward_type" Nullable="true" MaxLength="10" />
+          <Property Type="String" Name="org_code" Nullable="false" MaxLength="50" />
+          <Property Type="String" Name="org_name" Nullable="true" MaxLength="100" />
+          <Property Type="String" Name="anti_code" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="anti_name" Nullable="true" MaxLength="200" />
+          <Property Type="Double" Name="percent_s" Nullable="true" />
+          <Property Type="Double" Name="percent_r" Nullable="true" />
+          <Property Type="Double" Name="percent_i" Nullable="true" />
+        </ComplexType>
+        <ComplexType Name="sp_GET_RPAntibiotrendAMRStrategy_Result">
+          <Property Type="DateTime" Name="month_start" Nullable="true" Precision="23" />
+          <Property Type="DateTime" Name="month_end" Nullable="true" Precision="23" />
+          <Property Type="String" Name="hos_arh_code" Nullable="false" MaxLength="10" />
+          <Property Type="String" Name="org_code" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="org_name" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="anti_code" Nullable="false" MaxLength="50" />
+          <Property Type="String" Name="anti_name" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="measure_type" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="org_mst_code" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="org_label_name" Nullable="true" MaxLength="255" />
+          <Property Type="Decimal" Name="arh_01" Nullable="true" Precision="32" Scale="1" />
+          <Property Type="Decimal" Name="arh_02" Nullable="true" Precision="32" Scale="1" />
+          <Property Type="Decimal" Name="arh_03" Nullable="true" Precision="32" Scale="1" />
+          <Property Type="Decimal" Name="arh_04" Nullable="true" Precision="32" Scale="1" />
+          <Property Type="Decimal" Name="arh_05" Nullable="true" Precision="32" Scale="1" />
+          <Property Type="Decimal" Name="arh_06" Nullable="true" Precision="32" Scale="1" />
+          <Property Type="Decimal" Name="arh_07" Nullable="true" Precision="32" Scale="1" />
+          <Property Type="Decimal" Name="arh_08" Nullable="true" Precision="32" Scale="1" />
+          <Property Type="Decimal" Name="arh_09" Nullable="true" Precision="32" Scale="1" />
+          <Property Type="Decimal" Name="arh_10" Nullable="true" Precision="32" Scale="1" />
+          <Property Type="Decimal" Name="arh_11" Nullable="true" Precision="32" Scale="1" />
+          <Property Type="Decimal" Name="arh_12" Nullable="true" Precision="32" Scale="1" />
+          <Property Type="Decimal" Name="arh_13" Nullable="true" Precision="32" Scale="1" />
+          <Property Type="Decimal" Name="max_percent" Nullable="true" Precision="32" Scale="1" />
+          <Property Type="Decimal" Name="min_percent" Nullable="true" Precision="32" Scale="1" />
+          <Property Type="Int32" Name="rank_arh_01" Nullable="true" />
+          <Property Type="Int32" Name="rank_arh_02" Nullable="true" />
+          <Property Type="Int32" Name="rank_arh_03" Nullable="true" />
+          <Property Type="Int32" Name="rank_arh_04" Nullable="true" />
+          <Property Type="Int32" Name="rank_arh_05" Nullable="true" />
+          <Property Type="Int32" Name="rank_arh_06" Nullable="true" />
+          <Property Type="Int32" Name="rank_arh_07" Nullable="true" />
+          <Property Type="Int32" Name="rank_arh_08" Nullable="true" />
+          <Property Type="Int32" Name="rank_arh_09" Nullable="true" />
+          <Property Type="Int32" Name="rank_arh_10" Nullable="true" />
+          <Property Type="Int32" Name="rank_arh_11" Nullable="true" />
+          <Property Type="Int32" Name="rank_arh_12" Nullable="true" />
+          <Property Type="Int32" Name="rank_arh_13" Nullable="true" />
+        </ComplexType>
+        <ComplexType Name="sp_GET_TCSpecimen_Active_Result">
+          <Property Type="Int32" Name="spc_id" Nullable="false" />
+          <Property Type="String" Name="spc_mst_code" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="spc_code" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="spc_name" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="spc_desc" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="spc_status" Nullable="true" MaxLength="50" />
+          <Property Type="Boolean" Name="spc_active" Nullable="false" />
+          <Property Type="String" Name="spc_createuser" Nullable="true" MaxLength="50" />
+          <Property Type="DateTime" Name="spc_createdate" Nullable="true" Precision="23" />
+          <Property Type="String" Name="spc_updateuser" Nullable="true" MaxLength="50" />
+          <Property Type="DateTime" Name="spc_updatedate" Nullable="true" Precision="23" />
+        </ComplexType>
+        <ComplexType Name="sp_GET_TCWardType_Active_Result">
+          <Property Type="Int32" Name="wrd_id" Nullable="false" />
+          <Property Type="String" Name="wrd_mst_code" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="wrd_code" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="wrd_name" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="wrd_desc" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="wrd_status" Nullable="true" MaxLength="50" />
+          <Property Type="Boolean" Name="wrd_active" Nullable="false" />
+          <Property Type="String" Name="wrd_createuser" Nullable="true" MaxLength="50" />
+          <Property Type="DateTime" Name="wrd_createdate" Nullable="true" Precision="23" />
+          <Property Type="String" Name="wrd_updateuser" Nullable="true" MaxLength="50" />
+          <Property Type="DateTime" Name="wrd_updatedate" Nullable="true" Precision="23" />
+        </ComplexType>
+        <ComplexType Name="sp_GET_TCAntibiotic_Active_Result">
+          <Property Type="Int32" Name="ant_id" Nullable="false" />
+          <Property Type="String" Name="ant_mst_code" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_code" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_name" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_WHON5_CODE" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_WHON4_CODE" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_WHO_CODE" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_DIN_CODE" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_JAC_CODE" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_USER_CODE" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_ANTIBIOTIC" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_GUIDELINES" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_CLSI" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_EUCAST" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_SFM" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_SRGA" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_BSAC" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_DIN" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_NEO" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_AFA" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_ABX_NUMBER" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_POTENCY" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_BETALACTAM" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_CLASS" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_SUBCLASS" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_PROF_CLASS" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_CLSI_ORDER" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_HUMAN" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_VETERINARY" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_ANIMAL_GP" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_WHO_IMPORT" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_LOINCCOMP" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_LOINCGEN" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_LOINCDISK" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_LOINCMIC" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_LOINCETEST" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_LOINCSLOW" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_LOINCAFB" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_LOINCSBT" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_LOINCMLC" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="ant_mst_CLSI19_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI19_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI19_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI19_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI19_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI18_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI18_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI18_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI18_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI18_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI17_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI17_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI17_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI17_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI17_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI16_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI16_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI16_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI16_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI16_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI15_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI15_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI15_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI15_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI15_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI14_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI14_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI14_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI14_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI14_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI13_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI13_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI13_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI13_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI13_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI12_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI12_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI12_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI12_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI12_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI11_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI11_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI11_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI11_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI11_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI10_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI10_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI10_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI10_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CLSI10_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST19_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST19_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST19_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST19_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST19_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST18_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST18_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST18_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST18_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST18_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST17_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST17_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST17_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST17_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST17_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST16_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST16_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST16_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST16_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST16_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST15_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST15_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST15_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST15_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST15_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST14_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST14_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST14_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST14_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST14_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST13_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST13_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST13_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST13_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST13_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_ECV12_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_ECV12_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_ECV12_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_ECV12_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_ECV12_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST11_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST11_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST11_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST11_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_EUCST11_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_NEODK16_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_NEODK16_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_NEODK16_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_NEODK16_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_NEODK16_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_NEODK13_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_NEODK13_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_NEODK13_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_NEODK13_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_NEODK13_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_NEODK98_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_NEODK98_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_NEODK98_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_NEODK98_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_NEODK98_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_SFM07_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_SFM07_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_SFM07_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_SFM07_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_SFM07_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_DIN04_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_DIN04_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_DIN04_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_DIN04_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_DIN04_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CRG96_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CRG96_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CRG96_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CRG96_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_CRG96_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_AFA00_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_AFA00_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_AFA00_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_AFA00_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_AFA00_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_MENS00_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_MENS00_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_MENS00_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_MENS00_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_MENS00_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_SRGA98_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_SRGA98_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_SRGA98_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_SRGA98_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_SRGA98_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_BSAC00_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_BSAC00_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_BSAC00_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_BSAC00_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_BSAC00_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_OTHER_DR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_OTHER_DI" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_OTHER_DS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_OTHER_MS" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_mst_OTHER_MR" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ant_status" Nullable="true" MaxLength="2" />
+          <Property Type="Boolean" Name="ant_active" Nullable="false" />
+          <Property Type="String" Name="ant_createuser" Nullable="true" MaxLength="50" />
+          <Property Type="DateTime" Name="ant_createdate" Nullable="true" Precision="23" />
+          <Property Type="String" Name="ant_updateuser" Nullable="true" MaxLength="50" />
+          <Property Type="DateTime" Name="ant_updatedate" Nullable="true" Precision="23" />
+        </ComplexType>
+        <ComplexType Name="sp_GET_TCOrganism_Active_Result">
+          <Property Type="Int32" Name="org_id" Nullable="false" />
+          <Property Type="String" Name="org_mst_code" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="org_code" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="org_mst_ORG" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="org_mst_GRAM" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="org_mst_ORGANISM" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="org_mst_ORG_CLEAN" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="org_mst_STATUS" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="org_mst_COMMON" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="org_mst_ORG_GROUP" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="org_mst_SUB_GROUP" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="org_mst_GENUS" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="org_mst_GENUS_CODE" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="org_mst_SCT_CODE" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="org_mst_SCT_TEXT" Nullable="true" MaxLength="255" />
+          <Property Type="String" Name="org_status" Nullable="true" MaxLength="2" />
+          <Property Type="Boolean" Name="org_active" Nullable="false" />
+          <Property Type="String" Name="org_createuser" Nullable="true" MaxLength="50" />
+          <Property Type="DateTime" Name="org_createdate" Nullable="true" Precision="23" />
+          <Property Type="String" Name="org_updateuser" Nullable="true" MaxLength="50" />
+          <Property Type="DateTime" Name="org_updatedate" Nullable="true" Precision="23" />
+        </ComplexType>
+        <ComplexType Name="sp_GET_TCParameter_Result">
+          <Property Type="Int32" Name="prm_id" Nullable="false" />
+          <Property Type="String" Name="prm_code_major" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="prm_code_minor" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="prm_value" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="prm_desc1" Nullable="true" MaxLength="500" />
+          <Property Type="String" Name="prm_desc2" Nullable="true" MaxLength="500" />
+          <Property Type="String" Name="prm_desc3" Nullable="true" MaxLength="500" />
+          <Property Type="String" Name="prm_desc4" Nullable="true" MaxLength="500" />
+          <Property Type="String" Name="prm_status" Nullable="true" MaxLength="2" />
+          <Property Type="Boolean" Name="prm_active" Nullable="false" />
+        </ComplexType>
+        <ComplexType Name="sp_GET_RPAntibicromialResstAll_Result">
+          <Property Type="Int32" Name="year" Nullable="false" />
+          <Property Type="String" Name="spc_code" Nullable="false" MaxLength="1" />
+          <Property Type="String" Name="ward_type" Nullable="false" MaxLength="1" />
+          <Property Type="String" Name="org_code" Nullable="false" MaxLength="50" />
+          <Property Type="String" Name="org_name" Nullable="true" MaxLength="100" />
+          <Property Type="String" Name="anti_code" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="anti_name" Nullable="true" MaxLength="200" />
+          <Property Type="Double" Name="percent_s" Nullable="true" />
+          <Property Type="Double" Name="percent_i" Nullable="true" />
+          <Property Type="Double" Name="percent_r" Nullable="true" />
+        </ComplexType>
+        <ComplexType Name="sp_GET_RPAntibicromialResstSpecimen_Result">
+          <Property Type="Int32" Name="year" Nullable="false" />
+          <Property Type="String" Name="spc_code" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="ward_type" Nullable="false" MaxLength="1" />
+          <Property Type="String" Name="org_code" Nullable="false" MaxLength="50" />
+          <Property Type="String" Name="org_name" Nullable="true" MaxLength="100" />
+          <Property Type="String" Name="anti_code" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="anti_name" Nullable="true" MaxLength="200" />
+          <Property Type="Double" Name="percent_s" Nullable="true" />
+          <Property Type="Double" Name="percent_i" Nullable="true" />
+          <Property Type="Double" Name="percent_r" Nullable="true" />
+        </ComplexType>
+        <ComplexType Name="sp_GET_RPAntibicromialResstWard_Result">
+          <Property Type="Int32" Name="year" Nullable="false" />
+          <Property Type="String" Name="spc_code" Nullable="false" MaxLength="1" />
+          <Property Type="String" Name="ward_type" Nullable="true" MaxLength="10" />
+          <Property Type="String" Name="org_code" Nullable="false" MaxLength="50" />
+          <Property Type="String" Name="org_name" Nullable="true" MaxLength="100" />
+          <Property Type="String" Name="anti_code" Nullable="true" MaxLength="50" />
+          <Property Type="String" Name="anti_name" Nullable="true" MaxLength="200" />
+          <Property Type="Double" Name="percent_s" Nullable="true" />
+          <Property Type="Double" Name="percent_i" Nullable="true" />
+          <Property Type="Double" Name="percent_r" Nullable="true" />
+        </ComplexType>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="ALISSModelStoreContainer" CdmEntityContainer="ALISSEntities" >
+          <FunctionImportMapping FunctionImportName="sp_GET_RPAntibicromialResistance" FunctionName="ALISSModel.Store.sp_GET_RPAntibicromialResistance">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="ALISSModel.sp_GET_RPAntibicromialResistance_Result">
+                <ScalarProperty Name="year" ColumnName="year" />
+                <ScalarProperty Name="spc_code" ColumnName="spc_code" />
+                <ScalarProperty Name="ward_type" ColumnName="ward_type" />
+                <ScalarProperty Name="org_code" ColumnName="org_code" />
+                <ScalarProperty Name="org_name" ColumnName="org_name" />
+                <ScalarProperty Name="anti_code" ColumnName="anti_code" />
+                <ScalarProperty Name="anti_name" ColumnName="anti_name" />
+                <ScalarProperty Name="percent_s" ColumnName="percent_s" />
+                <ScalarProperty Name="percent_r" ColumnName="percent_r" />
+                <ScalarProperty Name="percent_i" ColumnName="percent_i" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
+          <FunctionImportMapping FunctionImportName="sp_GET_RPAntibiotrendAMRStrategy" FunctionName="ALISSModel.Store.sp_GET_RPAntibiotrendAMRStrategy">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="ALISSModel.sp_GET_RPAntibiotrendAMRStrategy_Result">
+                <ScalarProperty Name="month_start" ColumnName="month_start" />
+                <ScalarProperty Name="month_end" ColumnName="month_end" />
+                <ScalarProperty Name="hos_arh_code" ColumnName="hos_arh_code" />
+                <ScalarProperty Name="org_code" ColumnName="org_code" />
+                <ScalarProperty Name="org_name" ColumnName="org_name" />
+                <ScalarProperty Name="anti_code" ColumnName="anti_code" />
+                <ScalarProperty Name="anti_name" ColumnName="anti_name" />
+                <ScalarProperty Name="measure_type" ColumnName="measure_type" />
+                <ScalarProperty Name="org_mst_code" ColumnName="org_mst_code" />
+                <ScalarProperty Name="org_label_name" ColumnName="org_label_name" />
+                <ScalarProperty Name="arh_01" ColumnName="arh_01" />
+                <ScalarProperty Name="arh_02" ColumnName="arh_02" />
+                <ScalarProperty Name="arh_03" ColumnName="arh_03" />
+                <ScalarProperty Name="arh_04" ColumnName="arh_04" />
+                <ScalarProperty Name="arh_05" ColumnName="arh_05" />
+                <ScalarProperty Name="arh_06" ColumnName="arh_06" />
+                <ScalarProperty Name="arh_07" ColumnName="arh_07" />
+                <ScalarProperty Name="arh_08" ColumnName="arh_08" />
+                <ScalarProperty Name="arh_09" ColumnName="arh_09" />
+                <ScalarProperty Name="arh_10" ColumnName="arh_10" />
+                <ScalarProperty Name="arh_11" ColumnName="arh_11" />
+                <ScalarProperty Name="arh_12" ColumnName="arh_12" />
+                <ScalarProperty Name="arh_13" ColumnName="arh_13" />
+                <ScalarProperty Name="max_percent" ColumnName="max_percent" />
+                <ScalarProperty Name="min_percent" ColumnName="min_percent" />
+                <ScalarProperty Name="rank_arh_01" ColumnName="rank_arh_01" />
+                <ScalarProperty Name="rank_arh_02" ColumnName="rank_arh_02" />
+                <ScalarProperty Name="rank_arh_03" ColumnName="rank_arh_03" />
+                <ScalarProperty Name="rank_arh_04" ColumnName="rank_arh_04" />
+                <ScalarProperty Name="rank_arh_05" ColumnName="rank_arh_05" />
+                <ScalarProperty Name="rank_arh_06" ColumnName="rank_arh_06" />
+                <ScalarProperty Name="rank_arh_07" ColumnName="rank_arh_07" />
+                <ScalarProperty Name="rank_arh_08" ColumnName="rank_arh_08" />
+                <ScalarProperty Name="rank_arh_09" ColumnName="rank_arh_09" />
+                <ScalarProperty Name="rank_arh_10" ColumnName="rank_arh_10" />
+                <ScalarProperty Name="rank_arh_11" ColumnName="rank_arh_11" />
+                <ScalarProperty Name="rank_arh_12" ColumnName="rank_arh_12" />
+                <ScalarProperty Name="rank_arh_13" ColumnName="rank_arh_13" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
+          <FunctionImportMapping FunctionImportName="sp_GET_TCSpecimen_Active" FunctionName="ALISSModel.Store.sp_GET_TCSpecimen_Active">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="ALISSModel.sp_GET_TCSpecimen_Active_Result">
+                <ScalarProperty Name="spc_id" ColumnName="spc_id" />
+                <ScalarProperty Name="spc_mst_code" ColumnName="spc_mst_code" />
+                <ScalarProperty Name="spc_code" ColumnName="spc_code" />
+                <ScalarProperty Name="spc_name" ColumnName="spc_name" />
+                <ScalarProperty Name="spc_desc" ColumnName="spc_desc" />
+                <ScalarProperty Name="spc_status" ColumnName="spc_status" />
+                <ScalarProperty Name="spc_active" ColumnName="spc_active" />
+                <ScalarProperty Name="spc_createuser" ColumnName="spc_createuser" />
+                <ScalarProperty Name="spc_createdate" ColumnName="spc_createdate" />
+                <ScalarProperty Name="spc_updateuser" ColumnName="spc_updateuser" />
+                <ScalarProperty Name="spc_updatedate" ColumnName="spc_updatedate" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
+          <FunctionImportMapping FunctionImportName="sp_GET_TCWardType_Active" FunctionName="ALISSModel.Store.sp_GET_TCWardType_Active">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="ALISSModel.sp_GET_TCWardType_Active_Result">
+                <ScalarProperty Name="wrd_id" ColumnName="wrd_id" />
+                <ScalarProperty Name="wrd_mst_code" ColumnName="wrd_mst_code" />
+                <ScalarProperty Name="wrd_code" ColumnName="wrd_code" />
+                <ScalarProperty Name="wrd_name" ColumnName="wrd_name" />
+                <ScalarProperty Name="wrd_desc" ColumnName="wrd_desc" />
+                <ScalarProperty Name="wrd_status" ColumnName="wrd_status" />
+                <ScalarProperty Name="wrd_active" ColumnName="wrd_active" />
+                <ScalarProperty Name="wrd_createuser" ColumnName="wrd_createuser" />
+                <ScalarProperty Name="wrd_createdate" ColumnName="wrd_createdate" />
+                <ScalarProperty Name="wrd_updateuser" ColumnName="wrd_updateuser" />
+                <ScalarProperty Name="wrd_updatedate" ColumnName="wrd_updatedate" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
+          <FunctionImportMapping FunctionImportName="sp_GET_TCAntibiotic_Active" FunctionName="ALISSModel.Store.sp_GET_TCAntibiotic_Active">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="ALISSModel.sp_GET_TCAntibiotic_Active_Result">
+                <ScalarProperty Name="ant_id" ColumnName="ant_id" />
+                <ScalarProperty Name="ant_mst_code" ColumnName="ant_mst_code" />
+                <ScalarProperty Name="ant_code" ColumnName="ant_code" />
+                <ScalarProperty Name="ant_name" ColumnName="ant_name" />
+                <ScalarProperty Name="ant_mst_WHON5_CODE" ColumnName="ant_mst_WHON5_CODE" />
+                <ScalarProperty Name="ant_mst_WHON4_CODE" ColumnName="ant_mst_WHON4_CODE" />
+                <ScalarProperty Name="ant_mst_WHO_CODE" ColumnName="ant_mst_WHO_CODE" />
+                <ScalarProperty Name="ant_mst_DIN_CODE" ColumnName="ant_mst_DIN_CODE" />
+                <ScalarProperty Name="ant_mst_JAC_CODE" ColumnName="ant_mst_JAC_CODE" />
+                <ScalarProperty Name="ant_mst_USER_CODE" ColumnName="ant_mst_USER_CODE" />
+                <ScalarProperty Name="ant_mst_ANTIBIOTIC" ColumnName="ant_mst_ANTIBIOTIC" />
+                <ScalarProperty Name="ant_mst_GUIDELINES" ColumnName="ant_mst_GUIDELINES" />
+                <ScalarProperty Name="ant_mst_CLSI" ColumnName="ant_mst_CLSI" />
+                <ScalarProperty Name="ant_mst_EUCAST" ColumnName="ant_mst_EUCAST" />
+                <ScalarProperty Name="ant_mst_SFM" ColumnName="ant_mst_SFM" />
+                <ScalarProperty Name="ant_mst_SRGA" ColumnName="ant_mst_SRGA" />
+                <ScalarProperty Name="ant_mst_BSAC" ColumnName="ant_mst_BSAC" />
+                <ScalarProperty Name="ant_mst_DIN" ColumnName="ant_mst_DIN" />
+                <ScalarProperty Name="ant_mst_NEO" ColumnName="ant_mst_NEO" />
+                <ScalarProperty Name="ant_mst_AFA" ColumnName="ant_mst_AFA" />
+                <ScalarProperty Name="ant_mst_ABX_NUMBER" ColumnName="ant_mst_ABX_NUMBER" />
+                <ScalarProperty Name="ant_mst_POTENCY" ColumnName="ant_mst_POTENCY" />
+                <ScalarProperty Name="ant_mst_BETALACTAM" ColumnName="ant_mst_BETALACTAM" />
+                <ScalarProperty Name="ant_mst_CLASS" ColumnName="ant_mst_CLASS" />
+                <ScalarProperty Name="ant_mst_SUBCLASS" ColumnName="ant_mst_SUBCLASS" />
+                <ScalarProperty Name="ant_mst_PROF_CLASS" ColumnName="ant_mst_PROF_CLASS" />
+                <ScalarProperty Name="ant_mst_CLSI_ORDER" ColumnName="ant_mst_CLSI_ORDER" />
+                <ScalarProperty Name="ant_mst_HUMAN" ColumnName="ant_mst_HUMAN" />
+                <ScalarProperty Name="ant_mst_VETERINARY" ColumnName="ant_mst_VETERINARY" />
+                <ScalarProperty Name="ant_mst_ANIMAL_GP" ColumnName="ant_mst_ANIMAL_GP" />
+                <ScalarProperty Name="ant_mst_WHO_IMPORT" ColumnName="ant_mst_WHO_IMPORT" />
+                <ScalarProperty Name="ant_mst_LOINCCOMP" ColumnName="ant_mst_LOINCCOMP" />
+                <ScalarProperty Name="ant_mst_LOINCGEN" ColumnName="ant_mst_LOINCGEN" />
+                <ScalarProperty Name="ant_mst_LOINCDISK" ColumnName="ant_mst_LOINCDISK" />
+                <ScalarProperty Name="ant_mst_LOINCMIC" ColumnName="ant_mst_LOINCMIC" />
+                <ScalarProperty Name="ant_mst_LOINCETEST" ColumnName="ant_mst_LOINCETEST" />
+                <ScalarProperty Name="ant_mst_LOINCSLOW" ColumnName="ant_mst_LOINCSLOW" />
+                <ScalarProperty Name="ant_mst_LOINCAFB" ColumnName="ant_mst_LOINCAFB" />
+                <ScalarProperty Name="ant_mst_LOINCSBT" ColumnName="ant_mst_LOINCSBT" />
+                <ScalarProperty Name="ant_mst_LOINCMLC" ColumnName="ant_mst_LOINCMLC" />
+                <ScalarProperty Name="ant_mst_CLSI19_DR" ColumnName="ant_mst_CLSI19_DR" />
+                <ScalarProperty Name="ant_mst_CLSI19_DI" ColumnName="ant_mst_CLSI19_DI" />
+                <ScalarProperty Name="ant_mst_CLSI19_DS" ColumnName="ant_mst_CLSI19_DS" />
+                <ScalarProperty Name="ant_mst_CLSI19_MS" ColumnName="ant_mst_CLSI19_MS" />
+                <ScalarProperty Name="ant_mst_CLSI19_MR" ColumnName="ant_mst_CLSI19_MR" />
+                <ScalarProperty Name="ant_mst_CLSI18_DR" ColumnName="ant_mst_CLSI18_DR" />
+                <ScalarProperty Name="ant_mst_CLSI18_DI" ColumnName="ant_mst_CLSI18_DI" />
+                <ScalarProperty Name="ant_mst_CLSI18_DS" ColumnName="ant_mst_CLSI18_DS" />
+                <ScalarProperty Name="ant_mst_CLSI18_MS" ColumnName="ant_mst_CLSI18_MS" />
+                <ScalarProperty Name="ant_mst_CLSI18_MR" ColumnName="ant_mst_CLSI18_MR" />
+                <ScalarProperty Name="ant_mst_CLSI17_DR" ColumnName="ant_mst_CLSI17_DR" />
+                <ScalarProperty Name="ant_mst_CLSI17_DI" ColumnName="ant_mst_CLSI17_DI" />
+                <ScalarProperty Name="ant_mst_CLSI17_DS" ColumnName="ant_mst_CLSI17_DS" />
+                <ScalarProperty Name="ant_mst_CLSI17_MS" ColumnName="ant_mst_CLSI17_MS" />
+                <ScalarProperty Name="ant_mst_CLSI17_MR" ColumnName="ant_mst_CLSI17_MR" />
+                <ScalarProperty Name="ant_mst_CLSI16_DR" ColumnName="ant_mst_CLSI16_DR" />
+                <ScalarProperty Name="ant_mst_CLSI16_DI" ColumnName="ant_mst_CLSI16_DI" />
+                <ScalarProperty Name="ant_mst_CLSI16_DS" ColumnName="ant_mst_CLSI16_DS" />
+                <ScalarProperty Name="ant_mst_CLSI16_MS" ColumnName="ant_mst_CLSI16_MS" />
+                <ScalarProperty Name="ant_mst_CLSI16_MR" ColumnName="ant_mst_CLSI16_MR" />
+                <ScalarProperty Name="ant_mst_CLSI15_DR" ColumnName="ant_mst_CLSI15_DR" />
+                <ScalarProperty Name="ant_mst_CLSI15_DI" ColumnName="ant_mst_CLSI15_DI" />
+                <ScalarProperty Name="ant_mst_CLSI15_DS" ColumnName="ant_mst_CLSI15_DS" />
+                <ScalarProperty Name="ant_mst_CLSI15_MS" ColumnName="ant_mst_CLSI15_MS" />
+                <ScalarProperty Name="ant_mst_CLSI15_MR" ColumnName="ant_mst_CLSI15_MR" />
+                <ScalarProperty Name="ant_mst_CLSI14_DR" ColumnName="ant_mst_CLSI14_DR" />
+                <ScalarProperty Name="ant_mst_CLSI14_DI" ColumnName="ant_mst_CLSI14_DI" />
+                <ScalarProperty Name="ant_mst_CLSI14_DS" ColumnName="ant_mst_CLSI14_DS" />
+                <ScalarProperty Name="ant_mst_CLSI14_MS" ColumnName="ant_mst_CLSI14_MS" />
+                <ScalarProperty Name="ant_mst_CLSI14_MR" ColumnName="ant_mst_CLSI14_MR" />
+                <ScalarProperty Name="ant_mst_CLSI13_DR" ColumnName="ant_mst_CLSI13_DR" />
+                <ScalarProperty Name="ant_mst_CLSI13_DI" ColumnName="ant_mst_CLSI13_DI" />
+                <ScalarProperty Name="ant_mst_CLSI13_DS" ColumnName="ant_mst_CLSI13_DS" />
+                <ScalarProperty Name="ant_mst_CLSI13_MS" ColumnName="ant_mst_CLSI13_MS" />
+                <ScalarProperty Name="ant_mst_CLSI13_MR" ColumnName="ant_mst_CLSI13_MR" />
+                <ScalarProperty Name="ant_mst_CLSI12_DR" ColumnName="ant_mst_CLSI12_DR" />
+                <ScalarProperty Name="ant_mst_CLSI12_DI" ColumnName="ant_mst_CLSI12_DI" />
+                <ScalarProperty Name="ant_mst_CLSI12_DS" ColumnName="ant_mst_CLSI12_DS" />
+                <ScalarProperty Name="ant_mst_CLSI12_MS" ColumnName="ant_mst_CLSI12_MS" />
+                <ScalarProperty Name="ant_mst_CLSI12_MR" ColumnName="ant_mst_CLSI12_MR" />
+                <ScalarProperty Name="ant_mst_CLSI11_DR" ColumnName="ant_mst_CLSI11_DR" />
+                <ScalarProperty Name="ant_mst_CLSI11_DI" ColumnName="ant_mst_CLSI11_DI" />
+                <ScalarProperty Name="ant_mst_CLSI11_DS" ColumnName="ant_mst_CLSI11_DS" />
+                <ScalarProperty Name="ant_mst_CLSI11_MS" ColumnName="ant_mst_CLSI11_MS" />
+                <ScalarProperty Name="ant_mst_CLSI11_MR" ColumnName="ant_mst_CLSI11_MR" />
+                <ScalarProperty Name="ant_mst_CLSI10_DR" ColumnName="ant_mst_CLSI10_DR" />
+                <ScalarProperty Name="ant_mst_CLSI10_DI" ColumnName="ant_mst_CLSI10_DI" />
+                <ScalarProperty Name="ant_mst_CLSI10_DS" ColumnName="ant_mst_CLSI10_DS" />
+                <ScalarProperty Name="ant_mst_CLSI10_MS" ColumnName="ant_mst_CLSI10_MS" />
+                <ScalarProperty Name="ant_mst_CLSI10_MR" ColumnName="ant_mst_CLSI10_MR" />
+                <ScalarProperty Name="ant_mst_EUCST19_DR" ColumnName="ant_mst_EUCST19_DR" />
+                <ScalarProperty Name="ant_mst_EUCST19_DI" ColumnName="ant_mst_EUCST19_DI" />
+                <ScalarProperty Name="ant_mst_EUCST19_DS" ColumnName="ant_mst_EUCST19_DS" />
+                <ScalarProperty Name="ant_mst_EUCST19_MS" ColumnName="ant_mst_EUCST19_MS" />
+                <ScalarProperty Name="ant_mst_EUCST19_MR" ColumnName="ant_mst_EUCST19_MR" />
+                <ScalarProperty Name="ant_mst_EUCST18_DR" ColumnName="ant_mst_EUCST18_DR" />
+                <ScalarProperty Name="ant_mst_EUCST18_DI" ColumnName="ant_mst_EUCST18_DI" />
+                <ScalarProperty Name="ant_mst_EUCST18_DS" ColumnName="ant_mst_EUCST18_DS" />
+                <ScalarProperty Name="ant_mst_EUCST18_MS" ColumnName="ant_mst_EUCST18_MS" />
+                <ScalarProperty Name="ant_mst_EUCST18_MR" ColumnName="ant_mst_EUCST18_MR" />
+                <ScalarProperty Name="ant_mst_EUCST17_DR" ColumnName="ant_mst_EUCST17_DR" />
+                <ScalarProperty Name="ant_mst_EUCST17_DI" ColumnName="ant_mst_EUCST17_DI" />
+                <ScalarProperty Name="ant_mst_EUCST17_DS" ColumnName="ant_mst_EUCST17_DS" />
+                <ScalarProperty Name="ant_mst_EUCST17_MS" ColumnName="ant_mst_EUCST17_MS" />
+                <ScalarProperty Name="ant_mst_EUCST17_MR" ColumnName="ant_mst_EUCST17_MR" />
+                <ScalarProperty Name="ant_mst_EUCST16_DR" ColumnName="ant_mst_EUCST16_DR" />
+                <ScalarProperty Name="ant_mst_EUCST16_DI" ColumnName="ant_mst_EUCST16_DI" />
+                <ScalarProperty Name="ant_mst_EUCST16_DS" ColumnName="ant_mst_EUCST16_DS" />
+                <ScalarProperty Name="ant_mst_EUCST16_MS" ColumnName="ant_mst_EUCST16_MS" />
+                <ScalarProperty Name="ant_mst_EUCST16_MR" ColumnName="ant_mst_EUCST16_MR" />
+                <ScalarProperty Name="ant_mst_EUCST15_DR" ColumnName="ant_mst_EUCST15_DR" />
+                <ScalarProperty Name="ant_mst_EUCST15_DI" ColumnName="ant_mst_EUCST15_DI" />
+                <ScalarProperty Name="ant_mst_EUCST15_DS" ColumnName="ant_mst_EUCST15_DS" />
+                <ScalarProperty Name="ant_mst_EUCST15_MS" ColumnName="ant_mst_EUCST15_MS" />
+                <ScalarProperty Name="ant_mst_EUCST15_MR" ColumnName="ant_mst_EUCST15_MR" />
+                <ScalarProperty Name="ant_mst_EUCST14_DR" ColumnName="ant_mst_EUCST14_DR" />
+                <ScalarProperty Name="ant_mst_EUCST14_DI" ColumnName="ant_mst_EUCST14_DI" />
+                <ScalarProperty Name="ant_mst_EUCST14_DS" ColumnName="ant_mst_EUCST14_DS" />
+                <ScalarProperty Name="ant_mst_EUCST14_MS" ColumnName="ant_mst_EUCST14_MS" />
+                <ScalarProperty Name="ant_mst_EUCST14_MR" ColumnName="ant_mst_EUCST14_MR" />
+                <ScalarProperty Name="ant_mst_EUCST13_DR" ColumnName="ant_mst_EUCST13_DR" />
+                <ScalarProperty Name="ant_mst_EUCST13_DI" ColumnName="ant_mst_EUCST13_DI" />
+                <ScalarProperty Name="ant_mst_EUCST13_DS" ColumnName="ant_mst_EUCST13_DS" />
+                <ScalarProperty Name="ant_mst_EUCST13_MS" ColumnName="ant_mst_EUCST13_MS" />
+                <ScalarProperty Name="ant_mst_EUCST13_MR" ColumnName="ant_mst_EUCST13_MR" />
+                <ScalarProperty Name="ant_mst_ECV12_DR" ColumnName="ant_mst_ECV12_DR" />
+                <ScalarProperty Name="ant_mst_ECV12_DI" ColumnName="ant_mst_ECV12_DI" />
+                <ScalarProperty Name="ant_mst_ECV12_DS" ColumnName="ant_mst_ECV12_DS" />
+                <ScalarProperty Name="ant_mst_ECV12_MS" ColumnName="ant_mst_ECV12_MS" />
+                <ScalarProperty Name="ant_mst_ECV12_MR" ColumnName="ant_mst_ECV12_MR" />
+                <ScalarProperty Name="ant_mst_EUCST11_DR" ColumnName="ant_mst_EUCST11_DR" />
+                <ScalarProperty Name="ant_mst_EUCST11_DI" ColumnName="ant_mst_EUCST11_DI" />
+                <ScalarProperty Name="ant_mst_EUCST11_DS" ColumnName="ant_mst_EUCST11_DS" />
+                <ScalarProperty Name="ant_mst_EUCST11_MS" ColumnName="ant_mst_EUCST11_MS" />
+                <ScalarProperty Name="ant_mst_EUCST11_MR" ColumnName="ant_mst_EUCST11_MR" />
+                <ScalarProperty Name="ant_mst_NEODK16_DR" ColumnName="ant_mst_NEODK16_DR" />
+                <ScalarProperty Name="ant_mst_NEODK16_DI" ColumnName="ant_mst_NEODK16_DI" />
+                <ScalarProperty Name="ant_mst_NEODK16_DS" ColumnName="ant_mst_NEODK16_DS" />
+                <ScalarProperty Name="ant_mst_NEODK16_MS" ColumnName="ant_mst_NEODK16_MS" />
+                <ScalarProperty Name="ant_mst_NEODK16_MR" ColumnName="ant_mst_NEODK16_MR" />
+                <ScalarProperty Name="ant_mst_NEODK13_DR" ColumnName="ant_mst_NEODK13_DR" />
+                <ScalarProperty Name="ant_mst_NEODK13_DI" ColumnName="ant_mst_NEODK13_DI" />
+                <ScalarProperty Name="ant_mst_NEODK13_DS" ColumnName="ant_mst_NEODK13_DS" />
+                <ScalarProperty Name="ant_mst_NEODK13_MS" ColumnName="ant_mst_NEODK13_MS" />
+                <ScalarProperty Name="ant_mst_NEODK13_MR" ColumnName="ant_mst_NEODK13_MR" />
+                <ScalarProperty Name="ant_mst_NEODK98_DR" ColumnName="ant_mst_NEODK98_DR" />
+                <ScalarProperty Name="ant_mst_NEODK98_DI" ColumnName="ant_mst_NEODK98_DI" />
+                <ScalarProperty Name="ant_mst_NEODK98_DS" ColumnName="ant_mst_NEODK98_DS" />
+                <ScalarProperty Name="ant_mst_NEODK98_MS" ColumnName="ant_mst_NEODK98_MS" />
+                <ScalarProperty Name="ant_mst_NEODK98_MR" ColumnName="ant_mst_NEODK98_MR" />
+                <ScalarProperty Name="ant_mst_SFM07_DR" ColumnName="ant_mst_SFM07_DR" />
+                <ScalarProperty Name="ant_mst_SFM07_DI" ColumnName="ant_mst_SFM07_DI" />
+                <ScalarProperty Name="ant_mst_SFM07_DS" ColumnName="ant_mst_SFM07_DS" />
+                <ScalarProperty Name="ant_mst_SFM07_MS" ColumnName="ant_mst_SFM07_MS" />
+                <ScalarProperty Name="ant_mst_SFM07_MR" ColumnName="ant_mst_SFM07_MR" />
+                <ScalarProperty Name="ant_mst_DIN04_DR" ColumnName="ant_mst_DIN04_DR" />
+                <ScalarProperty Name="ant_mst_DIN04_DI" ColumnName="ant_mst_DIN04_DI" />
+                <ScalarProperty Name="ant_mst_DIN04_DS" ColumnName="ant_mst_DIN04_DS" />
+                <ScalarProperty Name="ant_mst_DIN04_MS" ColumnName="ant_mst_DIN04_MS" />
+                <ScalarProperty Name="ant_mst_DIN04_MR" ColumnName="ant_mst_DIN04_MR" />
+                <ScalarProperty Name="ant_mst_CRG96_DR" ColumnName="ant_mst_CRG96_DR" />
+                <ScalarProperty Name="ant_mst_CRG96_DI" ColumnName="ant_mst_CRG96_DI" />
+                <ScalarProperty Name="ant_mst_CRG96_DS" ColumnName="ant_mst_CRG96_DS" />
+                <ScalarProperty Name="ant_mst_CRG96_MS" ColumnName="ant_mst_CRG96_MS" />
+                <ScalarProperty Name="ant_mst_CRG96_MR" ColumnName="ant_mst_CRG96_MR" />
+                <ScalarProperty Name="ant_mst_AFA00_DR" ColumnName="ant_mst_AFA00_DR" />
+                <ScalarProperty Name="ant_mst_AFA00_DI" ColumnName="ant_mst_AFA00_DI" />
+                <ScalarProperty Name="ant_mst_AFA00_DS" ColumnName="ant_mst_AFA00_DS" />
+                <ScalarProperty Name="ant_mst_AFA00_MS" ColumnName="ant_mst_AFA00_MS" />
+                <ScalarProperty Name="ant_mst_AFA00_MR" ColumnName="ant_mst_AFA00_MR" />
+                <ScalarProperty Name="ant_mst_MENS00_DR" ColumnName="ant_mst_MENS00_DR" />
+                <ScalarProperty Name="ant_mst_MENS00_DI" ColumnName="ant_mst_MENS00_DI" />
+                <ScalarProperty Name="ant_mst_MENS00_DS" ColumnName="ant_mst_MENS00_DS" />
+                <ScalarProperty Name="ant_mst_MENS00_MS" ColumnName="ant_mst_MENS00_MS" />
+                <ScalarProperty Name="ant_mst_MENS00_MR" ColumnName="ant_mst_MENS00_MR" />
+                <ScalarProperty Name="ant_mst_SRGA98_DR" ColumnName="ant_mst_SRGA98_DR" />
+                <ScalarProperty Name="ant_mst_SRGA98_DI" ColumnName="ant_mst_SRGA98_DI" />
+                <ScalarProperty Name="ant_mst_SRGA98_DS" ColumnName="ant_mst_SRGA98_DS" />
+                <ScalarProperty Name="ant_mst_SRGA98_MS" ColumnName="ant_mst_SRGA98_MS" />
+                <ScalarProperty Name="ant_mst_SRGA98_MR" ColumnName="ant_mst_SRGA98_MR" />
+                <ScalarProperty Name="ant_mst_BSAC00_DR" ColumnName="ant_mst_BSAC00_DR" />
+                <ScalarProperty Name="ant_mst_BSAC00_DI" ColumnName="ant_mst_BSAC00_DI" />
+                <ScalarProperty Name="ant_mst_BSAC00_DS" ColumnName="ant_mst_BSAC00_DS" />
+                <ScalarProperty Name="ant_mst_BSAC00_MS" ColumnName="ant_mst_BSAC00_MS" />
+                <ScalarProperty Name="ant_mst_BSAC00_MR" ColumnName="ant_mst_BSAC00_MR" />
+                <ScalarProperty Name="ant_mst_OTHER_DR" ColumnName="ant_mst_OTHER_DR" />
+                <ScalarProperty Name="ant_mst_OTHER_DI" ColumnName="ant_mst_OTHER_DI" />
+                <ScalarProperty Name="ant_mst_OTHER_DS" ColumnName="ant_mst_OTHER_DS" />
+                <ScalarProperty Name="ant_mst_OTHER_MS" ColumnName="ant_mst_OTHER_MS" />
+                <ScalarProperty Name="ant_mst_OTHER_MR" ColumnName="ant_mst_OTHER_MR" />
+                <ScalarProperty Name="ant_status" ColumnName="ant_status" />
+                <ScalarProperty Name="ant_active" ColumnName="ant_active" />
+                <ScalarProperty Name="ant_createuser" ColumnName="ant_createuser" />
+                <ScalarProperty Name="ant_createdate" ColumnName="ant_createdate" />
+                <ScalarProperty Name="ant_updateuser" ColumnName="ant_updateuser" />
+                <ScalarProperty Name="ant_updatedate" ColumnName="ant_updatedate" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
+          <FunctionImportMapping FunctionImportName="sp_GET_TCOrganism_Active" FunctionName="ALISSModel.Store.sp_GET_TCOrganism_Active">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="ALISSModel.sp_GET_TCOrganism_Active_Result">
+                <ScalarProperty Name="org_id" ColumnName="org_id" />
+                <ScalarProperty Name="org_mst_code" ColumnName="org_mst_code" />
+                <ScalarProperty Name="org_code" ColumnName="org_code" />
+                <ScalarProperty Name="org_mst_ORG" ColumnName="org_mst_ORG" />
+                <ScalarProperty Name="org_mst_GRAM" ColumnName="org_mst_GRAM" />
+                <ScalarProperty Name="org_mst_ORGANISM" ColumnName="org_mst_ORGANISM" />
+                <ScalarProperty Name="org_mst_ORG_CLEAN" ColumnName="org_mst_ORG_CLEAN" />
+                <ScalarProperty Name="org_mst_STATUS" ColumnName="org_mst_STATUS" />
+                <ScalarProperty Name="org_mst_COMMON" ColumnName="org_mst_COMMON" />
+                <ScalarProperty Name="org_mst_ORG_GROUP" ColumnName="org_mst_ORG_GROUP" />
+                <ScalarProperty Name="org_mst_SUB_GROUP" ColumnName="org_mst_SUB_GROUP" />
+                <ScalarProperty Name="org_mst_GENUS" ColumnName="org_mst_GENUS" />
+                <ScalarProperty Name="org_mst_GENUS_CODE" ColumnName="org_mst_GENUS_CODE" />
+                <ScalarProperty Name="org_mst_SCT_CODE" ColumnName="org_mst_SCT_CODE" />
+                <ScalarProperty Name="org_mst_SCT_TEXT" ColumnName="org_mst_SCT_TEXT" />
+                <ScalarProperty Name="org_status" ColumnName="org_status" />
+                <ScalarProperty Name="org_active" ColumnName="org_active" />
+                <ScalarProperty Name="org_createuser" ColumnName="org_createuser" />
+                <ScalarProperty Name="org_createdate" ColumnName="org_createdate" />
+                <ScalarProperty Name="org_updateuser" ColumnName="org_updateuser" />
+                <ScalarProperty Name="org_updatedate" ColumnName="org_updatedate" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
+          <FunctionImportMapping FunctionImportName="sp_GET_TCParameter" FunctionName="ALISSModel.Store.sp_GET_TCParameter">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="ALISSModel.sp_GET_TCParameter_Result">
+                <ScalarProperty Name="prm_id" ColumnName="prm_id" />
+                <ScalarProperty Name="prm_code_major" ColumnName="prm_code_major" />
+                <ScalarProperty Name="prm_code_minor" ColumnName="prm_code_minor" />
+                <ScalarProperty Name="prm_value" ColumnName="prm_value" />
+                <ScalarProperty Name="prm_desc1" ColumnName="prm_desc1" />
+                <ScalarProperty Name="prm_desc2" ColumnName="prm_desc2" />
+                <ScalarProperty Name="prm_desc3" ColumnName="prm_desc3" />
+                <ScalarProperty Name="prm_desc4" ColumnName="prm_desc4" />
+                <ScalarProperty Name="prm_status" ColumnName="prm_status" />
+                <ScalarProperty Name="prm_active" ColumnName="prm_active" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
+          <FunctionImportMapping FunctionImportName="sp_GET_RPAntibicromialResstAll" FunctionName="ALISSModel.Store.sp_GET_RPAntibicromialResstAll">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="ALISSModel.sp_GET_RPAntibicromialResstAll_Result">
+                <ScalarProperty Name="year" ColumnName="year" />
+                <ScalarProperty Name="spc_code" ColumnName="spc_code" />
+                <ScalarProperty Name="ward_type" ColumnName="ward_type" />
+                <ScalarProperty Name="org_code" ColumnName="org_code" />
+                <ScalarProperty Name="org_name" ColumnName="org_name" />
+                <ScalarProperty Name="anti_code" ColumnName="anti_code" />
+                <ScalarProperty Name="anti_name" ColumnName="anti_name" />
+                <ScalarProperty Name="percent_s" ColumnName="percent_s" />
+                <ScalarProperty Name="percent_i" ColumnName="percent_i" />
+                <ScalarProperty Name="percent_r" ColumnName="percent_r" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
+          <FunctionImportMapping FunctionImportName="sp_GET_RPAntibicromialResstSpecimen" FunctionName="ALISSModel.Store.sp_GET_RPAntibicromialResstSpecimen">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="ALISSModel.sp_GET_RPAntibicromialResstSpecimen_Result">
+                <ScalarProperty Name="year" ColumnName="year" />
+                <ScalarProperty Name="spc_code" ColumnName="spc_code" />
+                <ScalarProperty Name="ward_type" ColumnName="ward_type" />
+                <ScalarProperty Name="org_code" ColumnName="org_code" />
+                <ScalarProperty Name="org_name" ColumnName="org_name" />
+                <ScalarProperty Name="anti_code" ColumnName="anti_code" />
+                <ScalarProperty Name="anti_name" ColumnName="anti_name" />
+                <ScalarProperty Name="percent_s" ColumnName="percent_s" />
+                <ScalarProperty Name="percent_i" ColumnName="percent_i" />
+                <ScalarProperty Name="percent_r" ColumnName="percent_r" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
+          <FunctionImportMapping FunctionImportName="sp_GET_RPAntibicromialResstWard" FunctionName="ALISSModel.Store.sp_GET_RPAntibicromialResstWard">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="ALISSModel.sp_GET_RPAntibicromialResstWard_Result">
+                <ScalarProperty Name="year" ColumnName="year" />
+                <ScalarProperty Name="spc_code" ColumnName="spc_code" />
+                <ScalarProperty Name="ward_type" ColumnName="ward_type" />
+                <ScalarProperty Name="org_code" ColumnName="org_code" />
+                <ScalarProperty Name="org_name" ColumnName="org_name" />
+                <ScalarProperty Name="anti_code" ColumnName="anti_code" />
+                <ScalarProperty Name="anti_name" ColumnName="anti_name" />
+                <ScalarProperty Name="percent_s" ColumnName="percent_s" />
+                <ScalarProperty Name="percent_i" ColumnName="percent_i" />
+                <ScalarProperty Name="percent_r" ColumnName="percent_r" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="false" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="true" />
+        <DesignerProperty Name="UseLegacyProvider" Value="false" />
+        <DesignerProperty Name="CodeGenerationStrategy" Value="None" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams></Diagrams>
+  </Designer>
+</edmx:Edmx>

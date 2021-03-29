@@ -1,0 +1,207 @@
+﻿@page "/UserManagement/Hospital"
+
+@inject IJSRuntime jsRuntime
+@inject NavigationManager navigationManager
+@inject DialogService dialogService
+
+@inject ConfigDataService configDataService
+@inject DropDownListDataService ddlDataService
+@inject HospitalService hospitalService
+
+<div>
+    <div class="divHead">
+        Hospital
+    </div>
+</div>
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>
+
+    <Loading ShowModel="true" />
+}
+else
+{
+    <div class="container inputArea">
+        <div class="row justify-content-between">
+            <InputBox ConfigData="@(configData.Get_ConfigRow("hos_name"))">
+                <RadzenTextBox @bind-Value="@searchModel.hos_name" />
+            </InputBox>
+            <InputBox ConfigData="@(configData.Get_ConfigRow("hos_prv_code"))">
+                <RadzenDropDown @bind-Value="searchModel.hos_prv_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name }).Where(x => (searchModel.hos_arh_code == null || x.arh_code == searchModel.hos_arh_code)).Distinct()" ValueProperty="prv_code" TextProperty="prv_name" Change="@(args => DDL_Change("Prv", args))" Style="width:100%;" />
+            </InputBox>
+            <InputBox ConfigData="@(configData.Get_ConfigRow("hos_arh_code"))">
+                <RadzenDropDown @bind-Value="searchModel.hos_arh_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name }).Distinct().OrderBy(x => x.arh_code)" ValueProperty="arh_code" TextProperty="arh_name" Change="@(args => DDL_Change("Arh", args))" Style="width:100%;" />
+            </InputBox>
+        </div>
+        <div class="row justify-content-end">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup buttonArea">
+                    <div class="col-auto">
+                        <RadzenButton class="btnSearch" Text="Search" Click="SearchInboxData" />
+                    </div>
+                    <div class="col-auto">
+                        <RadzenButton class="btnClear" Text="Clear" Click="ClearInboxData" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div>
+        <div style="text-align:right;">
+            @if (mainLayout.loginUser.PagePermission.rop_create)
+            {
+                <RadzenButton Icon="add" Text="Add Hospital" Click="@(() => ShowSimpleDialog(""))" style="background: #0A6839;border-radius: 3px;color: #FFFFFF;" />
+            }
+        </div>
+
+        <br />
+
+        <div style="width:90%;margin:0px auto;">
+            <div class="container">
+                <div class="row justify-content-end">
+                    <div class="col-auto">
+                        <label>Rows : </label>
+                    </div>
+                    <div class="col-auto">
+                        <RadzenDropDown @bind-Value="inboxGrid.PageSize" TValue="int" AllowFiltering="true" Data="inboxGrid.PageSizeOption" Change="SearchInboxData" Style="width:50px" />
+                    </div>
+                </div>
+            </div>
+            <RadzenGrid TItem="HospitalDTO" @ref="inboxGrid.radzenGrid" Data="@searchResultList" PageSize="inboxGrid.PageSize" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                <Columns>
+                    <RadzenGridColumn TItem="HospitalDTO" Property="" Title="" Width="50px" Filterable="false" Context="data">
+                        <Template>
+                            @if (mainLayout.loginUser.PagePermission.rop_edit)
+                            {
+                                <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowSimpleDialog(data.hos_code))" />
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="HospitalDTO" Property="hos_code" Title="@configData.Get_Label("hos_code")">
+                        <FooterTemplate>
+                            <label title="@inboxGrid.FooterLabelString">@inboxGrid.FooterLabelString</label>
+                        </FooterTemplate>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="HospitalDTO" Property="hos_name" Title="@configData.Get_Label("hos_name")" />
+                    <RadzenGridColumn TItem="HospitalDTO" Property="arh_name" Title="@configData.Get_Label("hos_arh_code")" />
+                    <RadzenGridColumn TItem="HospitalDTO" Property="prv_name" Title="@configData.Get_Label("hos_prv_code")" />
+                    <RadzenGridColumn TItem="HospitalDTO" Property="hos_active" Title="@configData.Get_Label("hos_active")" Context="data">
+                        <Template>
+                            @if (data.hos_active == true)
+                            {
+                                <label>Active</label>
+                            }
+                            else
+                            {
+                                <label>Inactive</label>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+
+        <br />
+
+    </div>
+
+    <hr />
+
+    <Loading ShowModel="showLoading" />
+}
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private bool showLoading;
+
+    private RadzenGridCustom<HospitalDTO> inboxGrid = new RadzenGridCustom<HospitalDTO>();
+    private HospitalSearchDTO searchModel = new HospitalSearchDTO();
+    private List<HospitalDTO> searchResultList;
+
+    private List<HospitalLabDataDTO> lab_ddl_List;
+
+    HospitalDTO objHospital = new HospitalDTO();
+
+    private bool pageLoading { get { return (searchResultList == null); } }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0301") == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = "MNU_0301" });
+
+            var searchData = new HospitalLabDataDTO()
+            {
+                arh_code = searchModel.hos_arh_code = mainLayout.loginUser.arh_code,
+                prv_code = searchModel.hos_prv_code = mainLayout.loginUser.prv_code
+            };
+            lab_ddl_List = await ddlDataService.GetAllLabListByModelAsync(searchData);
+
+            searchResultList = await hospitalService.GetListByModelAsync(searchModel);
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task SearchInboxData()
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        searchResultList = await hospitalService.GetListByModelAsync(searchModel);
+        if (inboxGrid.radzenGrid != null) inboxGrid.radzenGrid.GoToPage(0);
+
+        showLoading = false;
+        StateHasChanged();
+
+    }
+
+    private async Task ClearInboxData()
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        searchModel = new HospitalSearchDTO();
+
+        await SearchInboxData();
+    }
+
+    private void DDL_Change(string ddl_name, object value)
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        if (ddl_name == "Arh" && value == null)
+        {
+            searchModel.hos_prv_code = null;
+        }
+        else if (ddl_name == "Prv" && value != null)
+        {
+            var prv_select = lab_ddl_List.FirstOrDefault(x => x.prv_code == value.ToString());
+
+            searchModel.hos_arh_code = prv_select.arh_code;
+        }
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private void ShowSimpleDialog(string hos_code)
+    {
+        navigationManager.NavigateTo("UserManagement/Hospital/DataDetail/" + hos_code);
+    }
+
+}

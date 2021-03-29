@@ -1,0 +1,619 @@
+﻿@page "/UserManagement/UserLogin/DataDetail"
+@page "/UserManagement/UserLogin/DataDetail/{usr_username}"
+
+@inject IJSRuntime jsRuntime
+@inject NavigationManager navigationManager
+@inject DialogService dialogService
+
+@inject ConfigDataService configDataService
+@inject DropDownListDataService ddlDataService
+@inject UserLoginService userLoginService
+@inject PasswordConfigService passwordConfigService
+
+<div>
+    <div class="divHead">
+        <RadzenLink Path="/UserManagement/Hospital" Text="User Login" /> - @(dataModel?.usr_username ?? "New user login")
+    </div>
+</div>
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>
+
+    <Loading ShowModel="true" />
+}
+else
+{
+    <EditForm Model="dataModel" OnInvalidSubmit="HandleInvalidSubmit" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+
+        <div class="container inputArea">
+            <div class="row">
+                <InputBox ConfigData="@(configData.Get_ConfigRow("usr_username"))">
+                    @if (dataModel.usr_status == "N")
+                    {
+                        <RadzenTextBox @bind-Value="dataModel.usr_username" Placeholder=@(configData.Get_PlaceHolder("usr_username")) />
+                        <ValidationMessage For="@(() => dataModel.usr_username)" />
+                    }
+                    else
+                    {
+                        <RadzenTextBox @bind-Value="dataModel.usr_username" ReadOnly="true" />
+                    }
+                </InputBox>
+
+                <InputBox ConfigData="@(configData.Get_ConfigRow("usr_email"))">
+                    <RadzenTextBox Name="Email" @bind-Value="dataModel.usr_email" />
+                    <ValidationMessage For="@(() => dataModel.usr_email)" />
+                </InputBox>
+
+                <InputBox ConfigData="@(configData.Get_ConfigRow("usr_active"))">
+                    <RadzenRadioButtonList @bind-Value="dataModel.usr_active" TValue="bool">
+                        <Items>
+                            <RadzenRadioButtonListItem Text="Active" Value="true" />
+                            <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                        </Items>
+                    </RadzenRadioButtonList>
+                </InputBox>
+
+                <InputBox ConfigData="@(configData.Get_ConfigRow("usr_firstname"))">
+                    <RadzenTextBox @bind-Value="dataModel.usr_firstname" />
+                    <ValidationMessage For="@(() => dataModel.usr_firstname)" />
+                </InputBox>
+
+                <InputBox ConfigData="@(configData.Get_ConfigRow("usr_lastname"))">
+                    <RadzenTextBox @bind-Value="dataModel.usr_lastname" />
+                    <ValidationMessage For="@(() => dataModel.usr_lastname)" />
+                </InputBox>
+            </div>
+            <div class="row">
+                <InputBox ConfigData="@(configData.Get_ConfigRow("usr_password"))">
+                    @if (mainLayout.loginUser.Username == dataModel.usr_username)
+                    {
+                        <RadzenPassword @bind-Value="txtPassword" ReadOnly="txtReadOnly" />
+                        @if (errMessage.Count > 0)
+                        {
+                            foreach (var item in errMessage)
+                            {
+                                <div class="validation-message">@item</div>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        <RadzenTextBox @bind-Value="txtPassword" ReadOnly="txtReadOnly" />
+                    }
+                </InputBox>
+
+                <InputBox ConfigData="@(configData.Get_ConfigRow("usr_password_confirm"))">
+                    @if (mainLayout.loginUser.Username == dataModel.usr_username)
+                    {
+                        <RadzenPassword @bind-Value="txtPasswordConfirm" ReadOnly="txtReadOnly" />
+                    }
+                    else
+                    {
+                        <RadzenTextBox @bind-Value="txtPasswordConfirm" ReadOnly="txtReadOnly" />
+                    }
+                </InputBox>
+
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup buttonArea">
+                        <div class="col">
+                            @if (mainLayout.loginUser.Username == dataModel.usr_username)
+                            {
+                                <RadzenButton class="btnSearch" Text="Change pwd" Click="ChangePassword" />
+                            }
+                            else
+                            {
+                                <RadzenButton class="btnSearch" Text="Get default pwd" Click="ResetPassword" />
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr />
+
+        <div>
+            @if ((mainLayout.loginUser.PagePermission.rop_create || mainLayout.loginUser.PagePermission.rop_edit) && (dataDetailList.Count == 0))
+            {
+                <div class="container">
+                    <div class="row justify-content-end">
+                        <div class="col-auto buttonArea">
+                            <RadzenButton Icon="add" class="btnAdd" Text="เพิ่มสังกัด" Click="@(() => ShowPopupDialog(null))" />
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <br />
+
+            <div style="width:90%;margin:0px auto;">
+                <RadzenGrid TItem="UserLoginPermissionDTO" @ref="dataDetailGrid.radzenGrid" Data="@dataDetailList" PageSize="4" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                    <Columns>
+                        <RadzenGridColumn TItem="UserLoginPermissionDTO" Property="" Title="" Width="50px" Filterable="false" Context="Data">
+                            <Template>
+                                @if (mainLayout.loginUser.PagePermission.rop_create || mainLayout.loginUser.PagePermission.rop_edit)
+                                {
+                                    <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowPopupDialog(Data))" />
+                                }
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="UserLoginPermissionDTO" Property="usp_rol_name" Title="@configData.Get_Label("usp_rol_code")" />
+                        <RadzenGridColumn TItem="UserLoginPermissionDTO" Property="usp_arh_name" Title="@configData.Get_Label("usp_arh_code")" />
+                        <RadzenGridColumn TItem="UserLoginPermissionDTO" Property="usp_hos_name" Title="@configData.Get_Label("usp_hos_code")" />
+                        <RadzenGridColumn TItem="UserLoginPermissionDTO" Property="usp_lab_name" Title="@configData.Get_Label("usp_lab_code")" />
+                        <RadzenGridColumn TItem="UserLoginPermissionDTO" Property="usp_active" Title="@configData.Get_Label("usp_active")" Context="data">
+                            <Template>
+                                @if (data.usp_active == true)
+                                {
+                                    <label>Active</label>
+                                }
+                                else
+                                {
+                                    <label>Inactive</label>
+                                }
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+            </div>
+
+            <br />
+
+            <div class="row justify-content-between inputArea buttonArea">
+                <div class="col-auto">
+                    <RadzenButton class="btnCancel" Text="Cancel" Click="RedirectToInbox" />
+                </div>
+                <div class="col-auto">
+                    @if (mainLayout.loginUser.PagePermission.rop_create || mainLayout.loginUser.PagePermission.rop_edit || mainLayout.loginUser.Username == dataModel.usr_username)
+                    {
+                        <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Save" />
+                    }
+                </div>
+            </div>
+        </div>
+
+    </EditForm>
+
+    <hr />
+
+    <HistoryLog HistoryList="historyResultList" />
+
+    @if (showPopupDialog)
+    {
+        <div class="modal" tabindex="-1" style="display:block" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+
+                    </div>
+                    <div class="modal-body">
+                        <EditForm Model="dataDetailModel" OnInvalidSubmit="HandleInvalidSubmitPopup" OnValidSubmit="HandleValidSubmitPopup">
+                            <DataAnnotationsValidator />
+
+                            <div class="container inputArea">
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("usp_rol_code"))"classColumn="col-xl-12">
+                                        <RadzenDropDown @bind-Value="dataDetailModel.usp_rol_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="rol_List" ValueProperty="data_Value" TextProperty="data_Text" Style="width:100%" />
+                                        <ValidationMessage For="@(() => dataDetailModel.usp_rol_code)" />
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("usp_arh_code"))"classColumn="col-xl-12">
+                                        <RadzenDropDown @bind-Value="dataDetailModel.usp_arh_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name }).Distinct().OrderBy(x => x.arh_code)" ValueProperty="arh_code" TextProperty="arh_name" Change="@(args => DDL_Change("Arh", args))" Style="width:100%" />
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("usp_hos_code"))"classColumn="col-xl-12">
+                                        <RadzenDropDown @bind-Value="dataDetailModel.usp_hos_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name, x.hos_code, x.hos_name }).Where(x => dataDetailModel.usp_arh_code == null || x.arh_code == dataDetailModel.usp_arh_code)" ValueProperty="hos_code" TextProperty="hos_name" Change="@(args => DDL_Change("Hos", args))" Style="width:100%" />
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("usp_lab_code"))"classColumn="col-xl-12">
+                                        <RadzenDropDown @bind-Value="dataDetailModel.usp_lab_code" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Where(x => x.hos_code == dataDetailModel.usp_hos_code)" ValueProperty="lab_code" TextProperty="lab_name" Change="@(args => DDL_Change("Lab", args))" Style="width:100%" />
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <InputBox ConfigData="@(configData.Get_ConfigRow("usp_active"))"classColumn="col-xl-12">
+                                        <RadzenRadioButtonList @bind-Value="dataDetailModel.usp_active" TValue="bool">
+                                            <Items>
+                                                <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                                <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                            </Items>
+                                        </RadzenRadioButtonList>
+                                    </InputBox>
+                                </div>
+                                <div class="row justify-content-center">
+                                    <div class="col-12">
+                                        <div class="row justify-content-center divGroup buttonArea">
+                                            <div class="col-auto">
+                                                <RadzenButton class="btnCancel" Text="Cancel" Click="ClosePopup" />
+                                            </div>
+                                            <div class="col-auto">
+                                                @if (mainLayout.loginUser.PagePermission.rop_create || mainLayout.loginUser.PagePermission.rop_edit)
+                                                {
+                                                    <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="OK" />
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <Loading ShowModel="showLoading" />
+    }
+}
+
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+    [Parameter] public string usr_username { get; set; }
+
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private bool showPopupDialog;
+    private bool showLoading;
+
+    private List<HospitalLabDataDTO> lab_ddl_List;
+    private List<DropDownListDTO> rol_List;
+
+    private UserLoginDTO dataModel;
+
+    private RadzenGridCustom<UserLoginPermissionDTO> dataDetailGrid = new RadzenGridCustom<UserLoginPermissionDTO>();
+    private List<UserLoginPermissionDTO> dataDetailList;
+    UserLoginPermissionDTO dataDetailModel = new UserLoginPermissionDTO();
+
+    private List<LogProcessDTO> historyResultList;
+
+    private string txtPassword;
+    private string txtPasswordConfirm;
+
+    bool txtReadOnly = true;
+    bool changePassword;
+    bool resetPassword;
+    bool checkEmail;
+    bool checkPasswordConfirm;
+
+    private HospitalDataDTO searchData;
+    private UserLoginSearchDTO searchModel = new UserLoginSearchDTO();
+    bool ShowPopup = false;
+
+    PasswordConfigDTO pwdCfg;
+
+    List<string> errMessage = new List<string>();
+
+    private bool pageLoading { get { return (dataModel == null || dataDetailList == null || historyResultList == null); } }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0302") == false && mainLayout.loginUser.Username != usr_username) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = "MNU_0302" });
+            if (mainLayout.loginUser.rol_code == "ROL_00")
+            {
+                configData.ConfigDTOList.ForEach(x =>
+                {
+                    x.tbc_edit = true;
+                });
+            }
+
+            var searchData = new HospitalLabDataDTO()
+            {
+                arh_code = searchModel.usp_arh_code = mainLayout.loginUser.arh_code,
+                prv_code = searchModel.usp_prv_code = mainLayout.loginUser.prv_code,
+                hos_code = searchModel.usp_hos_code = mainLayout.loginUser.hos_code,
+                lab_code = searchModel.usp_lab_code = mainLayout.loginUser.lab_code
+            };
+            lab_ddl_List = await ddlDataService.GetAllLabListByModelAsync(searchData);
+            rol_List = await ddlDataService.GetRoleListByModelAsync();
+
+            pwdCfg = await passwordConfigService.GetDataAsync();
+
+            if (string.IsNullOrEmpty(usr_username))
+            {
+                dataModel = new UserLoginDTO()
+                {
+                    usr_status = "N",
+                    usr_active = true,
+                    usr_createuser = mainLayout.loginUser.Username
+                };
+
+                ResetPassword();
+
+                dataDetailList = new List<UserLoginPermissionDTO>();
+
+                historyResultList = new List<LogProcessDTO>();
+            }
+            else
+            {
+                dataModel = await userLoginService.GetDataAsync(usr_username);
+                dataModel.usr_status = "E";
+                dataModel.usr_updateuser = mainLayout.loginUser.Username;
+
+                dataDetailList = await userLoginService.GetPermissionListByModelAsync(new UserLoginPermissionDTO() { usp_usr_userName = usr_username });
+
+                historyResultList = await userLoginService.GetHistoryAsync(usr_username);
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    private void DDL_Change(string ddl_name, object value)
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        if (ddl_name == "Arh" && value == null)
+        {
+            dataDetailModel.usp_hos_code = null;
+            dataDetailModel.usp_lab_code = null;
+        }
+        else if (ddl_name == "Hos" && value != null)
+        {
+            var hos_select = lab_ddl_List.FirstOrDefault(x => x.hos_code == value.ToString());
+
+            dataDetailModel.usp_arh_code = hos_select.arh_code;
+        }
+        else if (ddl_name == "Hos" && value == null)
+        {
+            dataDetailModel.usp_lab_code = null;
+        }
+        else if (ddl_name == "Lab" && value != null)
+        {
+            dataDetailModel.usp_lab_code = value.ToString();
+        }
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private void RedirectToInbox()
+    {
+        if (mainLayout.loginUser.CheckPagePermission("MNU_0302") == false && mainLayout.loginUser.Username == usr_username)
+        {
+            navigationManager.NavigateTo("/Home");
+        }
+        else
+        {
+            navigationManager.NavigateTo("/usermanagement/userlogin/");
+        }
+    }
+
+    private void ShowPopupDialog(UserLoginPermissionDTO selectModel)
+    {
+
+        //if (CreateMode == true)
+        //{
+        //    await jsRuntime.InvokeAsync<object>("ShowAlert", "Please save before add lab.");
+        //}
+        //else
+        //{
+        if (selectModel == null)
+        {
+            dataDetailModel = new UserLoginPermissionDTO()
+            {
+                usp_status = "N",
+                usp_active = true,
+                usp_createuser = mainLayout.loginUser.Username
+            };
+        }
+        else
+        {
+            dataDetailModel = selectModel;
+            dataDetailModel.usp_status = "E";
+            dataDetailModel.usp_updateuser = mainLayout.loginUser.Username;
+
+            if (string.IsNullOrEmpty(dataDetailModel.usp_lab_code) == false)
+            {
+                DDL_Change("Lab", dataDetailModel.usp_lab_code);
+            }
+        }
+
+        showPopupDialog = true;
+        //}
+
+        StateHasChanged();
+    }
+
+    private async Task ClosePopup()
+    {
+        // Close the Popup
+        dataDetailModel = new UserLoginPermissionDTO();
+
+        dataDetailList = await userLoginService.GetPermissionListByModelAsync(new UserLoginPermissionDTO() { usp_usr_userName = usr_username });
+
+        showPopupDialog = false;
+        StateHasChanged();
+    }
+
+
+    private void HandleInvalidSubmitPopup()
+    {
+
+    }
+
+    private async void HandleValidSubmitPopup()
+    {
+        if (dataDetailModel.usp_status == "N")
+        {
+            dataDetailModel.usp_arh_name = lab_ddl_List.FirstOrDefault(x => x.arh_code == dataDetailModel.usp_arh_code)?.arh_name;
+            dataDetailModel.usp_hos_name = lab_ddl_List.FirstOrDefault(x => x.hos_code == dataDetailModel.usp_hos_code)?.hos_name;
+            dataDetailModel.usp_lab_name = lab_ddl_List.FirstOrDefault(x => x.hos_code == dataDetailModel.usp_hos_code && x.lab_code == dataDetailModel.usp_lab_code)?.lab_name;
+            dataDetailModel.usp_rol_name = rol_List.FirstOrDefault(x => x.data_Value == dataDetailModel.usp_rol_code)?.data_Text;
+            dataDetailList.Add(dataDetailModel);
+        }
+        else
+        {
+            var objHospitalLabData = dataDetailList.FirstOrDefault(x => x.usp_id == dataDetailModel.usp_id);
+            objHospitalLabData.usp_arh_code = dataDetailModel.usp_arh_code;
+            objHospitalLabData.usp_arh_name = lab_ddl_List.FirstOrDefault(x => x.arh_code == dataDetailModel.usp_arh_code)?.arh_name;
+            objHospitalLabData.usp_hos_code = dataDetailModel.usp_hos_code;
+            objHospitalLabData.usp_hos_name = lab_ddl_List.FirstOrDefault(x => x.hos_code == dataDetailModel.usp_hos_code)?.hos_name;
+            objHospitalLabData.usp_lab_code = dataDetailModel.usp_lab_code;
+            objHospitalLabData.usp_lab_name = lab_ddl_List.FirstOrDefault(x => x.hos_code == dataDetailModel.usp_hos_code && x.lab_code == dataDetailModel.usp_lab_code)?.lab_name;
+            objHospitalLabData.usp_rol_code = dataDetailModel.usp_rol_code;
+            objHospitalLabData.usp_rol_name = rol_List.FirstOrDefault(x => x.data_Value == dataDetailModel.usp_rol_code)?.data_Text;
+            objHospitalLabData.usp_active = dataDetailModel.usp_active;
+        }
+
+        showPopupDialog = false;
+        StateHasChanged();
+    }
+
+    private void CheckPassword()
+    {
+        errMessage = new List<string>();
+
+        if (txtPassword != txtPasswordConfirm)
+        {
+            errMessage.Add("Password not match.");
+        }
+        else
+        {
+            if ((pwdCfg.pwc_min_char != 0) && (txtPassword.Length < pwdCfg.pwc_min_char))
+            {
+                errMessage.Add($"Password must >= {pwdCfg.pwc_min_char} chars.");
+            }
+
+            if ((pwdCfg.pwc_max_char != 0) && (txtPassword.Length > pwdCfg.pwc_max_char))
+            {
+                errMessage.Add($"Password must <= {pwdCfg.pwc_max_char} chars.");
+            }
+
+            if ((pwdCfg.pwc_lowwer_letter) && (!txtPassword.Any(c => char.IsLower(c))))
+            {
+                errMessage.Add($"Password must have lowwer case letter.");
+            }
+
+            if ((pwdCfg.pwc_upper_letter) && (!txtPassword.Any(c => char.IsUpper(c))))
+            {
+                errMessage.Add($"Password must have upper case letter.");
+            }
+
+            if ((pwdCfg.pwc_number) && (!txtPassword.Any(c => char.IsDigit(c))))
+            {
+                errMessage.Add($"Password must have number.");
+            }
+
+            if ((pwdCfg.pwc_special_char) && (!txtPassword.Any(c => !char.IsLetterOrDigit(c))))
+            {
+                errMessage.Add($"Password must have special character.");
+            }
+        }
+    }
+
+    private void ChangePassword()
+    {
+        changePassword = true;
+        txtReadOnly = false;
+    }
+
+    private void ResetPassword()
+    {
+        resetPassword = true;
+        txtPassword = pwdCfg.pwc_default_password;
+        txtPasswordConfirm = pwdCfg.pwc_default_password;
+    }
+
+    private void HandleInvalidSubmit()
+    {
+
+    }
+
+    private async void HandleValidSubmit()
+    {
+        if (changePassword)
+        {
+            if (string.IsNullOrEmpty(txtPassword) == true && string.IsNullOrEmpty(txtPasswordConfirm) == true)
+            {
+                var resultPassword = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Password empty do you want to continue save data?");
+                if (!resultPassword)
+                {
+                    return;
+                }
+            }
+            else
+            {
+                CheckPassword();
+                if (errMessage.Count > 0)
+                {
+                    //var errMessageJoin = string.Join("\n", errMessage);
+                    //await jsRuntime.InvokeAsync<object>("ShowAlert", errMessageJoin);
+
+                    return;
+                }
+                else
+                {
+                    var encryptPassword = CryptoHelper.EncryptMD5(txtPassword);
+                    dataModel.usr_password = encryptPassword;
+                }
+            }
+        }
+        else if (resetPassword)
+        {
+            var encryptPassword = CryptoHelper.EncryptMD5(txtPassword);
+            dataModel.usr_password = encryptPassword;
+        }
+
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (result)
+        {
+            showLoading = true;
+            StateHasChanged();
+
+            if (dataModel.usr_status == "N")
+            {
+                //Check duplicate
+                var duplicate = await userLoginService.GetDataAsync(dataModel.usr_username);
+
+                if (string.IsNullOrEmpty(duplicate.usr_username) == false)
+                {
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate username.");
+
+                    showLoading = false;
+
+                    StateHasChanged();
+                    return;
+                }
+            }
+
+            //Save data
+            var saveResult = await userLoginService.SaveDataAsync(dataModel);
+
+            dataDetailList.ForEach(x =>
+            {
+                x.usp_usr_userName = dataModel.usr_username;
+            });
+
+            if (dataDetailList.Count > 0)
+            {
+                var saveResultList = await userLoginService.SavePermissionDataAsync(dataDetailList);
+            }
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save data complete.");
+
+            historyResultList = await userLoginService.GetHistoryAsync(dataModel.usr_username);
+
+            dataModel.usr_status = "E";
+            changePassword = false;
+            txtReadOnly = true;
+            txtPassword = "";
+            txtPasswordConfirm = "";
+
+            showLoading = false;
+
+            StateHasChanged();
+        }
+    }
+}

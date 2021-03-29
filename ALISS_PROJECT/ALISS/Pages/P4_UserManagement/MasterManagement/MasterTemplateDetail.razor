@@ -1,0 +1,1756 @@
+﻿@page "/MasterManagement/MasterTemplate/DataDetail"
+@page "/MasterManagement/MasterTemplate/DataDetail/{mst_code}"
+
+@inject IJSRuntime jsRuntime
+@inject NavigationManager navigationManager
+@inject DialogService dialogService
+
+@inject ConfigDataService configDataService
+@inject MasterTemplateService masterTemplateService
+@inject WardTypeService wardTypeService
+@inject SpecimenService specimenService
+@inject AntibioticService antibioticService
+@inject OrganismService organismService
+@inject QCRangeService qcrangeService
+@inject ExpertRuleService expertRuleService
+@inject WHONETColumnService whonetColumnService
+
+<div>
+    <div class="divHead">
+        Master Template - @masterTemplateData.mst_version (@masterTemplateData.mst_code)
+    </div>
+</div>
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>
+
+    <Loading ShowModel="true" />
+}
+else
+{
+    <EditForm Model="masterTemplateData" OnInvalidSubmit="HandleInvalidSubmit" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+
+       <div class="container inputArea">
+           <div class="row">
+               <InputBox ConfigData="@(configData.Get_ConfigRow("mst_code"))">
+                   <RadzenTextBox @bind-Value="@masterTemplateData.mst_code" ReadOnly="true" />
+               </InputBox>
+               <InputBox ConfigData="@(configData.Get_ConfigRow("mst_version"))">
+                   <RadzenTextBox @bind-Value="@masterTemplateData.mst_version" Placeholder="@(configData.Get_PlaceHolder("mst_version"))" />
+                   <ValidationMessage For="@(() => masterTemplateData.mst_version)" />
+               </InputBox>
+               <InputBox ConfigData="@(configData.Get_ConfigRow("mst_active"))">
+                   <RadzenRadioButtonList @bind-Value="masterTemplateData.mst_active" TValue="bool" Disabled="true">
+                       <Items>
+                           <RadzenRadioButtonListItem Text="Active" Value="true" />
+                           <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                       </Items>
+                   </RadzenRadioButtonList>
+               </InputBox>
+               <InputBox ConfigData="@(configData.Get_ConfigRow("mst_date_from"))">
+                   <RadzenDatePicker @bind-Value="@masterTemplateData.mst_date_from" DateFormat="dd/MM/yyyy" ReadOnly="true" Style="width:100%;" />
+                   <ValidationMessage For="@(() => masterTemplateData.mst_date_from)" />
+               </InputBox>
+           </div>
+
+            <br />
+
+            <div class="row justify-content-between buttonArea">
+                <div class="col-auto">
+                    <RadzenButton class="btnCancel" Text="Cancel" Click="RedirectToInbox" />
+                </div>
+                <div class="col-auto">
+                    @*<RadzenButton Icon="save" class="btnSave" Text="Save" Click="HandleValidSubmit" />*@
+                    <RadzenButton Icon="save" class="btnSave" ButtonType="ButtonType.Submit" Text="Save" />
+                </div>
+            </div>
+        </div>
+    </EditForm>
+
+    <hr />
+
+    <div>
+        <RadzenTabs>
+            <Tabs>
+                <RadzenTabsItem Text="Ward">
+                    <div class="container">
+                        <div class="row justify-content-end">
+                            <div class="col-auto buttonArea">
+                                <RadzenButton Icon="add" class="btnAdd" Text="Add Ward" Click="@(() => ShowPopupDialogWardType(null))" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <br />
+
+                    <div style="width:90%;margin:0px auto;">
+                        <div class="container">
+                            <div class="row justify-content-end">
+                                <div class="col-auto">
+                                    <label>Rows : </label>
+                                </div>
+                                <div class="col-auto">
+                                    <RadzenDropDown @bind-Value="wardTypeGrid.PageSize" TValue="int" AllowFiltering="true" Data="wardTypeGrid.PageSizeOption" Change="SearchInboxDataWardType" Style="width:50px" />
+                                </div>
+                            </div>
+                        </div>
+                        <RadzenGrid TItem="WardTypeDTO" @ref="wardTypeGrid.radzenGrid" Data="wardTypeDatas" PageSize="wardTypeGrid.PageSize" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                            <Columns>
+                                <RadzenGridColumn TItem="WardTypeDTO" Property="" Title="" Width="50px" Filterable="false" Context="Data">
+                                    <Template>
+                                        <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowPopupDialogWardType(Data))" />
+                                    </Template>
+                                </RadzenGridColumn>
+                                <RadzenGridColumn TItem="WardTypeDTO" Property="wrd_code" Title="@configData.Get_Label("wrd_code")">
+                                    <FooterTemplate>
+                                        <label title="@wardTypeGrid.FooterLabelString">@wardTypeGrid.FooterLabelString</label>
+                                    </FooterTemplate>
+                                </RadzenGridColumn>
+                                <RadzenGridColumn TItem="WardTypeDTO" Property="wrd_name" Title="@configData.Get_Label("wrd_name")" />
+                                <RadzenGridColumn TItem="WardTypeDTO" Property="wrd_desc" Title="@configData.Get_Label("wrd_desc")" />
+                                <RadzenGridColumn TItem="WardTypeDTO" Property="wrd_active" Title="@configData.Get_Label("wrd_active")" Context="data">
+                                    <Template>
+                                        @if (data.wrd_active == true)
+                                        {
+                                            <label>Active</label>
+                                        }
+                                        else
+                                        {
+                                            <label>Inactive</label>
+                                        }
+                                    </Template>
+                                </RadzenGridColumn>
+                            </Columns>
+                        </RadzenGrid>
+                    </div>
+
+                    @if (showPopupDialogWardType)
+                    {
+                        <div class="modal" tabindex="-1" style="display:block" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+
+                                    </div>
+                                    <div class="modal-body">
+                                        <EditForm Model="@wardTypeModel" OnInvalidSubmit="HandleInvalidSubmitWardType" OnValidSubmit="HandleValidSubmitWardType">
+                                            <DataAnnotationsValidator />
+
+                                            <div class="container inputArea">
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("wrd_code"))"classColumn="col-xl-12">
+                                                        @if (wardTypeModel.wrd_status == "N")
+                                                        {
+                                                            <RadzenTextBox @bind-Value="@wardTypeModel.wrd_code" Placeholder="@(configData.Get_PlaceHolder("wrd_code"))" />
+                                                            <ValidationMessage For="@(() => wardTypeModel.wrd_code)" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <RadzenTextBox @bind-Value="@wardTypeModel.wrd_code" ReadOnly="true" />
+                                                        }
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("wrd_name"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@wardTypeModel.wrd_name" />
+                                                        <ValidationMessage For="@(() => wardTypeModel.wrd_name)" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("wrd_desc"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@wardTypeModel.wrd_desc" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("wrd_active"))"classColumn="col-xl-12">
+                                                        <RadzenRadioButtonList @bind-Value="@wardTypeModel.wrd_active" TValue="bool">
+                                                            <Items>
+                                                                <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                                                <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                                            </Items>
+                                                        </RadzenRadioButtonList>
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-xl-12">
+                                                        <div class="row justify-content-center divGroup buttonArea">
+                                                            <div class="col-auto">
+                                                                <RadzenButton class="btnCancel" Text="Cancel" Click="ClosePopupDialogWardType" />
+                                                            </div>
+                                                            <div class="col-auto">
+                                                                <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Save" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </EditForm>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <br />
+                </RadzenTabsItem>
+                <RadzenTabsItem Text="Specimen">
+                    <div class="container">
+                        <div class="row justify-content-end">
+                            <div class="col-auto buttonArea">
+                                <RadzenButton Icon="add" class="btnAdd" Text="Add Specimen" Click="@(() => ShowPopupDialogSpecimen(null))" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <br />
+
+                    <div style="width:90%;margin:0px auto;">
+                        <div class="container">
+                            <div class="row justify-content-end">
+                                <div class="col-auto">
+                                    <label>Rows : </label>
+                                </div>
+                                <div class="col-auto">
+                                    <RadzenDropDown @bind-Value="specimenGrid.PageSize" TValue="int" AllowFiltering="true" Data="specimenGrid.PageSizeOption" Change="SearchInboxDataSpecimen" Style="width:50px" />
+                                </div>
+                            </div>
+                        </div>
+                        <RadzenGrid TItem="SpecimenDTO" @ref="specimenGrid.radzenGrid" Data="@specimenDatas" PageSize="specimenGrid.PageSize" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                            <Columns>
+                                <RadzenGridColumn TItem="SpecimenDTO" Property="" Title="" Width="50px" Filterable="false" Context="Data">
+                                    <Template>
+                                        <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowPopupDialogSpecimen(Data))" />
+                                    </Template>
+                                </RadzenGridColumn>
+                                <RadzenGridColumn TItem="SpecimenDTO" Property="spc_code" Title="@configData.Get_Label("spc_code")">
+                                    <FooterTemplate>
+                                        <label title="@specimenGrid.FooterLabelString">@specimenGrid.FooterLabelString</label>
+                                    </FooterTemplate>
+                                </RadzenGridColumn>
+                                <RadzenGridColumn TItem="SpecimenDTO" Property="spc_name" Title="@configData.Get_Label("spc_name")" />
+                                <RadzenGridColumn TItem="SpecimenDTO" Property="spc_active" Title="@configData.Get_Label("spc_active")" Context="data">
+                                    <Template>
+                                        @if (data.spc_active == true)
+                                        {
+                                            <label>Active</label>
+                                        }
+                                        else
+                                        {
+                                            <label>Inactive</label>
+                                        }
+                                    </Template>
+                                </RadzenGridColumn>
+                            </Columns>
+                        </RadzenGrid>
+                    </div>
+
+                    @if (showPopupDialogSpecimen)
+                    {
+                        <div class="modal" tabindex="-1" style="display:block" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+
+                                    </div>
+                                    <div class="modal-body">
+                                        <EditForm Model="@specimenModel" OnInvalidSubmit="HandleInvalidSubmitSpecimen" OnValidSubmit="HandleValidSubmitSpecimen">
+                                            <DataAnnotationsValidator />
+
+                                            <div class="container inputArea">
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("spc_code"))"classColumn="col-xl-12">
+                                                        @if (specimenModel.spc_status == "N")
+                                                        {
+                                                            <RadzenTextBox @bind-Value="@specimenModel.spc_code" Placeholder="@(configData.Get_PlaceHolder("spc_code"))" />
+                                                            <ValidationMessage For="@(() => specimenModel.spc_code)" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <RadzenTextBox @bind-Value="@specimenModel.spc_code" ReadOnly="true" />
+                                                        }
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("spc_name"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@specimenModel.spc_name" />
+                                                        <ValidationMessage For="@(() => specimenModel.spc_name)" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("spc_active"))"classColumn="col-xl-12">
+                                                        <RadzenRadioButtonList @bind-Value="@specimenModel.spc_active" TValue="bool">
+                                                            <Items>
+                                                                <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                                                <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                                            </Items>
+                                                        </RadzenRadioButtonList>
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-xl-12">
+                                                        <div class="row justify-content-center divGroup buttonArea">
+                                                            <div class="col-auto">
+                                                                <RadzenButton class="btnCancel" Text="Cancel" Click="ClosePopupDialogSpecimen" />
+                                                            </div>
+                                                            <div class="col-auto">
+                                                                <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Save" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </EditForm>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <br />
+                </RadzenTabsItem>
+                <RadzenTabsItem Text="Antibiotic">
+                    <div class="container">
+                        <div class="row justify-content-end">
+                            <div class="col-auto buttonArea">
+                                <RadzenButton Icon="add" class="btnAdd" Text="Add Antibiotic" Click="@(() => ShowPopupDialogAntibiotic(null))" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <br />
+
+                    <div style="width:90%;margin:0px auto;">
+                        <div class="container">
+                            <div class="row justify-content-end">
+                                <div class="col-auto">
+                                    <label>Rows : </label>
+                                </div>
+                                <div class="col-auto">
+                                    <RadzenDropDown @bind-Value="antibioticGrid.PageSize" TValue="int" AllowFiltering="true" Data="antibioticGrid.PageSizeOption" Change="SearchInboxDataAntibiotic" Style="width:50px" />
+                                </div>
+                            </div>
+                        </div>
+                        <RadzenGrid TItem="AntibioticDTO" @ref="antibioticGrid.radzenGrid" Data="@antibioticDatas" PageSize="antibioticGrid.PageSize" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                            <Columns>
+                                <RadzenGridColumn TItem="AntibioticDTO" Property="" Title="" Width="50px" Filterable="false" Context="Data">
+                                    <Template>
+                                        <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowPopupDialogAntibiotic(Data))" />
+                                    </Template>
+                                </RadzenGridColumn>
+                                <RadzenGridColumn TItem="AntibioticDTO" Property="ant_code" Title="@configData.Get_Label("ant_code")">
+                                    <FooterTemplate>
+                                        <label title="@antibioticGrid.FooterLabelString">@antibioticGrid.FooterLabelString</label>
+                                    </FooterTemplate>
+                                </RadzenGridColumn>
+                                <RadzenGridColumn TItem="AntibioticDTO" Property="ant_name" Title="@configData.Get_Label("ant_name")" />
+                                <RadzenGridColumn TItem="AntibioticDTO" Property="ant_mst_GUIDELINES" Title="@configData.Get_Label("ant_mst_GUIDELINES")" />
+                                <RadzenGridColumn TItem="AntibioticDTO" Property="ant_mst_ABX_NUMBER" Title="@configData.Get_Label("ant_mst_ABX_NUMBER")" />
+                                <RadzenGridColumn TItem="AntibioticDTO" Property="ant_mst_POTENCY" Title="@configData.Get_Label("ant_mst_POTENCY")" />
+                                <RadzenGridColumn TItem="AntibioticDTO" Property="ant_active" Title="@configData.Get_Label("ant_active")" Context="data">
+                                    <Template>
+                                        @if (data.ant_active == true)
+                                        {
+                                            <label>Active</label>
+                                        }
+                                        else
+                                        {
+                                            <label>Inactive</label>
+                                        }
+                                    </Template>
+                                </RadzenGridColumn>
+                            </Columns>
+                        </RadzenGrid>
+                    </div>
+
+                    @if (showPopupDialogAntibiotic)
+                    {
+                        <div class="modal" tabindex="-1" style="display:block" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+
+                                    </div>
+                                    <div class="modal-body">
+                                        <EditForm Model="@antibioticModel" OnInvalidSubmit="HandleInvalidSubmitAntibiotic" OnValidSubmit="HandleValidSubmitAntibiotic">
+                                            <DataAnnotationsValidator />
+
+                                            <div class="container inputArea">
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("ant_code"))"classColumn="col-xl-12">
+                                                        @if (antibioticModel.ant_status == "N")
+                                                        {
+                                                            <RadzenTextBox @bind-Value="@antibioticModel.ant_code" Placeholder="@(configData.Get_PlaceHolder("ant_code"))" />
+                                                            <ValidationMessage For="@(() => antibioticModel.ant_code)" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <RadzenTextBox @bind-Value="@antibioticModel.ant_code" ReadOnly="true" />
+                                                        }
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("ant_name"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@antibioticModel.ant_name" />
+                                                        <ValidationMessage For="@(() => antibioticModel.ant_name)" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("ant_mst_GUIDELINES"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@antibioticModel.ant_mst_GUIDELINES" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("ant_mst_ABX_NUMBER"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@antibioticModel.ant_mst_ABX_NUMBER" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("ant_mst_POTENCY"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@antibioticModel.ant_mst_POTENCY" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("ant_active"))"classColumn="col-xl-12">
+                                                        <RadzenRadioButtonList @bind-Value="antibioticModel.ant_active" TValue="bool">
+                                                            <Items>
+                                                                <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                                                <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                                            </Items>
+                                                        </RadzenRadioButtonList>
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-12">
+                                                        <div class="row justify-content-center divGroup buttonArea">
+                                                            <div class="col-auto">
+                                                                <RadzenButton class="btnCancel" Text="Cancel" Click="ClosePopupDialogAntibiotic" />
+                                                            </div>
+                                                            <div class="col-auto">
+                                                                <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Save" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </EditForm>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <br />
+                </RadzenTabsItem>
+                <RadzenTabsItem Text="Organism">
+                    <div class="container">
+                        <div class="row justify-content-end">
+                            <div class="col-auto buttonArea">
+                                <RadzenButton Icon="add" class="btnAdd" Text="Add Organism" Click="@(() => ShowPopupDialogOrganism(null))" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <br />
+
+                    <div style="width:90%;margin:0px auto;">
+                        <div class="container">
+                            <div class="row justify-content-end">
+                                <div class="col-auto">
+                                    <label>Rows : </label>
+                                </div>
+                                <div class="col-auto">
+                                    <RadzenDropDown @bind-Value="organismGrid.PageSize" TValue="int" AllowFiltering="true" Data="organismGrid.PageSizeOption" Change="SearchInboxDataOrganism" Style="width:50px" />
+                                </div>
+                            </div>
+                        </div>
+                        <RadzenGrid TItem="OrganismDTO" @ref="organismGrid.radzenGrid" Data="@organismDatas" PageSize="organismGrid.PageSize" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                            <Columns>
+                                <RadzenGridColumn TItem="OrganismDTO" Property="" Title="" Width="50px" Filterable="false" Context="Data">
+                                    <Template>
+                                        <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowPopupDialogOrganism(Data))" />
+                                    </Template>
+                                </RadzenGridColumn>
+                                <RadzenGridColumn TItem="OrganismDTO" Property="org_code" Title="@configData.Get_Label("org_code")">
+                                    <FooterTemplate>
+                                        <label title="@organismGrid.FooterLabelString">@organismGrid.FooterLabelString</label>
+                                    </FooterTemplate>
+                                </RadzenGridColumn>
+                                <RadzenGridColumn TItem="OrganismDTO" Property="org_mst_ORG" Title="@configData.Get_Label("org_mst_ORG")" />
+                                <RadzenGridColumn TItem="OrganismDTO" Property="org_mst_GRAM" Title="@configData.Get_Label("org_mst_GRAM")" />
+                                <RadzenGridColumn TItem="OrganismDTO" Property="org_mst_ORGANISM" Title="@configData.Get_Label("org_mst_ORGANISM")" />
+                                <RadzenGridColumn TItem="OrganismDTO" Property="org_mst_STATUS" Title="@configData.Get_Label("org_mst_STATUS")" />
+                                <RadzenGridColumn TItem="OrganismDTO" Property="org_active" Title="@configData.Get_Label("org_active")" Context="data">
+                                    <Template>
+                                        @if (data.org_active == true)
+                                        {
+                                            <label>Active</label>
+                                        }
+                                        else
+                                        {
+                                            <label>Inactive</label>
+                                        }
+                                    </Template>
+                                </RadzenGridColumn>
+                            </Columns>
+                        </RadzenGrid>
+                    </div>
+
+
+                    @if (showPopupDialogOrganism)
+                    {
+                        <div class="modal" tabindex="-1" style="display:block" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+
+                                    </div>
+                                    <div class="modal-body">
+                                        <EditForm Model="@organismModel" OnInvalidSubmit="HandleInvalidSubmitOrganism" OnValidSubmit="HandleValidSubmitOrganism">
+                                            <DataAnnotationsValidator />
+
+                                            <div class="container inputArea">
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("org_code"))"classColumn="col-xl-12">
+                                                        @if (organismModel.org_status == "N")
+                                                        {
+                                                            <RadzenTextBox @bind-Value="@organismModel.org_code" Placeholder="@(configData.Get_PlaceHolder("org_code"))" />
+                                                            <ValidationMessage For="@(() => organismModel.org_code)" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <RadzenTextBox @bind-Value="@organismModel.org_code" ReadOnly="true" />
+                                                        }
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("org_mst_ORGANISM"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@organismModel.org_mst_ORGANISM" />
+                                                        <ValidationMessage For="@(() => organismModel.org_mst_ORGANISM)" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("org_mst_ORG"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@organismModel.org_mst_ORG" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("org_mst_GRAM"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@organismModel.org_mst_GRAM" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("org_mst_STATUS"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@organismModel.org_mst_STATUS" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("org_active"))"classColumn="col-xl-12">
+                                                        <RadzenRadioButtonList @bind-Value="@organismModel.org_active" TValue="bool">
+                                                            <Items>
+                                                                <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                                                <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                                            </Items>
+                                                        </RadzenRadioButtonList>
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-xl-12">
+                                                        <div class="row justify-content-center divGroup buttonArea">
+                                                            <div class="col-auto">
+                                                                <RadzenButton class="btnCancel" Text="Cancel" Click="ClosePopupDialogOrganism" />
+                                                            </div>
+                                                            <div class="col-auto">
+                                                                <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Save" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </EditForm>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <br />
+                </RadzenTabsItem>
+                <RadzenTabsItem Text="QCRange">
+                    <div class="container">
+                        <div class="row justify-content-end">
+                            <div class="col-auto buttonArea">
+                                <RadzenButton Icon="add" class="btnAdd" Text="Add QCRange" Click="@(() => ShowPopupDialogQCRange(null))" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <br />
+
+                    <div style="width:90%;margin:0px auto;">
+                        <div class="container">
+                            <div class="row justify-content-end">
+                                <div class="col-auto">
+                                    <label>Rows : </label>
+                                </div>
+                                <div class="col-auto">
+                                    <RadzenDropDown @bind-Value="qcrangeGrid.PageSize" TValue="int" AllowFiltering="true" Data="qcrangeGrid.PageSizeOption" Change="SearchInboxDataQCRange" Style="width:50px" />
+                                </div>
+                            </div>
+                        </div>
+                        <RadzenGrid TItem="QCRangeDTO" @ref="qcrangeGrid.radzenGrid" Data="@qcrangeDatas" PageSize="qcrangeGrid.PageSize" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                            <Columns>
+                                <RadzenGridColumn TItem="QCRangeDTO" Property="" Title="" Width="50px" Filterable="false" Context="Data">
+                                    <Template>
+                                        <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowPopupDialogQCRange(Data))" />
+                                    </Template>
+                                </RadzenGridColumn>
+                                <RadzenGridColumn TItem="QCRangeDTO" Property="qcr_mst_GUIDELINE" Title="@configData.Get_Label("qcr_mst_GUIDELINE")">
+                                    <FooterTemplate>
+                                        <label title="@qcrangeGrid.FooterLabelString">@qcrangeGrid.FooterLabelString</label>
+                                    </FooterTemplate>
+                                </RadzenGridColumn>
+                                <RadzenGridColumn TItem="QCRangeDTO" Property="qcr_mst_ORGANISM" Title="@configData.Get_Label("qcr_mst_ORGANISM")" />
+                                <RadzenGridColumn TItem="QCRangeDTO" Property="qcr_mst_ANTIBIOTIC" Title="@configData.Get_Label("qcr_mst_ANTIBIOTIC")" />
+                                <RadzenGridColumn TItem="QCRangeDTO" Property="qcr_mst_QC_RANGE" Title="@configData.Get_Label("qcr_mst_QC_RANGE")" />
+                                <RadzenGridColumn TItem="QCRangeDTO" Property="qcr_active" Title="@configData.Get_Label("qcr_active")" Context="data">
+                                    <Template>
+                                        @if (data.qcr_active == true)
+                                        {
+                                            <label>Active</label>
+                                        }
+                                        else
+                                        {
+                                            <label>Inactive</label>
+                                        }
+                                    </Template>
+                                </RadzenGridColumn>
+                            </Columns>
+                        </RadzenGrid>
+                    </div>
+
+                    @if (showPopupDialogQCRange)
+                    {
+                        <div class="modal" tabindex="-1" style="display:block" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+
+                                    </div>
+                                    <div class="modal-body">
+                                        <EditForm Model="@qcRangeModel" OnInvalidSubmit="HandleInvalidSubmitQCRange" OnValidSubmit="HandleValidSubmitQCRange">
+                                            <DataAnnotationsValidator />
+
+                                            <div class="container inputArea">
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("qcr_code"))" classColumn="col-xl-12">
+                                                        @if (qcRangeModel.qcr_status == "N")
+                                                        {
+                                                            <RadzenTextBox @bind-Value="@qcRangeModel.qcr_code" Placeholder="@(configData.Get_PlaceHolder("qcr_code"))" />
+                                                            <ValidationMessage For="@(() => qcRangeModel.qcr_code)" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <RadzenTextBox @bind-Value="@qcRangeModel.qcr_code" ReadOnly="true" />
+                                                        }
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("qcr_mst_GUIDELINE"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@qcRangeModel.qcr_mst_GUIDELINE" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("qcr_mst_ORGANISM"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@qcRangeModel.qcr_mst_ORGANISM" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("qcr_mst_ANTIBIOTIC"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@qcRangeModel.qcr_mst_ANTIBIOTIC" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("qcr_active"))"classColumn="col-xl-12">
+                                                        <RadzenRadioButtonList @bind-Value="@qcRangeModel.qcr_active" TValue="bool">
+                                                            <Items>
+                                                                <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                                                <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                                            </Items>
+                                                        </RadzenRadioButtonList>
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-xl-12">
+                                                        <div class="row justify-content-center divGroup buttonArea">
+                                                            <div class="col-auto">
+                                                                <RadzenButton class="btnCancel" Text="Cancel" Click="ClosePopupDialogQCRange" />
+                                                            </div>
+                                                            <div class="col-auto">
+                                                                <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Save" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </EditForm>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <br />
+                </RadzenTabsItem>
+                <RadzenTabsItem Text="Expert Rules">
+                    <div class="container">
+                        <div class="row justify-content-end">
+                            <div class="col-auto buttonArea">
+                                <RadzenButton Icon="add" class="btnAdd" Text="Add Expert Rules" Click="@(() => ShowPopupDialogExpertRule(null))" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <br />
+
+                    <div style="width:90%;margin:0px auto;">
+                        <div class="container">
+                            <div class="row justify-content-end">
+                                <div class="col-auto">
+                                    <label>Rows : </label>
+                                </div>
+                                <div class="col-auto">
+                                    <RadzenDropDown @bind-Value="expertRuleGrid.PageSize" TValue="int" AllowFiltering="true" Data="expertRuleGrid.PageSizeOption" Change="SearchInboxDataExpertRule" Style="width:50px" />
+                                </div>
+                            </div>
+                        </div>
+                        <RadzenGrid TItem="ExpertRuleDTO" @ref="expertRuleGrid.radzenGrid" Data="@expertRuleDatas" PageSize="expertRuleGrid.PageSize" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                            <Columns>
+                                <RadzenGridColumn TItem="ExpertRuleDTO" Property="" Title="" Width="50px" Filterable="false" Context="Data">
+                                    <Template>
+                                        <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowPopupDialogExpertRule(Data))" />
+                                    </Template>
+                                </RadzenGridColumn>
+                                <RadzenGridColumn TItem="ExpertRuleDTO" Property="exr_code" Title="@configData.Get_Label("exr_code")">
+                                    <FooterTemplate>
+                                        <label title="@expertRuleGrid.FooterLabelString">@expertRuleGrid.FooterLabelString</label>
+                                    </FooterTemplate>
+                                </RadzenGridColumn>
+                                <RadzenGridColumn TItem="ExpertRuleDTO" Property="exr_mst_CATEGORY" Title="@configData.Get_Label("exr_mst_CATEGORY")" />
+                                <RadzenGridColumn TItem="ExpertRuleDTO" Property="exr_mst_PRIORITY" Title="@configData.Get_Label("exr_mst_PRIORITY")" />
+                                <RadzenGridColumn TItem="ExpertRuleDTO" Property="exr_mst_ORGANISMS" Title="@configData.Get_Label("exr_mst_ORGANISMS")" />
+                                <RadzenGridColumn TItem="ExpertRuleDTO" Property="exr_mst_DESCRIPTION" Title="@configData.Get_Label("exr_mst_DESCRIPTION")" />
+                                <RadzenGridColumn TItem="ExpertRuleDTO" Property="exr_active" Title="@configData.Get_Label("exr_active")" Context="data">
+                                    <Template>
+                                        @if (data.exr_active == true)
+                                        {
+                                            <label>Active</label>
+                                        }
+                                        else
+                                        {
+                                            <label>Inactive</label>
+                                        }
+                                    </Template>
+                                </RadzenGridColumn>
+                            </Columns>
+                        </RadzenGrid>
+                    </div>
+
+                    @if (showPopupDialogExpertRule)
+                    {
+                        <div class="modal" tabindex="-1" style="display:block" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+
+                                    </div>
+                                    <div class="modal-body">
+                                        <EditForm Model="@expertRuleModel" OnInvalidSubmit="HandleInvalidSubmitExpertRule" OnValidSubmit="HandleValidSubmitExpertRule">
+                                            <DataAnnotationsValidator />
+
+                                            <div class="container inputArea">
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("exr_code"))" classColumn="col-xl-12">
+                                                        @if (expertRuleModel.exr_status == "N")
+                                                        {
+                                                            <RadzenTextBox @bind-Value="@expertRuleModel.exr_code" Placeholder="@(configData.Get_PlaceHolder("qcr_code"))" />
+                                                            <ValidationMessage For="@(() => expertRuleModel.exr_code)" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <RadzenTextBox @bind-Value="@expertRuleModel.exr_code" ReadOnly="true" />
+                                                        }
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("exr_mst_CATEGORY"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@expertRuleModel.exr_mst_CATEGORY" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("exr_mst_PRIORITY"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@expertRuleModel.exr_mst_PRIORITY" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("exr_mst_ORGANISMS"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@expertRuleModel.exr_mst_ORGANISMS" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("exr_mst_DESCRIPTION"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@expertRuleModel.exr_mst_DESCRIPTION" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("exr_active"))"classColumn="col-xl-12">
+                                                        <RadzenRadioButtonList @bind-Value="@expertRuleModel.exr_active" TValue="bool">
+                                                            <Items>
+                                                                <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                                                <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                                            </Items>
+                                                        </RadzenRadioButtonList>
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-xl-12">
+                                                        <div class="row justify-content-center divGroup buttonArea">
+                                                            <div class="col-auto">
+                                                                <RadzenButton class="btnCancel" Text="Cancel" Click="ClosePopupDialogExpertRule" />
+                                                            </div>
+                                                            <div class="col-auto">
+                                                                <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Save" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </EditForm>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <br />
+                </RadzenTabsItem>
+                <RadzenTabsItem Text="WHONET Column">
+                    <div class="container">
+                        <div class="row justify-content-end">
+                            <div class="col-auto buttonArea">
+                                <RadzenButton Icon="add" class="btnAdd" Text="Add WHONET Column" Click="@(() => ShowPopupDialogWHONETColumn(null))" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <br />
+
+                    <div style="width:90%;margin:0px auto;">
+                        <div class="container">
+                            <div class="row justify-content-end">
+                                <div class="col-auto">
+                                    <label>Rows : </label>
+                                </div>
+                                <div class="col-auto">
+                                    <RadzenDropDown @bind-Value="whonetColumnGrid.PageSize" TValue="int" AllowFiltering="true" Data="whonetColumnGrid.PageSizeOption" Change="SearchInboxDataWHONETColumn" Style="width:50px" />
+                                </div>
+                            </div>
+                        </div>
+                        <RadzenGrid TItem="WHONETColumnDTO" @ref="whonetColumnGrid.radzenGrid" Data="@whonetColumnDatas" PageSize="whonetColumnGrid.PageSize" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                            <Columns>
+                                <RadzenGridColumn TItem="WHONETColumnDTO" Property="" Title="" Width="50px" Filterable="false" Context="Data">
+                                    <Template>
+                                        <RadzenButton Icon="edit" Style="background: #0A6839" Click="@(() => ShowPopupDialogWHONETColumn(Data))" />
+                                    </Template>
+                                </RadzenGridColumn>
+                                <RadzenGridColumn TItem="WHONETColumnDTO" Property="wnc_code" Title="@configData.Get_Label("wnc_code")">
+                                    <FooterTemplate>
+                                        <label title="@whonetColumnGrid.FooterLabelString">@whonetColumnGrid.FooterLabelString</label>
+                                    </FooterTemplate>
+                                </RadzenGridColumn>
+                                <RadzenGridColumn TItem="WHONETColumnDTO" Property="wnc_name" Title="@configData.Get_Label("wnc_name")" />
+                                <RadzenGridColumn TItem="WHONETColumnDTO" Property="wnc_data_type" Title="@configData.Get_Label("wnc_data_type")" />
+                                <RadzenGridColumn TItem="WHONETColumnDTO" Property="wnc_date_format" Title="@configData.Get_Label("wnc_date_format")" />
+                                <RadzenGridColumn TItem="WHONETColumnDTO" Property="wnc_encrypt" Title="@configData.Get_Label("wnc_encrypt")" Context="data">
+                                    <Template>
+                                        @if (data.wnc_encrypt == true)
+                                        {
+                                            <label>Encrypt</label>
+                                        }
+                                        else
+                                        {
+                                            <label>No Encrypt</label>
+                                        }
+                                    </Template>
+                                </RadzenGridColumn>
+                                <RadzenGridColumn TItem="WHONETColumnDTO" Property="wnc_active" Title="@configData.Get_Label("wnc_active")" Context="data">
+                                    <Template>
+                                        @if (data.wnc_active == true)
+                                        {
+                                            <label>Active</label>
+                                        }
+                                        else
+                                        {
+                                            <label>Inactive</label>
+                                        }
+                                    </Template>
+                                </RadzenGridColumn>
+                            </Columns>
+                        </RadzenGrid>
+                    </div>
+
+                    @if (showPopupDialogWHONETColumn)
+                    {
+                        <div class="modal" tabindex="-1" style="display:block" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+
+                                    </div>
+                                    <div class="modal-body">
+                                        <EditForm Model="@whonetColumnModel" OnInvalidSubmit="HandleInvalidSubmitWHONETColumn" OnValidSubmit="HandleValidSubmitWHONETColumn">
+                                            <DataAnnotationsValidator />
+
+                                            <div class="container inputArea">
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("wnc_code"))"classColumn="col-xl-12">
+                                                        @if (whonetColumnModel.wnc_status == "N")
+                                                        {
+                                                            <RadzenTextBox @bind-Value="@whonetColumnModel.wnc_code" Placeholder="@(configData.Get_PlaceHolder("qcr_code"))" />
+                                                            <ValidationMessage For="@(() => whonetColumnModel.wnc_code)" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <RadzenTextBox @bind-Value="@whonetColumnModel.wnc_code" ReadOnly="true" />
+                                                        }
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("wnc_name"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@whonetColumnModel.wnc_name" />
+                                                        <ValidationMessage For="@(() => whonetColumnModel.wnc_name)" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("wnc_data_type"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@whonetColumnModel.wnc_data_type" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("wnc_date_format"))"classColumn="col-xl-12">
+                                                        <RadzenTextBox @bind-Value="@whonetColumnModel.wnc_date_format" />
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <InputBox ConfigData="@(configData.Get_ConfigRow("wnc_encrypt"))"classColumn="col-xl-12">
+                                                        <RadzenRadioButtonList @bind-Value="@whonetColumnModel.wnc_encrypt" TValue="bool">
+                                                            <Items>
+                                                                <RadzenRadioButtonListItem Text="NO" Value="true" />
+                                                                <RadzenRadioButtonListItem Text="YES" Value="false" />
+                                                            </Items>
+                                                        </RadzenRadioButtonList>
+                                                    </InputBox>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-xl-12">
+                                                        <div class="row justify-content-center divGroup">
+                                                            <div class="@classLabel">
+                                                                <LabelBox inputLabel="Status" />
+                                                            </div>
+                                                            <div class="@classInput">
+                                                                <RadzenRadioButtonList @bind-Value="@whonetColumnModel.wnc_active" TValue="bool">
+                                                                    <Items>
+                                                                        <RadzenRadioButtonListItem Text="Active" Value="true" />
+                                                                        <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                                                                    </Items>
+                                                                </RadzenRadioButtonList>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-xl-12">
+                                                        <div class="row justify-content-center divGroup buttonArea">
+                                                            <div class="col-auto">
+                                                                <RadzenButton class="btnCancel" Text="Cancel" Click="ClosePopupDialogWHONETColumn" />
+                                                            </div>
+                                                            <div class="col-auto">
+                                                                <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Save" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </EditForm>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <br />
+                </RadzenTabsItem>
+            </Tabs>
+        </RadzenTabs>
+
+    </div>
+
+    <hr />
+
+    <HistoryLog HistoryList="historyResultList" />
+
+    <Loading ShowModel="showLoading" />
+}
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+    [Parameter] public string mst_code { get; set; }
+
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private bool showLoading;
+
+    RadzenGridCustom<WardTypeDTO> wardTypeGrid = new RadzenGridCustom<WardTypeDTO>();
+    RadzenGridCustom<SpecimenDTO> specimenGrid = new RadzenGridCustom<SpecimenDTO>();
+    RadzenGridCustom<AntibioticDTO> antibioticGrid = new RadzenGridCustom<AntibioticDTO>();
+    RadzenGridCustom<OrganismDTO> organismGrid = new RadzenGridCustom<OrganismDTO>();
+    RadzenGridCustom<QCRangeDTO> qcrangeGrid = new RadzenGridCustom<QCRangeDTO>();
+    RadzenGridCustom<ExpertRuleDTO> expertRuleGrid = new RadzenGridCustom<ExpertRuleDTO>();
+    RadzenGridCustom<WHONETColumnDTO> whonetColumnGrid = new RadzenGridCustom<WHONETColumnDTO>();
+
+    private MasterTemplateDTO masterTemplateData = new MasterTemplateDTO();
+    private List<WardTypeDTO> wardTypeDatas;
+    private List<SpecimenDTO> specimenDatas;
+    private List<AntibioticDTO> antibioticDatas;
+    private List<OrganismDTO> organismDatas;
+    private List<QCRangeDTO> qcrangeDatas;
+    private List<ExpertRuleDTO> expertRuleDatas;
+    private List<WHONETColumnDTO> whonetColumnDatas;
+
+    private WardTypeDTO wardTypeModel = new WardTypeDTO();
+    private SpecimenDTO specimenModel = new SpecimenDTO();
+    private AntibioticDTO antibioticModel = new AntibioticDTO();
+    private OrganismDTO organismModel = new OrganismDTO();
+    private QCRangeDTO qcRangeModel = new QCRangeDTO();
+    private ExpertRuleDTO expertRuleModel = new ExpertRuleDTO();
+    private WHONETColumnDTO whonetColumnModel = new WHONETColumnDTO();
+
+    private List<LogProcessDTO> historyResultList;
+
+    private bool showPopupDialogWardType = false;
+    private bool showPopupDialogSpecimen = false;
+    private bool showPopupDialogAntibiotic = false;
+    private bool showPopupDialogOrganism = false;
+    private bool showPopupDialogQCRange = false;
+    private bool showPopupDialogExpertRule = false;
+    private bool showPopupDialogWHONETColumn = false;
+
+    private bool pageLoading { get { return (wardTypeDatas == null || specimenDatas == null || antibioticDatas == null || organismDatas == null || qcrangeDatas == null || expertRuleDatas == null || whonetColumnDatas == null || historyResultList == null); } }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0202") == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = "MNU_0202" });
+            if (mainLayout.loginUser.rol_code == "ROL_00")
+            {
+                configData.ConfigDTOList.ForEach(x =>
+                {
+                    x.tbc_edit = true;
+                });
+            }
+
+            if (string.IsNullOrEmpty(mst_code))
+            {
+                masterTemplateData = new MasterTemplateDTO()
+                {
+                    mst_code = "New",
+                    mst_status = "N",
+                    mst_active = true,
+                    mst_createuser = mainLayout.loginUser.Username
+                };
+
+                wardTypeDatas = new List<WardTypeDTO>();
+                specimenDatas = new List<SpecimenDTO>();
+                antibioticDatas = new List<AntibioticDTO>();
+                organismDatas = new List<OrganismDTO>();
+                qcrangeDatas = new List<QCRangeDTO>();
+                expertRuleDatas = new List<ExpertRuleDTO>();
+                whonetColumnDatas = new List<WHONETColumnDTO>();
+
+                historyResultList = new List<LogProcessDTO>();
+            }
+            else
+            {
+                masterTemplateData = await masterTemplateService.GetDataAsync(mst_code);
+
+                masterTemplateData.mst_status = "E";
+                masterTemplateData.mst_updateuser = mainLayout.loginUser.Username;
+
+                wardTypeDatas = await wardTypeService.GetListByModelAsync(new WardTypeDTO() { wrd_mst_code = mst_code });
+                specimenDatas = await specimenService.GetListByModelAsync(new SpecimenDTO() { spc_mst_code = mst_code });
+                antibioticDatas = await antibioticService.GetListByModelAsync(new AntibioticDTO() { ant_mst_code = mst_code });
+                organismDatas = await organismService.GetListByModelAsync(new OrganismDTO() { org_mst_code = mst_code });
+                qcrangeDatas = await qcrangeService.GetListByModelAsync(new QCRangeDTO() { qcr_mst_code = mst_code });
+                expertRuleDatas = await expertRuleService.GetListByModelAsync(new ExpertRuleDTO() { exr_mst_code = mst_code });
+                whonetColumnDatas = await whonetColumnService.GetListByModelAsync(new WHONETColumnDTO() { wnc_mst_code = mst_code });
+
+                historyResultList = await masterTemplateService.GetHistoryAsync(mst_code);
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    private void RedirectToInbox()
+    {
+        navigationManager.NavigateTo("MasterManagement/MasterTemplate/");
+    }
+
+    #region WardType ...
+
+    private void SearchInboxDataWardType()
+    {
+        if (wardTypeGrid.radzenGrid != null) wardTypeGrid.radzenGrid.GoToPage(0);
+        StateHasChanged();
+    }
+
+    private void ShowPopupDialogWardType(WardTypeDTO selectModel)
+    {
+        if (selectModel == null)
+        {
+            wardTypeModel = new WardTypeDTO()
+            {
+                wrd_mst_code = masterTemplateData.mst_code,
+                wrd_status = "N",
+                wrd_active = true,
+                wrd_createuser = mainLayout.loginUser.Username
+            };
+        }
+        else
+        {
+            //wardTypeModel = await wardTypeService.GetDataAsync(wrd_code);
+            wardTypeModel = selectModel;
+            wardTypeModel.wrd_status = "E";
+            wardTypeModel.wrd_updateuser = mainLayout.loginUser.Username;
+        }
+
+        showPopupDialogWardType = true;
+    }
+
+    private async Task ClosePopupDialogWardType()
+    {
+        wardTypeModel = new WardTypeDTO();
+        showPopupDialogWardType = false;
+
+        wardTypeDatas = await wardTypeService.GetListByModelAsync(new WardTypeDTO() { wrd_mst_code = mst_code });
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private void HandleInvalidSubmitWardType()
+    {
+
+    }
+
+    private async void HandleValidSubmitWardType()
+    {
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (result)
+        {
+            showLoading = true;
+            StateHasChanged();
+
+            if (wardTypeModel.wrd_status == "N")
+            {
+                //Check duplicate
+                //var duplicate = await wardTypeService.GetDataAsync(wardTypeModel.wrd_code);
+                var duplicate = wardTypeDatas.Any(x => x.wrd_code == wardTypeModel.wrd_code);
+
+                if (duplicate)
+                {
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate ward type code.");
+
+                    showLoading = false;
+                    StateHasChanged();
+
+                    return;
+                }
+                wardTypeModel.wrd_createuser = mainLayout.loginUser.Username;
+            }
+            else
+            {
+                wardTypeModel.wrd_updateuser = mainLayout.loginUser.Username;
+            }
+
+            //Save data
+            var returnData = await wardTypeService.SaveDataAsync(wardTypeModel);
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save ward type data complete.");
+
+            await ClosePopupDialogWardType();
+        }
+    }
+
+    #endregion
+
+    #region Specimen ...
+
+    private void SearchInboxDataSpecimen()
+    {
+        if (specimenGrid.radzenGrid != null) specimenGrid.radzenGrid.GoToPage(0);
+        StateHasChanged();
+    }
+
+    private void ShowPopupDialogSpecimen(SpecimenDTO selectModel)
+    {
+        if (selectModel == null)
+        {
+            specimenModel = new SpecimenDTO()
+            {
+                spc_mst_code = masterTemplateData.mst_code,
+                spc_status = "N",
+                spc_createuser = mainLayout.loginUser.Username
+            };
+        }
+        else
+        {
+            //specimenModel = await specimenService.GetDataAsync(spc_code);
+            specimenModel = selectModel;
+            specimenModel.spc_status = "E";
+            specimenModel.spc_updateuser = mainLayout.loginUser.Username;
+        }
+
+        showPopupDialogSpecimen = true;
+    }
+
+    private async Task ClosePopupDialogSpecimen()
+    {
+        specimenModel = new SpecimenDTO();
+        showPopupDialogSpecimen = false;
+
+        specimenDatas = await specimenService.GetListByModelAsync(new SpecimenDTO() { spc_mst_code = mst_code });
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private void HandleInvalidSubmitSpecimen()
+    {
+
+    }
+
+    private async void HandleValidSubmitSpecimen()
+    {
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (result)
+        {
+            showLoading = true;
+            StateHasChanged();
+
+            if (specimenModel.spc_status == "N")
+            {
+                //Check duplicate
+                var duplicate = specimenDatas.Any(x => x.spc_code == specimenModel.spc_code);
+
+                if (duplicate)
+                {
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate specimen code.");
+
+                    showLoading = false;
+                    StateHasChanged();
+
+                    return;
+                }
+                specimenModel.spc_createuser = mainLayout.loginUser.Username;
+            }
+            else
+            {
+                specimenModel.spc_updateuser = mainLayout.loginUser.Username;
+            }
+
+            //Save data
+            var returnData = await specimenService.SaveDataAsync(specimenModel);
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save specimen data complete.");
+
+            await ClosePopupDialogSpecimen();
+        }
+    }
+
+    #endregion
+
+    #region Antibiotic ...
+
+    private void SearchInboxDataAntibiotic()
+    {
+        if (antibioticGrid.radzenGrid != null) antibioticGrid.radzenGrid.GoToPage(0);
+        StateHasChanged();
+    }
+
+    private void ShowPopupDialogAntibiotic(AntibioticDTO selectModel)
+    {
+        if (selectModel == null)
+        {
+            antibioticModel = new AntibioticDTO()
+            {
+                ant_mst_code = masterTemplateData.mst_code,
+                ant_status = "N",
+                ant_active = true,
+                ant_createuser = mainLayout.loginUser.Username
+            };
+        }
+        else
+        {
+            //wardTypeModel = await wardTypeService.GetDataAsync(wrd_code);
+            antibioticModel = selectModel;
+            antibioticModel.ant_status = "E";
+            antibioticModel.ant_updateuser = mainLayout.loginUser.Username;
+        }
+
+        showPopupDialogAntibiotic = true;
+    }
+
+    private async Task ClosePopupDialogAntibiotic()
+    {
+        antibioticModel = new AntibioticDTO();
+        showPopupDialogAntibiotic = false;
+
+        antibioticDatas = await antibioticService.GetListByModelAsync(new AntibioticDTO() { ant_mst_code = mst_code });
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private void HandleInvalidSubmitAntibiotic()
+    {
+
+    }
+
+    private async void HandleValidSubmitAntibiotic()
+    {
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (result)
+        {
+            showLoading = true;
+            StateHasChanged();
+
+            if (antibioticModel.ant_status == "N")
+            {
+                //Check duplicate
+                //var duplicate = await antibioticService.GetDataAsync(antibioticModel.ant_code);
+                var duplicate = antibioticDatas.Any(x => x.ant_code == antibioticModel.ant_code);
+
+                if (duplicate)
+                {
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate code.");
+
+                    showLoading = false;
+                    StateHasChanged();
+
+                    return;
+                }
+            }
+
+            //Save data
+            var returnData = await antibioticService.SaveDataAsync(antibioticModel);
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save data complete.");
+
+            await ClosePopupDialogAntibiotic();
+        }
+    }
+
+    #endregion
+
+    #region Organism ...
+
+    private void SearchInboxDataOrganism()
+    {
+        if (organismGrid.radzenGrid != null) organismGrid.radzenGrid.GoToPage(0);
+        StateHasChanged();
+    }
+
+    private void ShowPopupDialogOrganism(OrganismDTO selectModel)
+    {
+        if (selectModel == null)
+        {
+            organismModel = new OrganismDTO()
+            {
+                org_mst_code = masterTemplateData.mst_code,
+                org_status = "N",
+                org_active = true,
+                org_createuser = mainLayout.loginUser.Username
+            };
+        }
+        else
+        {
+            //wardTypeModel = await wardTypeService.GetDataAsync(wrd_code);
+            organismModel = selectModel;
+            organismModel.org_status = "E";
+            organismModel.org_updateuser = mainLayout.loginUser.Username;
+        }
+
+        showPopupDialogOrganism = true;
+    }
+
+    private async Task ClosePopupDialogOrganism()
+    {
+        organismModel = new OrganismDTO();
+        showPopupDialogOrganism = false;
+
+        organismDatas = await organismService.GetListByModelAsync(new OrganismDTO() { org_mst_code = mst_code });
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private void HandleInvalidSubmitOrganism()
+    {
+
+    }
+
+    private async void HandleValidSubmitOrganism()
+    {
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (result)
+        {
+            showLoading = true;
+            StateHasChanged();
+
+            if (organismModel.org_status == "N")
+            {
+                //Check duplicate
+                //var duplicate = await organismService.GetDataAsync(organismModel.org_code);
+                var duplicate = organismDatas.Any(x => x.org_code == organismModel.org_code);
+
+                if (duplicate)
+                {
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate organism code.");
+
+                    showLoading = false;
+                    StateHasChanged();
+
+                    return;
+                }
+            }
+
+            //Save data
+            var returnData = await organismService.SaveDataAsync(organismModel);
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save organism data complete.");
+
+            await ClosePopupDialogOrganism();
+        }
+    }
+
+    #endregion
+
+    #region QCRange ...
+
+    private void SearchInboxDataQCRange()
+    {
+        if (qcrangeGrid.radzenGrid != null) qcrangeGrid.radzenGrid.GoToPage(0);
+        StateHasChanged();
+    }
+
+    private void ShowPopupDialogQCRange(QCRangeDTO selectModel)
+    {
+        if (selectModel == null)
+        {
+            qcRangeModel = new QCRangeDTO()
+            {
+                qcr_mst_code = masterTemplateData.mst_code,
+                qcr_status = "N",
+                qcr_active = true,
+                qcr_createuser = mainLayout.loginUser.Username
+            };
+        }
+        else
+        {
+            //wardTypeModel = await wardTypeService.GetDataAsync(wrd_code);
+            qcRangeModel = selectModel;
+            qcRangeModel.qcr_status = "E";
+            qcRangeModel.qcr_updateuser = mainLayout.loginUser.Username;
+        }
+
+        showPopupDialogQCRange = true;
+    }
+
+    private async Task ClosePopupDialogQCRange()
+    {
+        qcRangeModel = new QCRangeDTO();
+        showPopupDialogQCRange = false;
+
+        qcrangeDatas = await qcrangeService.GetListByModelAsync(new QCRangeDTO() { qcr_mst_code = mst_code });
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private void HandleInvalidSubmitQCRange()
+    {
+
+    }
+
+    private async void HandleValidSubmitQCRange()
+    {
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (result)
+        {
+            showLoading = true;
+            StateHasChanged();
+
+            if (qcRangeModel.qcr_status == "N")
+            {
+                //Check duplicate
+                //var duplicate = await qcrangeService.GetDataAsync(qcRangeModel.qcr_code);
+                var duplicate = qcrangeDatas.Any(x => x.qcr_code == qcRangeModel.qcr_code);
+
+                if (duplicate)
+                {
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate QCRange code.");
+
+                    showLoading = false;
+                    StateHasChanged();
+
+                    return;
+                }
+            }
+
+            //Save data
+            var returnData = await qcrangeService.SaveDataAsync(qcRangeModel);
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save QCRange data complete.");
+
+            await ClosePopupDialogQCRange();
+        }
+    }
+
+    #endregion
+
+    #region ExpertRule ...
+
+    private void SearchInboxDataExpertRule()
+    {
+        if (expertRuleGrid.radzenGrid != null) expertRuleGrid.radzenGrid.GoToPage(0);
+        StateHasChanged();
+    }
+
+    private void ShowPopupDialogExpertRule(ExpertRuleDTO selectModel)
+    {
+        if (selectModel == null)
+        {
+            expertRuleModel = new ExpertRuleDTO()
+            {
+                exr_mst_code = masterTemplateData.mst_code,
+                exr_status = "N",
+                exr_active = true,
+                exr_createuser = mainLayout.loginUser.Username
+            };
+        }
+        else
+        {
+            //wardTypeModel = await wardTypeService.GetDataAsync(wrd_code);
+            expertRuleModel = selectModel;
+            expertRuleModel.exr_status = "E";
+            expertRuleModel.exr_updateuser = mainLayout.loginUser.Username;
+        }
+
+        showPopupDialogExpertRule = true;
+    }
+
+    private async Task ClosePopupDialogExpertRule()
+    {
+        expertRuleModel = new ExpertRuleDTO();
+        showPopupDialogExpertRule = false;
+
+        expertRuleDatas = await expertRuleService.GetListByModelAsync(new ExpertRuleDTO() { exr_mst_code = mst_code });
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private void HandleInvalidSubmitExpertRule()
+    {
+
+    }
+
+    private async void HandleValidSubmitExpertRule()
+    {
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (result)
+        {
+            showLoading = true;
+            StateHasChanged();
+
+            if (qcRangeModel.qcr_status == "N")
+            {
+                //Check duplicate
+                //var duplicate = await expertRuleService.GetDataAsync(expertRuleModel.exr_code);
+                var duplicate = expertRuleDatas.Any(x => x.exr_code == expertRuleModel.exr_code);
+
+                if (duplicate)
+                {
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate expert rule code.");
+
+                    showLoading = false;
+                    StateHasChanged();
+
+                    return;
+                }
+            }
+
+            //Save data
+            var returnData = await expertRuleService.SaveDataAsync(expertRuleModel);
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save expert rule data complete.");
+
+            await ClosePopupDialogExpertRule();
+        }
+    }
+
+    #endregion
+
+    #region WHONETColumn ...
+
+    private void SearchInboxDataWHONETColumn()
+    {
+        if (whonetColumnGrid.radzenGrid != null) whonetColumnGrid.radzenGrid.GoToPage(0);
+        StateHasChanged();
+    }
+
+    private void ShowPopupDialogWHONETColumn(WHONETColumnDTO selectModel)
+    {
+        if (selectModel == null)
+        {
+            whonetColumnModel = new WHONETColumnDTO()
+            {
+                wnc_mst_code = masterTemplateData.mst_code,
+                wnc_status = "N",
+                wnc_active = true,
+                wnc_createuser = mainLayout.loginUser.Username
+            };
+        }
+        else
+        {
+            //whonetColumnModel = await whonetColumnService.GetDataAsync(wnc_code);
+            whonetColumnModel = selectModel;
+            whonetColumnModel.wnc_status = "E";
+            whonetColumnModel.wnc_updateuser = mainLayout.loginUser.Username;
+        }
+
+        showPopupDialogWHONETColumn = true;
+    }
+
+    private async Task ClosePopupDialogWHONETColumn()
+    {
+        whonetColumnModel = new WHONETColumnDTO();
+        showPopupDialogWHONETColumn = false;
+
+        whonetColumnDatas = await whonetColumnService.GetListByModelAsync(new WHONETColumnDTO() { wnc_mst_code = mst_code });
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private void HandleInvalidSubmitWHONETColumn()
+    {
+
+    }
+
+    private async void HandleValidSubmitWHONETColumn()
+    {
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (result)
+        {
+            showLoading = true;
+            StateHasChanged();
+
+            if (whonetColumnModel.wnc_status == "N")
+            {
+                //Check duplicate
+                var duplicate = await whonetColumnService.GetDataAsync(whonetColumnModel.wnc_code);
+
+                if (string.IsNullOrEmpty(duplicate.wnc_code) == false)
+                {
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate WHONET Column code.");
+
+                    showLoading = false;
+                    StateHasChanged();
+
+                    return;
+                }
+                whonetColumnModel.wnc_createuser = mainLayout.loginUser.Username;
+            }
+            else
+            {
+                whonetColumnModel.wnc_updateuser = mainLayout.loginUser.Username;
+            }
+
+            //Save data
+            var returnData = await whonetColumnService.SaveDataAsync(whonetColumnModel);
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save WHONET Column data complete.");
+
+            await ClosePopupDialogWHONETColumn();
+        }
+    }
+
+    #endregion
+
+    private void HandleInvalidSubmit()
+    {
+
+    }
+
+    private async void HandleValidSubmit()
+    {
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (result)
+        {
+            showLoading = true;
+            StateHasChanged();
+
+            if (masterTemplateData.mst_status == "N")
+            {
+                //Check duplicate
+                var duplicate = await masterTemplateService.GetDataAsync(masterTemplateData.mst_code);
+
+                if (string.IsNullOrEmpty(duplicate.mst_code) == false)
+                {
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate code.");
+
+                    showLoading = false;
+                    StateHasChanged();
+
+                    return;
+                }
+            }
+
+            //Save data
+            var saveResult = await masterTemplateService.SaveDataAsync(masterTemplateData);
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save data complete.");
+
+            if (masterTemplateData.mst_status == "N")
+            {
+                masterTemplateData.mst_code = saveResult.mst_code;
+            }
+
+            historyResultList = await masterTemplateService.GetHistoryAsync(masterTemplateData.mst_code);
+
+            masterTemplateData.mst_status = "E";
+
+            showLoading = false;
+            StateHasChanged();
+        }
+    }
+}

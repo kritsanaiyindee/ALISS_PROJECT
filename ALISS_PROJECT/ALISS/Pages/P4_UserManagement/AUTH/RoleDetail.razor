@@ -1,0 +1,269 @@
+﻿@page "/AUTH/RoleDetail"
+@page "/AUTH/RoleDetail/{rol_code}"
+
+@inject IJSRuntime jsRuntime
+@inject NavigationManager navigationManager
+
+@inject ConfigDataService configDataService
+@inject RoleService roleService
+
+<div>
+    <div class="divHead">
+        <RadzenLink Path="/AUTH/Role" Text="Role" /> - @(dataModel?.rol_name ?? "New role") (@(dataModel?.rol_code ?? "-"))
+    </div>
+</div>
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>
+
+    <Loading ShowModel="true" />
+}
+else
+{
+    <EditForm Model="@dataModel" OnInvalidSubmit="HandleInvalidSubmit" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+
+        <div class="container inputArea">
+            <div class="row">
+                <InputBox ConfigData="@(configData.Get_ConfigRow("rol_code"))">
+                    <RadzenTextBox @bind-Value="@dataModel.rol_code" Placeholder="@(configData.Get_PlaceHolder("rol_code"))" ReadOnly="@(dataModel.rol_status == "E")" />
+                    <ValidationMessage For="@(() => dataModel.rol_code)" />
+                </InputBox>
+
+                <InputBox ConfigData="@(configData.Get_ConfigRow("rol_name"))">
+                    <RadzenTextBox @bind-Value="@dataModel.rol_name" />
+                    <ValidationMessage For="@(() => dataModel.rol_name)" />
+                </InputBox>
+
+                <InputBox ConfigData="@(configData.Get_ConfigRow("rol_active"))">
+                    <RadzenRadioButtonList @bind-Value="dataModel.rol_active" TValue="bool">
+                        <Items>
+                            <RadzenRadioButtonListItem Text="Active" Value="true" />
+                            <RadzenRadioButtonListItem Text="Inactive" Value="false" />
+                        </Items>
+                    </RadzenRadioButtonList>
+                </InputBox>
+
+                <InputBox ConfigData="@(configData.Get_ConfigRow("rol_desc"))">
+                    <RadzenTextBox @bind-Value="@dataModel.rol_desc" />
+                </InputBox>
+            </div>
+        </div>
+
+        <hr />
+
+        <div>
+            <div>
+                <label style="display: inline-block;font: Bold 18px/22px Arial;letter-spacing: 0;color: #999999;">Permission</label>
+            </div>
+
+            <br />
+
+            <div style="width:90%;margin:0px auto;">
+                <div class="container">
+                    <div class="row justify-content-end">
+                        <div class="col-auto">
+                            <label>Rows : </label>
+                        </div>
+                        <div class="col-auto">
+                            <RadzenDropDown @bind-Value="dataDetailGrid.PageSize" TValue="int" AllowFiltering="true" Data="dataDetailGrid.PageSizeOption" Change="SearchInboxData" Style="width:50px" />
+                        </div>
+                    </div>
+                </div>
+                <RadzenGrid TItem="RolePermissionDTO" @ref="dataDetailGrid.radzenGrid" Data="@dataDetialList" PageSize="dataDetailGrid.PageSize" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                    <Columns>
+                        <RadzenGridColumn TItem="RolePermissionDTO" Property="mnu_code" Title="@(configData.Get_Label("mnu_code"))">
+                            <FooterTemplate>
+                                <label title="@dataDetailGrid.FooterLabelString">@dataDetailGrid.FooterLabelString</label>
+                            </FooterTemplate>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="RolePermissionDTO" Property="mnu_name" Title="@(configData.Get_Label("mnu_name"))" />
+                        <RadzenGridColumn TItem="RolePermissionDTO" Property="mnu_status" Title="@(configData.Get_Label("mnu_status"))" Width="100px" />
+                        <RadzenGridColumn TItem="RolePermissionDTO" Property="rop_view" Title="@(configData.Get_Label("rop_view"))" Width="100px" Context="Data">
+                            <Template>
+                                <RadzenCheckBox @bind-Value="Data.rop_view" />
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="RolePermissionDTO" Property="rop_create" Title="@(configData.Get_Label("rop_create"))" Width="100px" Context="Data">
+                            <Template>
+                                <RadzenCheckBox @bind-Value="Data.rop_create" />
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="RolePermissionDTO" Property="rop_edit" Title="@(configData.Get_Label("rop_edit"))" Width="100px" Context="Data">
+                            <Template>
+                                <RadzenCheckBox @bind-Value="Data.rop_edit" />
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="RolePermissionDTO" Property="rop_approve" Title="@(configData.Get_Label("rop_approve"))" Width="100px" Context="Data">
+                            <Template>
+                                <RadzenCheckBox @bind-Value="Data.rop_approve" />
+                            </Template>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="RolePermissionDTO" Property="rop_reject" Title="@(configData.Get_Label("rop_reject"))" Width="100px" Context="Data">
+                            <Template>
+                                <RadzenCheckBox @bind-Value="Data.rop_reject" />
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+            </div>
+
+            <br />
+
+            <div class="row justify-content-between buttonArea">
+                <div class="col-auto">
+                    <RadzenButton class="btnCancel" Text="Cancel" Click="RedirectToInbox" />
+                </div>
+                <div class="col-auto">
+                    @if (mainLayout.loginUser.PagePermission.rop_create || mainLayout.loginUser.PagePermission.rop_edit)
+                    {
+                        <RadzenButton Icon="save" class="btnSave" ButtonType="ButtonType.Submit" Text="Save" />
+                    }
+                </div>
+            </div>
+        </div>
+    </EditForm>
+
+    <hr />
+
+    <HistoryLog HistoryList="historyResultList" />
+
+    <Loading ShowModel="showLoading" />
+}
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+    [Parameter] public string rol_code { get; set; }
+
+    private ConfigData configData = new ConfigData();
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private bool ShowPopupDialog;
+    private bool showLoading;
+
+    private RoleDTO dataModel;
+    private RadzenGridCustom<RolePermissionDTO> dataDetailGrid = new RadzenGridCustom<RolePermissionDTO>();
+    private List<RolePermissionDTO> dataDetialList;
+
+    private List<LogProcessDTO> historyResultList;
+
+    private bool pageLoading { get { return (dataModel == null || dataDetialList == null || historyResultList == null); } }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0103") == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = "MNU_0103" });
+            if (mainLayout.loginUser.rol_code == "ROL_00")
+            {
+                configData.ConfigDTOList.ForEach(x =>
+                {
+                    x.tbc_edit = true;
+                });
+            }
+
+            if (string.IsNullOrEmpty(rol_code) == true)
+            {
+                dataModel = new RoleDTO()
+                {
+                    rol_status = "N",
+                    rol_active = true,
+                    rol_createuser = mainLayout.loginUser.Username
+                };
+
+                historyResultList = new List<LogProcessDTO>();
+            }
+            else
+            {
+                dataModel = await roleService.GetRoleDataAsync(rol_code);
+                dataModel.rol_status = "E";
+                dataModel.rol_updateuser = mainLayout.loginUser.Username;
+
+                historyResultList = await roleService.GetHistoryAsync(rol_code);
+            }
+
+            dataDetialList = await roleService.GetRolePermissionListByModelAsync(rol_code);
+            dataDetialList.ForEach(x =>
+            {
+                if (x.rop_id == null)
+                {
+                    x.rop_createuser = mainLayout.loginUser.Username;
+                }
+                else
+                {
+                    x.rop_updateuser = mainLayout.loginUser.Username;
+                }
+                x.rop_active = true;
+            });
+
+            StateHasChanged();
+        }
+    }
+
+    private void SearchInboxData()
+    {
+        if (dataDetailGrid.radzenGrid != null) dataDetailGrid.radzenGrid.GoToPage(0);
+
+        StateHasChanged();
+    }
+
+    private void HandleInvalidSubmit()
+    {
+
+    }
+
+    private async void HandleValidSubmit()
+    {
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", "Do you want to save data?");
+        if (result)
+        {
+            showLoading = true;
+            StateHasChanged();
+
+            if (dataModel.rol_status == "N")
+            {
+                //Check duplicate
+                var duplicate = await roleService.GetRoleDataAsync(dataModel.rol_code);
+
+                if (string.IsNullOrEmpty(duplicate.rol_code) == false)
+                {
+                    await jsRuntime.InvokeAsync<object>("ShowAlert", "Duplicate code.");
+
+                    showLoading = false;
+                    StateHasChanged();
+
+                    return;
+                }
+            }
+
+            //Save data
+            var saveResult = await roleService.SaveDataAsync(dataModel);
+
+            dataDetialList.ForEach(x =>
+            {
+                x.rop_rol_code = dataModel.rol_code;
+            });
+
+            var saveResultList = await roleService.SaveListDataAsync(dataDetialList);
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "Save data complete.");
+
+            historyResultList = await roleService.GetHistoryAsync(dataModel.rol_code);
+
+            dataModel.rol_status = "E";
+
+            showLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void RedirectToInbox()
+    {
+        navigationManager.NavigateTo("/Auth/Role/");
+    }
+}

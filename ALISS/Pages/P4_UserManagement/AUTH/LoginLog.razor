@@ -1,0 +1,181 @@
+﻿@page "/Auth/LoginLog"
+
+@inject NavigationManager navigationManager
+
+@inject LoginLogService loginLogService
+
+<div>
+    <div class="divHead">
+        Login log
+    </div>
+</div>
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>
+
+    <Loading ShowModel="true" />
+}
+else
+{
+    <div class="container inputArea">
+        <div class="row">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="User name" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenTextBox @bind-Value="@searchModel.log_usr_id" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="Login date from" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDatePicker @bind-Value="searchModel.log_login_timestamp" DateFormat="dd/MM/yyyy" ReadOnly="true" Style="width:100%;" DateRender="DateRenderFrom" Change="DateFromChange" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="Login date to" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDatePicker @bind-Value="searchModel.log_logout_timestamp" DateFormat="dd/MM/yyyy" ReadOnly="true" Style="width:100%;" DateRender="DateRenderTo" Change="DateToChange" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row justify-content-end">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup buttonArea">
+                    <div class="col-auto">
+                        <RadzenButton class="btnSearch" Text="Search" Click="SearchInboxData" />
+                    </div>
+                    <div class="col-auto">
+                        <RadzenButton class="btnClear" Text="Clear" Click="ClearInboxData" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div>
+        <br />
+        <div style="width:90%;margin:0px auto;">
+            <div class="container">
+                <div class="row justify-content-end">
+                    <div class="col-auto">
+                        <label>Rows : </label>
+                    </div>
+                    <div class="col-auto">
+                        <RadzenDropDown @bind-Value="inboxGrid.PageSize" TValue="int" AllowFiltering="true" Data="inboxGrid.PageSizeOption" Change="SearchInboxData" Style="width:50px" />
+                    </div>
+                </div>
+            </div>
+            <RadzenGrid TItem="LogUserLoginDTO" @ref="inboxGrid.radzenGrid" Data="@searchResultList" PageSize="inboxGrid.PageSize" ColumnWidth="200px" AllowPaging="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowSorting="true">
+                <Columns>
+                    <RadzenGridColumn TItem="LogUserLoginDTO" Property="log_id" Width="50px" Title="ID" />
+                    <RadzenGridColumn TItem="LogUserLoginDTO" Property="log_usr_id" Title="User name">
+                        <FooterTemplate>
+                            <label title="@inboxGrid.FooterLabelString">@inboxGrid.FooterLabelString</label>
+                        </FooterTemplate>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="LogUserLoginDTO" Property="log_login_timestamp" Title="Login date" />
+                    <RadzenGridColumn TItem="LogUserLoginDTO" Property="log_logout_timestamp" Title="Logout date" />
+                    <RadzenGridColumn TItem="LogUserLoginDTO" Property="log_status" Title="Status" />
+                    <RadzenGridColumn TItem="LogUserLoginDTO" Property="log_remark" Title="Remark" />
+                </Columns>
+            </RadzenGrid>
+        </div>
+        <br />
+
+    </div>
+
+    <hr />
+
+    <Loading ShowModel="showLoading" />
+}
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+    private bool showLoading;
+
+    private RadzenGridCustom<LogUserLoginDTO> inboxGrid = new RadzenGridCustom<LogUserLoginDTO>();
+    private LogUserLoginDTO searchModel = new LogUserLoginDTO();
+    private List<LogUserLoginDTO> searchResultList;
+
+    private bool pageLoading { get { return (searchResultList == null); } }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0104") == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            searchResultList = await loginLogService.GetListByModelAsync(searchModel);
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task SearchInboxData()
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        searchResultList = await loginLogService.GetListByModelAsync(searchModel);
+        if (inboxGrid.radzenGrid != null) inboxGrid.radzenGrid.GoToPage(0);
+
+        showLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task ClearInboxData()
+    {
+        showLoading = true;
+        StateHasChanged();
+
+        searchModel = new LogUserLoginDTO();
+
+        await SearchInboxData();
+    }
+
+    void DateRenderFrom(DateRenderEventArgs args)
+    {
+        args.Disabled = ((searchModel.log_logout_timestamp != null && args.Date > searchModel.log_logout_timestamp) || (args.Date > DateTime.Now));
+    }
+
+    void DateRenderTo(DateRenderEventArgs args)
+    {
+        args.Disabled = ((searchModel.log_login_timestamp != null && args.Date < searchModel.log_login_timestamp) || (args.Date > DateTime.Now));
+    }
+
+    void DateFromChange(DateTime? args)
+    {
+        if ((args != null) && ((searchModel.log_logout_timestamp != null && args > searchModel.log_logout_timestamp) || (args > DateTime.Now)))
+        {
+            searchModel.log_login_timestamp = null;
+        }
+    }
+
+    void DateToChange(DateTime? args)
+    {
+        if ((args != null) && ((searchModel.log_login_timestamp != null && args < searchModel.log_login_timestamp) || (args > DateTime.Now)))
+        {
+            searchModel.log_logout_timestamp = null;
+        }
+    }
+}

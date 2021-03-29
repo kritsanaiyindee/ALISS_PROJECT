@@ -1,0 +1,324 @@
+﻿@page "/LabFileUploadDetail/{id}"
+
+@using ALISS.Data.D1_Upload
+@using ALISS.LabFileUpload.DTO
+
+
+@inject NavigationManager navigationManager
+@inject ConfigDataService configDataService
+@inject LabFileUploadService labFileUploadservice
+
+@inject IJSRuntime iJSRuntime;
+
+
+<div>
+    <div class="divHead">
+        Upload Summary - @labFileUploadData.lfu_FileName (@labFileUploadData.lfu_FileType)
+    </div>
+</div>
+
+@if (pageLoading)
+{
+    <p><em>Loading...</em></p>  
+}
+else
+{
+    <div class="container inputArea">
+        <div class="row">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="Total Record(s)" />
+                    </div>
+                    <div class="@classInput">
+                        <Radzen.Blazor.RadzenNumeric TValue="int" @bind-Value="@labFileUploadData.lfu_TotalRecord" Disabled="true"  />
+                    </div>
+                </div>
+            </div>
+            @if (labFileUploadData.lfu_Program == "MLAB" && labFileUploadData.lfu_FileType != "ETEST")
+            {
+                <div class="col-12 col-xl-4">
+                    <div class="row justify-content-center divGroup">
+                        <div class="col-6">
+                            <LabelBox inputLabel="Cmethod(Aerobic Culture)" />
+                        </div>
+                        <div class="col-6">
+                            <Radzen.Blazor.RadzenNumeric TValue="int" @bind-Value="@labFileUploadData.lfu_AerobicCulture" Disabled="true" />
+                        </div>
+                    </div>
+                </div>
+            }
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="Error Record(s)" />
+                    </div>
+                    <div class="@classInput">
+                        <Radzen.Blazor.RadzenNumeric TValue="int" @bind-Value="@labFileUploadData.lfu_ErrorRecord" Disabled="true" />
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+    <div>
+        <div class="row">
+            <div class="col-md-6">
+                <label>Organism List</label>
+                <div class="container">
+                    <div class="row justify-content-end">
+                        <div class="col-auto">
+                            <label>Rows : </label>
+                        </div>
+                        <div class="col-auto">
+                            <RadzenDropDown @bind-Value="labFileSummaryGrid.PageSize" TValue="int" AllowFiltering="true" Data="labFileSummaryGrid.PageSizeOption" Change="SearchInboxlabFileSummaryGrid" Style="width:50px" />
+                        </div>
+                    </div>
+                </div>
+                <RadzenGrid AllowFiltering="true" AllowSorting="true" AllowPaging="true" PageSize="labFileSummaryGrid.PageSize" @ref="labFileSummaryGrid.radzenGrid" Data="@labFileSummaryHeader" ColumnWidth="70px"
+                            TItem="LabFileSummaryHeaderListDTO" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+                  
+                    <Template Context="labFileSummaryHeader" >
+                          @if(labFileSummaryHeader.LabFileSummaryDetailLists.Count > 0)
+                          { 
+                        <RadzenGrid AllowFiltering="true" AllowPaging="true" AllowSorting="true" Data="@labFileSummaryHeader.LabFileSummaryDetailLists" TItem="LabFileSummaryDetailListDTO">
+                            <Columns>
+                                <RadzenGridColumn TItem="LabFileSummaryDetailListDTO" Property="fsd_organismcode" Title="Organism" />
+                                <RadzenGridColumn TItem="LabFileSummaryDetailListDTO" Property="fsd_organismdesc" Title="Description" />
+                                <RadzenGridColumn TItem="LabFileSummaryDetailListDTO" Property="fsd_total" Title="Total">
+                                    <Template Context="data">
+                                        @String.Format("{0:n0}", data.fsd_total)
+                                    </Template>
+                                </RadzenGridColumn>
+                            </Columns>
+                        </RadzenGrid>
+                        }
+                    </Template>
+
+                    <Columns>
+                        <RadzenGridColumn TItem="LabFileSummaryHeaderListDTO" Property="fsh_code" Title="Specimen Type" />
+                        <RadzenGridColumn TItem="LabFileSummaryHeaderListDTO" Property="fsh_desc" Title="Description" />
+                        <RadzenGridColumn TItem="LabFileSummaryHeaderListDTO" Property="fsh_total" Title="Total">
+                            <Template Context="data">
+                                @String.Format("{0:n0}", data.fsh_total)
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+            </div>
+            <div class="col-md-6">
+                <label>Error List</label>
+                <div class="container">
+                    <div class="row justify-content-end">
+                        <div class="col-auto">
+                            <label>Rows : </label>
+                        </div>
+                        <div class="col-auto">
+                            <RadzenDropDown @bind-Value="labFileErrorGrid.PageSize" TValue="int" AllowFiltering="true" Data="labFileErrorGrid.PageSizeOption" Change="SearchInboxlabFileErrorGrid" Style="width:50px" />
+                        </div>
+                    </div>
+                </div>
+                <RadzenGrid AllowFiltering="true" AllowSorting="true" AllowPaging="true" PageSize="labFileErrorGrid.PageSize" @ref="labFileErrorGrid.radzenGrid" Data="@labFileErrorHeader" ColumnWidth="70px"
+                            TItem="LabFileErrorHeaderListDTO" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+                    <Columns>
+                        <RadzenGridColumn TItem="LabFileErrorHeaderListDTO" Property="feh_field" Title="Type" />
+                        <RadzenGridColumn TItem="LabFileErrorHeaderListDTO" Property="feh_message" Title="Description" />
+                        <RadzenGridColumn TItem="LabFileErrorHeaderListDTO" Property="feh_errorrecord" Title="Total" />
+                        <RadzenGridColumn TItem="LabFileErrorHeaderListDTO" Property="" Title="" Width="50px" Filterable="false" Sortable="false">
+                            <Template>
+                                <RadzenButton Icon="edit" Style="        background: #0A6839
+" Click="@(() => OpenMappingDetail(labFileUploadData.lfu_mp_id.ToString()))" />
+                            </Template>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+            </div>
+        </div>
+    </div>
+    <br />
+    <div class="row justify-content-between buttonArea">
+        <div class="col-auto">
+            <RadzenButton Text="Export" class="btnSave" Click="GenerateExcelSummary" />
+        </div>
+    </div>
+    <br />
+    <div class="row justify-content-between buttonArea">
+
+        <div class="col-auto">
+            <RadzenButton Text="Back" class="btnCancel" Click="@OpenLabFileUploadIndex" />
+        </div>
+        @if (mainLayout.loginUser.PagePermission.rop_cancel == true)
+        {
+            <div class="col-auto">
+                <RadzenButton Text="Cancel" class="btnCancel" Click="@(() => ShowConfirmDialog("Cancel"))"
+                              Disabled="@(labFileUploadData.lfu_status == 'W' || labFileUploadData.lfu_status == 'D' ? true : false)" />
+            </div>
+        }
+        @if (mainLayout.loginUser.PagePermission.rop_approve == true)
+        {
+            <div class="col-auto">
+                <RadzenButton Text="Approve" class="btnSave" Click="@(() => ShowConfirmDialog("Approve"))"
+                              Disabled="@(labFileUploadData.lfu_approveduser != null || labFileUploadData.lfu_status == 'D' ? true : false)" />
+
+            </div>
+        }
+        @if (mainLayout.loginUser.PagePermission.rop_edit == true)
+        {
+            <div class="col-auto">
+                <RadzenButton Text="Re-Process" class="btnSave" Click="@(() => ShowConfirmDialog("Reprocess"))"
+                              Disabled="@(labFileUploadData.lfu_status == 'W' || labFileUploadData.lfu_status == 'D' ? true : false)" />
+            </div>
+        }
+        </div>
+}
+
+<Loading ShowModel="showModal" />
+
+@code
+{
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+
+    [Parameter]
+    public string id { get; set; }
+
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+
+    private ConfigData configData = new ConfigData();
+    LabFileUploadDataDTO labFileUploadData = new LabFileUploadDataDTO();
+    List<LabFileSummaryHeaderListDTO> labFileSummaryHeader = new List<LabFileSummaryHeaderListDTO>();
+    List<LabFileSummaryDetailListDTO> labFileSummaryDetail = new List<LabFileSummaryDetailListDTO>();
+    List<LabFileErrorHeaderListDTO> labFileErrorHeader = new List<LabFileErrorHeaderListDTO>();
+    List<LabFileErrorDetailListDTO> labFileErrorDetail = new List<LabFileErrorDetailListDTO>();
+
+    RadzenGridCustom<LabFileSummaryHeaderListDTO> labFileSummaryGrid = new RadzenGridCustom<LabFileSummaryHeaderListDTO>();
+    RadzenGridCustom<LabFileErrorHeaderListDTO> labFileErrorGrid = new RadzenGridCustom<LabFileErrorHeaderListDTO>();
+
+    private bool showModal = true;
+    private bool pageLoading { get { return (labFileUploadData == null); } }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0402") == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = "MNU_0402" });
+
+            labFileUploadData = await labFileUploadservice.GetLabFileUploadDataAsync(id);
+            labFileSummaryHeader = await labFileUploadservice.GetLabFileSummaryHeaderListAsync(id);
+            labFileErrorHeader = await labFileUploadservice.GetLabFileErrorHeaderListAsync(id);
+            labFileErrorDetail = await labFileUploadservice.GetLabFileErrorDetailListAsync(id);
+
+            if (labFileSummaryHeader.Count != 0)
+            {
+                foreach (LabFileSummaryHeaderListDTO item in labFileSummaryHeader)
+                {
+                    item.LabFileSummaryDetailLists = await labFileUploadservice.GetLabFileSummaryDetailListAsync(item.fsh_id.ToString());
+                }
+            }
+
+            showModal = false;
+            StateHasChanged();
+        }
+    }
+
+
+    void OpenLabFileUploadIndex()
+    {
+        navigationManager.NavigateTo("LabFileUpload");
+    }
+
+
+    private void SearchInboxlabFileSummaryGrid()
+    {
+        if (labFileSummaryGrid.radzenGrid != null) labFileSummaryGrid.radzenGrid.GoToPage(0);
+        StateHasChanged();
+    }
+
+
+    private void SearchInboxlabFileErrorGrid()
+    {
+        if (labFileErrorGrid.radzenGrid != null) labFileErrorGrid.radzenGrid.GoToPage(0);
+        StateHasChanged();
+    }
+
+
+    async Task OpenMappingDetail(string id)
+    {
+        navigationManager.NavigateTo("MappingDetail/" + id);
+    }
+
+    private async Task GenerateExcelSummary()
+    {
+        showModal = true;
+
+        labFileUploadservice.GenerateExportSummary(iJSRuntime, labFileSummaryHeader, labFileErrorDetail);
+
+        showModal = false;
+    }
+
+    private async Task ShowConfirmDialog(string type)
+    {
+        if (type.Equals("Approve"))
+        {
+            var result = await iJSRuntime.InvokeAsync<bool>("ShowConfirm", "Confirm approve data.");
+            if (result)
+            {
+                labFileUploadData.lfu_approveduser = mainLayout.loginUser.Username;
+                labFileUploadData.lfu_approveddate = DateTime.Now;
+                labFileUploadData.lfu_updateuser = mainLayout.loginUser.Username;
+                await SaveLabFileUpload();
+            }
+        }
+        else if (type.Equals("Reprocess"))
+        {
+            var result = await iJSRuntime.InvokeAsync<bool>("ShowConfirm", "Confirm re-process data.");
+            if (result)
+            {
+                labFileUploadData.lfu_status = 'R';
+                labFileUploadData.lfu_updateuser = mainLayout.loginUser.Username;
+                await SaveLabFileUpload();
+            }
+        }
+        else if (type.Equals("Cancel"))
+        {
+            var result = await iJSRuntime.InvokeAsync<bool>("ShowConfirm", "Confirm cancel data.");
+            if (result)
+            {
+                labFileUploadData.lfu_status = 'D';
+                labFileUploadData.lfu_updateuser = mainLayout.loginUser.Username;
+                await SaveLabFileUpload();
+            }
+        }
+
+    }
+
+
+    private async Task SaveLabFileUpload()
+    {
+        showModal = true;
+
+        labFileUploadData = await labFileUploadservice.SaveLabFileUploadDataAsync(labFileUploadData);
+
+        labFileUploadData = await labFileUploadservice.GetLabFileUploadDataAsync(id);
+        labFileSummaryHeader = await labFileUploadservice.GetLabFileSummaryHeaderListAsync(id);
+        labFileErrorHeader = await labFileUploadservice.GetLabFileErrorHeaderListAsync(id);
+        labFileErrorDetail = await labFileUploadservice.GetLabFileErrorDetailListAsync(id);
+
+        if (labFileSummaryHeader.Count != 0)
+        {
+            foreach (LabFileSummaryHeaderListDTO item in labFileSummaryHeader)
+            {
+                item.LabFileSummaryDetailLists = await labFileUploadservice.GetLabFileSummaryDetailListAsync(item.fsh_id.ToString());
+            }
+        }
+
+
+        showModal = false;
+        StateHasChanged();
+    }
+}

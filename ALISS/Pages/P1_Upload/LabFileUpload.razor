@@ -1,0 +1,619 @@
+﻿@page "/LabFileUpload"
+@using ALISS.Data.D1_Upload
+@using ALISS.Data.D2_Mapping
+@using ALISS.Data
+@using ALISS.LabFileUpload.DTO
+@using ALISS.Mapping.DTO
+@using BlazorInputFile
+@using System.IO;
+
+@inject IJSRuntime jsRuntime
+@inject LabFileUploadService labFileUploadservice
+@inject FileUploadService fileUploadservice
+@inject LoginUserData loginUserData
+@inject DropDownListDataService ddlDataService
+@inject NavigationManager navigationManager
+@inject ConfigDataService configDataService
+@inject MappingService mappingservice
+@inject MasterTemplateService masterTemplateService
+
+<div>
+    <div class="divHead">
+        Upload Lab File
+    </div>
+</div>
+
+@if (gridDatas == null || lab_ddl_List == null)
+{
+    <Loading ShowModel="true" />
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="container inputArea">
+        <div class="row justify-content-between">
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("lfu_Hos")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.lfu_Hos" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name, x.hos_code, x.hos_name }).Where(x => (searchModel.lfu_Area == null || x.arh_code == searchModel.lfu_Area) && (searchModel.lfu_Province == null || x.prv_code == searchModel.lfu_Province))" ValueProperty="hos_code" TextProperty="hos_name" Change="@(args => DDL_Change("Hos", args))" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("lfu_Province")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.lfu_Province" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name, x.prv_code, x.prv_name }).Where(x => (searchModel.lfu_Area == null || x.arh_code == searchModel.lfu_Area)).Distinct()" ValueProperty="prv_code" TextProperty="prv_name" Change="@(args => DDL_Change("Prv", args))" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("lfu_Area")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.lfu_Area" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Select(x => new { x.arh_code, x.arh_name }).Distinct()" ValueProperty="arh_code" TextProperty="arh_name" Change="@(args => DDL_Change("Arh", args))" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup">
+                    <div class="@classLabel">
+                        <LabelBox inputLabel="@configData.Get_Label("lfu_lab")" />
+                    </div>
+                    <div class="@classInput">
+                        <RadzenDropDown @bind-Value="searchModel.lfu_lab" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List.Where(x => x.hos_code == searchModel.lfu_Hos)" ValueProperty="lab_code" TextProperty="lab_name" Change="@(args => DDL_Change("Lab", args))" />
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="col-12 col-xl-4">
+                <div class="row justify-content-center divGroup buttonArea">
+                    <div class="col-auto">
+                        <RadzenButton class="btnSearch" Text="Search" Click="SearchData" />
+                    </div>
+                    <div class="col-auto">
+                        <RadzenButton class="btnClear" Text="Clear" Click="ClearInboxData" />
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+
+    <hr />
+
+    <div>
+        @if (mainLayout.loginUser.PagePermission.rop_create == true)
+        {
+            <div class="container">
+                <div class="row justify-content-end">
+                    <div class="col-auto buttonArea">
+                        <RadzenButton Text="Upload File" class="btnAdd"
+                                      Click="@ShowUploadEntryDialog" Disabled="@(LabFileData.lfu_lab != null ? false : true)" />
+                    </div>
+                </div>
+            </div>
+            <br />
+        }
+        <div style="width:90%;margin:0px auto;">
+            <div class="container">
+                <div class="row justify-content-end">
+                    <div class="col-auto">
+                        <label>Rows : </label>
+                    </div>
+                    <div class="col-auto">
+                        <RadzenDropDown @bind-Value="inboxGrid.PageSize" TValue="int" AllowFiltering="true" Data="inboxGrid.PageSizeOption" Change="SearchData" Style="width:50px" />
+                    </div>
+                </div>
+            </div>
+            <RadzenGrid AllowFiltering="true" AllowSorting="true" AllowPaging="true"
+                        PageSize="inboxGrid.PageSize" @ref="inboxGrid.radzenGrid" Data="@gridDatas" TItem="LabFileUploadDataDTO"
+                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+                <Columns>
+                    <RadzenGridColumn TItem="LabFileUploadDataDTO" Width="120px" Property="lfu_FileName" Title="File Name">
+                        <FooterTemplate>
+                            <label title="@inboxGrid.FooterLabelString">@inboxGrid.FooterLabelString</label>
+                        </FooterTemplate>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="LabFileUploadDataDTO" Width="110px" Property="lfu_TotalRecord" Title="Total Record(s)">
+                        <Template Context="data">
+                            @String.Format("{0:n0}", data.lfu_TotalRecord)
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="LabFileUploadDataDTO" Width="110px" Property="lfu_ErrorRecord" Title="Error Record(s)">
+                        <Template Context="data">
+                            @String.Format("{0:n0}", data.lfu_ErrorRecord)
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="LabFileUploadDataDTO" Width="120px" Property="lfu_DatePeriod" Title="Data Period" />
+                    <RadzenGridColumn TItem="LabFileUploadDataDTO" Width="80px" Property="lfu_status_str" Title="Status" />
+                    <RadzenGridColumn TItem="LabFileUploadDataDTO" Width="110px" Property="lfu_createdate" Title="Upload Date" />
+                    <RadzenGridColumn TItem="LabFileUploadDataDTO" Width="80px" Property="lfu_createuser" Title="Upload By" />
+
+                    <RadzenGridColumn TItem="LabFileUploadDataDTO" Property="" Title="" Width="120px" Context="data" Filterable="false" Sortable="false">
+                        <Template>
+                            <RadzenButton Text="See detail" Style="background: #0A6839 0% 0% no-repeat padding-box;" Click="@(() => OpenLabFileUploadDetail(data.lfu_id.ToString()))" Disabled="@(data.lfu_status == 'N'  || data.lfu_status == 'R' || data.lfu_status == 'M' || data.lfu_status == 'P' ? true : false)" />
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+    </div>
+}
+
+
+@if (ShowUploadEntryPopup == true)
+{
+    <div class="modal" tabindex="-1" style="display:block;" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@LabFileData" OnValidSubmit="()=> ValidateFile()">
+                        <DataAnnotationsValidator />
+                        <div class="container inputArea">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col">
+                                            <LabelBox inputLabel="@configData.Get_Label("lfu_Hos")" />
+                                        </div>
+                                        <div class="col">
+                                            <RadzenDropDown @bind-Value="searchModel.lfu_Hos" Disabled="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List" TextProperty="hos_name" ValueProperty="hos_code" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col">
+                                            <LabelBox inputLabel="@configData.Get_Label("lfu_Province")" />
+                                        </div>
+                                        <div class="col">
+                                            <RadzenDropDown @bind-Value="searchModel.lfu_Province" Disabled="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List" TextProperty="prv_name" ValueProperty="prv_code" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col">
+                                            <LabelBox inputLabel="@configData.Get_Label("lfu_Area")" />
+                                        </div>
+                                        <div class="col">
+                                            <RadzenDropDown @bind-Value="searchModel.lfu_Area" Disabled="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List" TextProperty="arh_name" ValueProperty="arh_code" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="row justify-content-center divGroup">
+                                        <div class="col">
+                                            <LabelBox inputLabel="@configData.Get_Label("lfu_lab")" />
+                                        </div>
+                                        <div class="col">
+                                            <RadzenDropDown @bind-Value="LabFileData.lfu_lab" Disabled="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" TValue="string" AllowFiltering="true" Placeholder="Select..." Data="lab_ddl_List" ValueProperty="lab_code" TextProperty="lab_name" />
+                                        </div>
+                                    </div>
+                                </div>
+                                @if (LabFileData.lfu_lab != null)
+                                {
+                                    <div class="col-12">
+                                        <div class="row justify-content-center divGroup">
+                                            <div class="col">
+                                                <LabelBox inputLabel="@configData.Get_Label("lfu_Program")" />
+                                            </div>
+                                            <div class="col">
+                                                <RadzenDropDown @bind-Value="LabFileData.lfu_Program"
+                                                                TValue="string"
+                                                                Data="@(programs.Select(c => new { ID = c, Name = c }).Distinct())"
+                                                                TextProperty="Name" ValueProperty="ID" Change="@(args => DDL_Change("Program", args))" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @if (LabFileData.lfu_Program == "MLAB")
+                                    {
+                                        <div class="col-12">
+                                            <div class="row justify-content-center divGroup">
+                                                <div class="col">
+                                                    <LabelBox inputLabel="@configData.Get_Label("lfu_FileType")" />
+                                                </div>
+                                                <div class="col">
+                                                    <RadzenDropDown @bind-Value="LabFileData.lfu_FileType"
+                                                                    TValue="string"
+                                                                    Data="@(filetype.Select(c => new { ID = c, Name = c }).Distinct())"
+                                                                    TextProperty="Name" ValueProperty="ID" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                    @if (LabFileData.lfu_Program == "MLAB" && LabFileData.lfu_FileType == "ETEST")
+                                    {
+                                        <div class="col-12">
+                                            <div class="row justify-content-center divGroup">
+                                                <div class="col">
+                                                    <LabelBox inputLabel="@configData.Get_Label("lfu_DataYear")" />
+                                                </div>
+                                                <div class="col">
+                                                    <RadzenNumeric TValue="int" @bind-Value="LabFileData.lfu_DataYear" Min="0" Max="9999" />
+                                                    @* <RadzenTextBox Name="DataYear" @bind-Value="LabFileData.lfu_DataYear.ToString()" />
+        <RadzenRegexValidator Component="DataYear" Text="Numeric 4 digits" Pattern="\d{4}" Popup="false" Style="position: absolute" />*@
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                    @if ((LabFileData.lfu_Program != null && LabFileData.lfu_Program != "MLAB")
+                                  || (LabFileData.lfu_FileType != null && LabFileData.lfu_Program == "MLAB")
+                                  )
+                                    {
+                                        <div class="col-12">
+                                            <div class="row justify-content-center divGroup">
+                                                <div class="col">
+                                                    <LabelBox inputLabel="Upload Lab File" />
+                                                </div>
+                                                <div class="col">
+                                                    <InputFile OnChange="HandleFileSelection"></InputFile>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        @if (selectedFiles != null)
+                                        {
+                                            <div class="col-12">
+                                                <div class="row justify-content-center divGroup">
+                                                    <div class="col">
+                                                        <LabelBox inputLabel="@configData.Get_Label("Filename")" />
+                                                    </div>
+                                                    <div class="col">
+                                                        <label>@selectedFiles.Name</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+
+                                        }
+                                    }
+                                }
+                            </div>
+
+
+                            <div class="row justify-content-center">
+                                <div class="col-xl-12">
+                                    <div class="row justify-content-center divGroup buttonArea">
+                                        <div class="col-auto">
+                                            <RadzenButton class="btnCancel" Text="Cancel" Click="@(() => ControlPopup("UploadEntry",false))" />
+                                        </div>
+                                        <div class="col-auto">
+                                            <RadzenButton Icon="save" ButtonType="ButtonType.Submit" class="btnSave" Text="Upload"
+                                                          disabled="@(selectedFiles == null ? true : false)" />
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </EditForm>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+
+<Loading ShowModel="showModal" />
+
+@code {
+    [CascadingParameter] MainLayout mainLayout { get; set; }
+
+    private ConfigData configData = new ConfigData();
+
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+
+    private RadzenGridCustom<LabFileUploadDataDTO> inboxGrid = new RadzenGridCustom<LabFileUploadDataDTO>();
+    private List<DropDownListDTO> rol_List;
+    private List<DropDownListDTO> lab_List = new List<DropDownListDTO>();
+
+    private bool showModal = false;
+    private bool ShowUploadEntryPopup = false;
+    //private bool checkDataYear { get { return ((_isAntibioticField != true) || (objWHONetMapping.wnm_antibioticcolumn != null)); } }
+
+    private List<LabFileUploadDataDTO> gridDatas;
+
+    LoginUserRolePermissionDTO permission;
+    IFileListEntry selectedFiles;
+
+    LabFileUploadSearchDTO searchModel = new LabFileUploadSearchDTO();
+    LabFileUploadDataDTO LabFileData = new LabFileUploadDataDTO();
+
+    private List<HospitalLabDataDTO> lab_ddl_List;
+    string[] filetype = new[]
+    {
+                "DISK",
+                "MIC",
+                "ETEST",
+                "ALL(DISK+MIC)"
+     };
+
+    string[] programs = new[]
+         {
+                "MLAB",
+                "WHONET",
+                "OTHER"
+            };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await mainLayout.GetLoginUser();
+
+            if (mainLayout.loginUser.CheckPagePermission("MNU_0402") == false) navigationManager.NavigateTo("/NoPermissionPage");
+
+            configData.ConfigDTOList = await configDataService.Get_TBConfig_DataList_Async(new TBConfigDTO() { tbc_mnu_code = "MNU_0402" });
+
+            var searchData = new HospitalLabDataDTO()
+            {
+                arh_code = searchModel.lfu_Area = mainLayout.loginUser.arh_code,
+                prv_code = searchModel.lfu_Province = mainLayout.loginUser.prv_code,
+                hos_code = LabFileData.lfu_hos_code = searchModel.lfu_Hos = mainLayout.loginUser.hos_code,
+                lab_code = LabFileData.lfu_lab = searchModel.lfu_lab = mainLayout.loginUser.lab_code
+            };
+
+
+            lab_ddl_List = await ddlDataService.GetAllLabListByModelAsync(searchData);
+            rol_List = await ddlDataService.GetRoleListByModelAsync();
+
+
+            gridDatas = await labFileUploadservice.GetLabFileUploadListByModelAsync(searchModel);
+        }
+    }
+
+    private async void ClearInboxData()
+    {
+        searchModel.lfu_Area = null;
+        searchModel.lfu_Hos = null;
+        searchModel.lfu_Province = null;
+        searchModel.lfu_lab = null;
+        SearchData();
+    }
+
+    private async void SearchData()
+    {
+        showModal = true;
+
+        gridDatas = await labFileUploadservice.GetLabFileUploadListByModelAsync(searchModel);
+
+        if (inboxGrid.radzenGrid != null) inboxGrid.radzenGrid.GoToPage(0);
+        showModal = false;
+        StateHasChanged();
+    }
+
+    private void DDL_Change(string ddl_name, object value)
+    {
+        if (ddl_name == "Arh" && value == null)
+        {
+            searchModel.lfu_Province = null;
+            searchModel.lfu_Hos = null;
+            searchModel.lfu_lab = null;
+            LabFileData.lfu_lab = null;
+        }
+        else if (ddl_name == "Prv" && value == null)
+        {
+            searchModel.lfu_Hos = null;
+            searchModel.lfu_lab = null;
+            LabFileData.lfu_lab = null;
+        }
+        else if (ddl_name == "Prv" && value != null)
+        {
+            var prv_select = lab_ddl_List.FirstOrDefault(x => x.prv_code == value.ToString());
+
+            searchModel.lfu_Area = prv_select.arh_code;
+        }
+        else if (ddl_name == "Hos" && value == null)
+        {
+            searchModel.lfu_lab = null;
+            LabFileData.lfu_lab = null;
+            LabFileData.lfu_hos_code = null;
+        }
+        else if (ddl_name == "Hos" && value != null)
+        {
+            var hos_select = lab_ddl_List.FirstOrDefault(x => x.hos_code == value.ToString());
+
+            searchModel.lfu_Province = hos_select.prv_code;
+            searchModel.lfu_Area = hos_select.arh_code;
+            searchModel.lfu_lab = null;
+            LabFileData.lfu_hos_code = hos_select.hos_code;
+        }
+        else if (ddl_name == "Lab" && value != null)
+        {
+            LabFileData.lfu_lab = searchModel.lfu_lab;
+        }
+        else if (ddl_name == "Lab" && value == null)
+        {
+
+            LabFileData.lfu_lab = null;
+        }
+        else if (ddl_name == "Program" && value != null)
+        {
+            LabFileData.lfu_FileType = "FileType";
+        }
+        StateHasChanged();
+    }
+
+
+    async Task ControlPopup(string type, bool control)
+    {
+        if (type == "UploadEntry")
+        {
+            ShowUploadEntryPopup = control;
+            LabFileData.lfu_DataYear = DateTime.Now.Year;
+
+            if (control == false)
+            {
+                selectedFiles = null;
+                LabFileData.lfu_Program = null;
+                LabFileData.lfu_FileType = null;
+            }
+        }
+    }
+
+    async Task ValidateFile()
+    {
+        string confirmMessage = "";
+        confirmMessage = "Confirm upload data." + "\n" + " File Name: " + selectedFiles.Name + "\n" + " Program: " + LabFileData.lfu_Program + "\n";
+
+        if (LabFileData.lfu_Program == "MLAB")
+            confirmMessage += " File Type: " + LabFileData.lfu_FileType;
+
+
+
+        var result = await jsRuntime.InvokeAsync<bool>("ShowConfirm", confirmMessage);
+        if (result == false)
+        {
+            return;
+        }
+
+        showModal = true;
+        MasterTemplateSearchDTO searchMasterTemplate = new MasterTemplateSearchDTO();
+        MappingDataDTO mappingSearch = new MappingDataDTO();
+        mappingSearch.mp_hos_code = LabFileData.lfu_hos_code;
+        mappingSearch.mp_lab = LabFileData.lfu_lab;
+        mappingSearch.mp_program = LabFileData.lfu_Program;
+        mappingSearch.mp_filetype = LabFileData.lfu_FileType;
+
+        if (LabFileData.lfu_Program != "MLAB")
+            mappingSearch.mp_filetype = null;
+
+        var MappingTemplate = await mappingservice.GetMappingDataActiveWithModelAsync(mappingSearch);
+
+        if (MappingTemplate.mp_id == Guid.Empty)
+        {
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "ไม่พบ Mapping Template สำหรับใช้ในการ Upload File");
+            showModal = false;
+            return;
+        }
+
+        MasterTemplateDTO ActiveMasterTemplate = await masterTemplateService.GetListByModelActiveAsync(searchMasterTemplate);
+
+        if (ActiveMasterTemplate == null)
+        {
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "ไม่พบ Master Template ที่มีสถานะเป็น Active (กรุณาติดต่อผู้ดูแลระบบ)");
+            showModal = false;
+            return;
+        }
+        if (MappingTemplate.mp_mst_code != ActiveMasterTemplate.mst_code)
+        {
+            await jsRuntime.InvokeAsync<object>("ShowAlert", "กรุณาติดต่อผู้ดูแลระบบเนื่องจาก Master Template (" + MappingTemplate.mp_mst_code + ") ไม่ตรงกับ Version ปัจจุบัน (" + ActiveMasterTemplate.mst_code + ")");
+            showModal = false;
+            return;
+        }
+
+
+        var chkValidate = await fileUploadservice.ValidateLabFileAsync(selectedFiles, MappingTemplate);
+        int totalRec = 0;
+        if (chkValidate != null)
+        {
+            string ErrorMessage = "";
+            foreach (LabFileUploadErrorMessageDTO item in chkValidate)
+            {
+                if (item.lfu_status == 'I' && item.lfu_Err_Column == "Total")
+                {
+                    Int32.TryParse(item.lfu_Err_Message, out totalRec);
+                    ////ErrorMessage += "Total Record(s) = " + totalRec + "\n";
+                    ErrorMessage += "Total Record(s) = " + String.Format("{0:n0}", totalRec) + "\n";
+                }
+                else if (item.lfu_status == 'E')
+                    ErrorMessage += "- " + item.lfu_Err_Message + "\n";
+            }
+
+            await jsRuntime.InvokeAsync<object>("ShowAlert", ErrorMessage);
+        }
+
+        var chkError = chkValidate.FirstOrDefault(x => x.lfu_status == 'E');
+
+        if (chkError == null)
+        {
+            var path = chkValidate.FirstOrDefault(x => x.lfu_status == 'I' && x.lfu_Err_Column == "path").lfu_Err_Message;
+            await UploadFile(MappingTemplate.mp_id, MappingTemplate.mp_version, totalRec, path);
+            await ControlPopup("UploadEntry", false);
+            showModal = false;
+
+            SearchData();
+            StateHasChanged();
+
+        }
+        else
+        {
+            showModal = false;
+            return;
+        }
+
+
+
+
+    }
+
+    async Task UploadFile(Guid mp_id, Decimal mp_version, int TotalRec, string path)
+    {
+
+        LabFileUploadDataDTO LabFileUpload = new LabFileUploadDataDTO();
+
+        LabFileUpload.lfu_mp_id = mp_id;
+        LabFileUpload.lfu_mp_version = mp_version;
+        LabFileUpload.lfu_hos_code = LabFileData.lfu_hos_code;
+        LabFileUpload.lfu_lab = LabFileData.lfu_lab;
+        LabFileUpload.lfu_Program = LabFileData.lfu_Program;
+        LabFileUpload.lfu_Path = path;
+        LabFileUpload.lfu_DataYear = LabFileData.lfu_DataYear;
+        LabFileUpload.lfu_FileName = selectedFiles.Name;
+        LabFileUpload.lfu_TotalRecord = TotalRec;
+        LabFileUpload.lfu_FileType = LabFileData.lfu_FileType;
+        LabFileUpload.lfu_createuser = mainLayout.loginUser.Username;
+        LabFileUpload.lfu_updateuser = mainLayout.loginUser.Username;
+
+        var x = await fileUploadservice.UploadFileAsync(selectedFiles, LabFileUpload);
+
+    }
+
+    async Task ShowUploadEntryDialog()
+    {
+        ControlPopup("UploadEntry", true);
+    }
+
+    async Task HandleFileSelection(IFileListEntry[] files)
+    {
+        selectedFiles = files.FirstOrDefault();
+
+        var type = Path.GetExtension(selectedFiles.Name);
+        if (type != ".xlsx" && type != ".xls" && type != ".csv" && type != ".txt")
+        {
+            if (selectedFiles.Type != "")
+            {
+                await jsRuntime.InvokeAsync<object>("ShowAlert", "ไม่สามารถ Upload ไฟล์ " + selectedFiles.Name);
+                selectedFiles = null;
+                return;
+            }
+        }
+    }
+
+
+    async Task OpenLabFileUploadDetail(string id)
+    {
+
+        navigationManager.NavigateTo("LabFileUploadDetail/" + id);
+
+    }
+
+
+}

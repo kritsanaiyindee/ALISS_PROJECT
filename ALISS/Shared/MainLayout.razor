@@ -1,0 +1,304 @@
+﻿@inherits LayoutComponentBase
+
+@using System.Reflection
+
+@inject IJSRuntime jsRuntime
+@inject NavigationManager navigationManager
+@inject Blazored.SessionStorage.ISessionStorageService sesstionStorage
+
+@inject LoginUserDataList loginUserData
+@inject UserLoginService userLoginService
+@inject LoginUserService loginUserService
+@inject PasswordConfigService passwordConfigService
+
+<RadzenDialog />
+
+@if (string.IsNullOrEmpty(loginUser?.Username) == false)
+{
+    <div class="@NavMenuCssClass">
+        <div class="sidebar" @onmousemove="MouseMove">
+            <CascadingValue Value="@this">
+                <NavMenu />
+            </CascadingValue>
+        </div>
+    </div>
+}
+
+<div class="main" @onmousemove="MouseMove">
+    @*<div class="top-row px-4 auth">
+            <LoginDisplay />
+            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+        </div>*@
+
+    @if (string.IsNullOrEmpty(loginUser?.Username) == false)
+    {
+        <div>
+            <div class="row justify-content-between">
+                <div class="col-auto">
+                    <div class="top-row pl-4 navbar navbar-dark" @onmousemove="MouseMove">
+                        <button class="navbar-toggler" @onclick="ToggleNavMenu">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="row justify-content-center">
+                        <div class="col-auto">
+                            <div style="display: inline-block;vertical-align: middle;margin:5px;">
+                                <img src="/Images/logodmsc.png" style="width: 44px;height: 50px;" />
+                            </div>
+                            <div style="display: inline-block;vertical-align: middle;margin:5px;padding-top:5px;text-align:center;">
+                                <div style="font: Bold 26px/22px Arial;letter-spacing: 16px;color: #0A6839;opacity: 1;margin-right:-16px;">A L I S S</div>
+                                <div style="font: Regular 12px/22px Arial; letter-spacing: 0px; color: #999999; opacity: 1;">AMR Lab Information Sharing System</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    <div class="content px-4" style="height: 100%;">
+        <CascadingValue Value="@this">
+            @Body
+        </CascadingValue>
+    </div>
+    <footer>
+        <div class="content-wrapper">
+            <div class="themeFooter">
+                เว็บไซด์นี้ควรดูผ่าน Chrome สงวนลิขสิทธิ์ &copy; 2563 กรมวิทยาศาสตร์การแพทย์ Version @Assembly.GetEntryAssembly().GetName().Version.ToString()
+            </div>
+        </div>
+    </footer>
+</div>
+@*
+    <div style="float:right;position: absolute;">
+        time : @datetimeNow.ToString("HH:mm:ss.fff")
+        <br />
+        sessionId : @loginUserData.CurrentLoginUser.SessionId
+    </div>
+*@
+
+@*@if (string.IsNullOrEmpty(loginUser.Username) == false)
+    {
+        <label>@((DateTime.Now - loginUser.SessionTimeStamp).TotalMinutes)</label>
+    }*@
+
+@if (showPopupDialog)
+{
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <label>Continue session</label>
+                </div>
+                <div class="modal-body">
+                    <div class="container inputArea">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="row justify-content-center divGroup">
+                                    <div class="@classLabel">
+                                        <LabelBox inputLabel="ชื่อผู้ใช้" />
+                                    </div>
+                                    <div class="@classInput">
+                                        <RadzenTextBox @bind-Value="loginUserSearch.usr_username" ReadOnly="true" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="row justify-content-center divGroup">
+                                    <div class="@classLabel">
+                                        <LabelBox inputLabel="รหัสผ่าน" />
+                                    </div>
+                                    <div class="@classInput">
+                                        <RadzenPassword @bind-Value="txtPassword" />
+                                        @if (string.IsNullOrEmpty(ErrMsg) == false)
+                                        {
+                                            <br />
+                                            <div class="col-12 row">
+                                                <label style="text-align: left;font: Bold 16px Arial;letter-spacing: 0px;color: red;opacity: 1;">@ErrMsg</label>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row justify-content-center">
+                            <div class="col-12">
+                                <div class="row justify-content-center divGroup buttonArea">
+                                    <div class="col-auto">
+                                        <RadzenButton class="btnCancel" Text="Logout" Click="RedirectToInbox" />
+                                    </div>
+                                    <div class="col-auto">
+                                        <RadzenButton Icon="save" class="btnSave" Text="Continue" Click="ValidateUser" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    public LoginUser loginUser { get; set; } = new LoginUser();
+    private string loginUserName { get; set; } = "";
+    private string loginSessionId { get; set; } = "";
+
+    private string classLabel = "col-4";
+    private string classInput = "col-8";
+
+    private LoginUserSearchDTO loginUserSearch = new LoginUserSearchDTO();
+    private string txtPassword;
+    private string ErrMsg = "";
+
+    private DateTime datetimeNow = DateTime.Now;
+    string _currentSessionId = Guid.NewGuid().ToString().ToUpper();
+    private bool showPopupDialog;
+    bool firsttime = true;
+
+    PasswordConfigDTO pwdCfg;
+
+    private bool collapseNavMenu = false;
+
+    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await GetLoginUser();
+
+            StateHasChanged();
+        }
+    }
+
+    public async Task GetLoginUser()
+    {
+        //loginUser = await sesstionStorage.GetItemAsync<LoginUser>("LoginUser") ?? new LoginUser();
+        loginUserName = await sesstionStorage.GetItemAsync<string>("loginUserName");
+        loginSessionId = await sesstionStorage.GetItemAsync<string>("loginSessionId");
+        if (string.IsNullOrEmpty(loginUserName) == false)
+        {
+            var currentUser = loginUserData.LoginUserList.FirstOrDefault(x => x.Username == loginUserName && x.SessionId == loginSessionId);
+            if(currentUser != null)
+            {
+                loginUser = currentUser;
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    public async Task Logout()
+    {
+        if (string.IsNullOrEmpty(loginUser.Username) == false)
+        {
+            var loginUserSearch = new LoginUserSearchDTO()
+            {
+                usr_username = loginUser.Username,
+                usr_clientIp = loginUser.ClientIp,
+                usr_sessionId = loginUser.SessionId
+            };
+
+            var logoutUser = await loginUserService.Set_LogoutUser_DataAsync(loginUserSearch);
+
+            var currentUser = loginUserData.LoginUserList.FirstOrDefault(x => x.Username == loginUser.Username && x.SessionId == loginSessionId);
+            loginUserData.LoginUserList.Remove(currentUser);
+
+            loginUser = new LoginUser();
+        }
+
+        await sesstionStorage.RemoveItemAsync("loginUserName");
+        await sesstionStorage.RemoveItemAsync("loginSessionId");
+
+        showPopupDialog = false;
+        StateHasChanged();
+    }
+
+    public async void UpdateLoginUser(LoginUser loginUserSuccess)
+    {
+        loginUser = loginUserSuccess;
+
+        loginUserData.LoginUserList.Add(loginUser);
+
+        await sesstionStorage.SetItemAsync("loginUserName", loginUser.Username);
+        await sesstionStorage.SetItemAsync("loginSessionId", loginUser.SessionId);
+
+        StateHasChanged();
+    }
+
+    private void MouseMove()
+    {
+        if (string.IsNullOrEmpty(loginUser.Username) == false)
+        {
+            if (((DateTime.Now - loginUser.SessionTimeStamp).TotalMinutes > loginUser.SessionTimeout))
+            {
+                showPopupDialog = true;
+                loginUserSearch.usr_username = loginUser.Username;
+                loginUserSearch.usr_password = "";
+                txtPassword = "";
+            }
+
+            loginUser.SessionTimeStamp = DateTime.Now;
+        }
+
+        datetimeNow = DateTime.Now;
+        StateHasChanged();
+    }
+
+    private async void ValidateUser()
+    {
+        if (string.IsNullOrEmpty(txtPassword) == true)
+        {
+            ErrMsg = "* กรุณากรอกรหัสผ่าน";
+        }
+        else
+        {
+            loginUserSearch.usr_password = CryptoHelper.EncryptMD5(txtPassword);
+
+            var loginUserCheck = await userLoginService.GetDataAsync(loginUserSearch.usr_username);
+
+            if (string.IsNullOrEmpty(loginUserCheck.usr_username) == false)
+            {
+                pwdCfg = await passwordConfigService.GetDataAsync();
+
+                var encryptPassword = CryptoHelper.EncryptMD5(pwdCfg.pwc_default_password);
+
+                if (loginUserSearch.usr_password != loginUserCheck.usr_password)
+                {
+                    ErrMsg = "* Invalid password. Please re-enter your user information.";
+                }
+                else
+                {
+                    ErrMsg = "";
+                    showPopupDialog = false;
+                    loginUser.SessionTimeStamp = DateTime.Now;
+
+                    StateHasChanged();
+                }
+            }
+            else
+            {
+                ErrMsg = "* Invalid password. Please re-enter your user information.";
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private async void RedirectToInbox()
+    {
+        await Logout();
+
+        navigationManager.NavigateTo("/");
+    }
+}
